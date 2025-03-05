@@ -15,7 +15,6 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 type RootStackParamList = {
   Login: undefined;
-  EditProfile: undefined;
   Bookmarks: undefined;
   ChangePassword: undefined;
   HelpSupport: undefined;
@@ -65,13 +64,6 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Profile</Text>
-        <TouchableOpacity 
-          style={styles.editButton}
-          onPress={() => navigation.navigate('EditProfile')}
-        >
-          <Feather name="edit-2" size={16} color="#0066cc" />
-          <Text style={styles.editButtonText}>Edit</Text>
-        </TouchableOpacity>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -134,14 +126,6 @@ export default function ProfileScreen() {
             <Feather name="chevron-right" size={20} color="#888" />,
             () => navigation.navigate('Bookmarks')
           )}
-          
-          {renderSettingsItem(
-            <Ionicons name="lock-closed-outline" size={22} color="#333" />,
-            'Change Password',
-            'Update your security credentials',
-            <Feather name="chevron-right" size={20} color="#888" />,
-            () => navigation.navigate('ChangePassword')
-          )}
         </View>
 
         <View style={styles.settingsSection}>
@@ -192,7 +176,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
     backgroundColor: '#ffffff',
@@ -203,16 +187,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
-  },
-  editButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  editButtonText: {
-    marginLeft: 4,
-    fontSize: 14,
-    color: '#0066cc',
-    fontWeight: '500',
   },
   profileSection: {
     backgroundColor: '#ffffff',
