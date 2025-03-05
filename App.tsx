@@ -7,6 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { enableScreens } from 'react-native-screens';
+import { Toaster } from 'sonner-native';
 
 import HomeScreen, { RootStackParamList } from './screens/HomeScreen';
 import DiscoverScreen from './screens/DiscoverScreen';
@@ -93,8 +94,11 @@ const TabNavigator = () => (
 const App = () => (
   <GestureHandlerRootView style={styles.container}>
     <SafeAreaProvider>
+      <Toaster />
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={LoginScreen} />
           <Stack.Screen name="Main" component={TabNavigator} />
           <Stack.Screen name="ArticleDetail" component={ArticleDetailScreen} />
           <Stack.Screen name="Notifications" component={NotificationsScreen} />

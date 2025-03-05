@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
+  Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -20,6 +21,7 @@ interface Article {
   timeAgo: string;
   imageUrl: string;
   sourceIconUrl: string;
+  url: string;
 }
 
 interface NewsCardProps {
@@ -54,9 +56,17 @@ const NewsCard = ({ article }: NewsCardProps) => {
         </View>
         <Text style={styles.title} numberOfLines={2}>{article.title}</Text>
         <Text style={styles.summary} numberOfLines={2}>{article.summary}</Text>
-        <View style={styles.sourceRow}>
-          <Image source={{ uri: article.sourceIconUrl }} style={styles.sourceIcon} />
-          <Text style={styles.sourceName}>{article.source}</Text>
+        <View>
+          <View style={styles.sourceRow}>
+            <Image source={{ uri: article.sourceIconUrl }} style={styles.sourceIcon} />
+            <Text style={styles.sourceName}>{article.source}</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.readMoreButton}
+            onPress={() => article.url && Linking.openURL(article.url)}
+          >
+            <Text style={styles.readMoreText}>Read More</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </TouchableOpacity>
@@ -131,6 +141,19 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#888',
     fontWeight: '500',
+  },
+  readMoreButton: {
+    backgroundColor: '#0066cc',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  readMoreText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });
 

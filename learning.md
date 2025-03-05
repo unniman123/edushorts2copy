@@ -1,0 +1,138 @@
+# Project Structure and Implementation Patterns
+
+## Project Overview
+- React Native TypeScript project
+- Uses React Navigation for routing
+- Mock data pattern for development
+- Component-based architecture with separation of concerns
+
+## Key Components
+- **NewsCard**: Reusable card component for displaying news articles
+- **CategorySelector**: Handles news category filtering
+- **ArticleDetailScreen**: Detailed view of articles
+- **ProfileScreen**: User profile and settings management
+
+## Data Flow
+1. Mock data is stored in `data/mockData.ts`
+2. Data is passed down through props with proper TypeScript interfaces
+3. Components are typed with proper interfaces for props and navigation
+
+## Implementation Patterns
+
+### Navigation
+- Uses React Navigation's stack navigator
+- Routes are defined in RootStackParamList types
+- Navigation prop typing ensures type-safe navigation calls
+```typescript
+type RootStackParamList = {
+  ArticleDetail: { articleId: string };
+  // other routes...
+};
+```
+
+### TypeScript Integration
+- Interfaces defined for all data structures
+- Navigation props properly typed
+- Component props defined with interfaces
+```typescript
+interface NewsCardProps {
+  article: Article;
+}
+```
+
+### External Link Handling
+- Uses React Native's Linking API
+- Always check if URL exists before attempting to open
+```typescript
+onPress={() => article.url && Linking.openURL(article.url)}
+```
+
+## Debugging Approaches
+
+### TypeScript Errors
+1. **Missing Properties**
+   - Check interface definitions
+   - Ensure mock data includes all required properties
+   - Verify prop passing in parent components
+
+2. **Navigation Type Errors**
+   - Ensure proper typing of navigation prop
+   - Check RootStackParamList includes all routes
+   - Verify navigation parameters match defined types
+
+3. **Component Prop Errors**
+   - Define proper interfaces for props
+   - Use optional properties when appropriate
+   - Implement null checks for optional data
+
+### Common Patterns for Fixes
+1. **Type Definition**
+```typescript
+interface Article {
+  id: string;
+  title: string;
+  // ... other required properties
+  url?: string; // Optional properties with ?
+}
+```
+
+2. **Null Checking**
+```typescript
+if (!article || !article.id) {
+  return null;
+}
+```
+
+3. **Type Assertion (when necessary)**
+```typescript
+const foundArticle = mockNewsData.find(item => item.id === articleId) as Article;
+```
+
+## Best Practices
+
+### Component Structure
+1. Define interfaces at the top
+2. Initialize hooks and state
+3. Define handler functions
+4. Return JSX with proper type checking
+
+### State Management
+- Use typed useState hooks
+- Initialize with proper types
+- Handle loading and error states
+
+### Style Organization
+- StyleSheet.create for type-safe styles
+- Group related styles together
+- Use consistent naming conventions
+
+### Error Handling
+1. Validate data before rendering
+2. Provide fallback UI for missing data
+3. Use proper type guards
+4. Handle async operations safely
+
+## Future Improvements
+1. Implement proper API integration
+2. Add error boundaries
+3. Implement proper state management (e.g., Redux)
+4. Add unit tests
+5. Implement proper loading states
+
+## Common Issues and Solutions
+
+### Issue: Component Not Rendering
+- Check if all required props are passed
+- Verify data structure matches interface
+- Ensure proper null checking
+
+### Issue: Navigation Errors
+- Verify route names match RootStackParamList
+- Check parameter types match route definitions
+- Ensure navigation prop is properly typed
+
+### Issue: TypeScript Errors
+- Check interface definitions
+- Verify data shapes match interfaces
+- Use optional properties when appropriate
+- Implement proper type guards

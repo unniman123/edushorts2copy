@@ -13,11 +13,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { mockUsers } from '../data/mockData';
 import { toast } from 'sonner-native';
+import { RootStackParamList } from './HomeScreen';
 
 export default function LoginScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -39,7 +41,7 @@ export default function LoginScreen() {
       
       if (user) {
         toast.success('Login successful!');
-        navigation.navigate('Home');
+        navigation.navigate('Main');
       } else {
         toast.error('Invalid email or password');
       }
@@ -63,7 +65,7 @@ export default function LoginScreen() {
               source={{ uri: 'https://api.a0.dev/assets/image?text=GlobalEdu%20News%20Logo&aspect=1:1&seed=123' }}
               style={styles.logo}
             />
-            <Text style={styles.logoText}>GlobalEdu News</Text>
+            <Text style={styles.logoText}>Edushorts</Text>
           </View>
           
           <Text style={styles.welcomeText}>Welcome Back!</Text>
@@ -145,7 +147,7 @@ export default function LoginScreen() {
           
           <TouchableOpacity 
             style={styles.guestButton}
-            onPress={() => navigation.navigate('Home')}
+            onPress={() => navigation.navigate('Main')}
           >
             <Text style={styles.guestButtonText}>Continue as Guest</Text>
           </TouchableOpacity>

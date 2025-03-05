@@ -1,4 +1,27 @@
 import React, { useState, useEffect } from 'react';
+import { RouteProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+type RootStackParamList = {
+  ArticleDetail: { articleId: string };
+};
+
+type ArticleDetailScreenRouteProp = RouteProp<RootStackParamList, 'ArticleDetail'>;
+type ArticleDetailScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+interface Article {
+  id: string;
+  title: string;
+  summary: string;
+  content: string;
+  category: string;
+  source: string;
+  sourceIconUrl: string;
+  imageUrl: string;
+  timeAgo: string;
+  url: string;
+  timestamp: string;
+}
 import {
   View,
   Text,
@@ -8,6 +31,7 @@ import {
   TouchableOpacity,
   Share,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, Ionicons } from '@expo/vector-icons';
@@ -15,22 +39,23 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { mockNewsData } from '../data/mockData';
 
 export default function ArticleDetailScreen() {
-  const navigation = useNavigation();
-  const route = useRoute();
+  const navigation = useNavigation<ArticleDetailScreenNavigationProp>();
+  const route = useRoute<ArticleDetailScreenRouteProp>();
   const { articleId } = route.params;
-  const [article, setArticle] = useState(null);
+  const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
   const [bookmarked, setBookmarked] = useState(false);
 
   useEffect(() => {
     // In a real app, we would fetch the article from an API
-    const foundArticle = mockNewsData.find(item => item.id === articleId);
-    setArticle(foundArticle);
+    const foundArticle = mockNewsData.find(item => item.id === articleId) as Article;
+    setArticle(foundArticle || null);
     setLoading(false);
   }, [articleId]);
 
   const handleShare = async () => {
     try {
+      if (!article) return;
       await Share.share({
         message: `Check out this article: ${article.title} ${article.url}`,
       });
@@ -116,7 +141,7 @@ export default function ArticleDetailScreen() {
           
           <TouchableOpacity 
             style={styles.sourceLink}
-            onPress={() => {/* Open the source URL */}}
+            onPress={() => article.url && Linking.openURL(article.url)}
           >
             <Text style={styles.sourceLinkText}>Read full article on {article.source}</Text>
             <Feather name="external-link" size={16} color="#0066cc" />

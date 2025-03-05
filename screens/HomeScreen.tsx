@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   RefreshControl,
   Image,
   ActivityIndicator,
+  Platform,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -26,6 +28,8 @@ export type RootStackParamList = {
   Bookmarks: undefined;
   Profile: undefined;
   AdminDashboard: undefined;
+  Login: undefined;
+  Register: undefined;
 };
 
 export type NewsItem = {
@@ -37,6 +41,7 @@ export type NewsItem = {
   timeAgo: string;
   imageUrl: string;
   sourceIconUrl: string;
+  url: string;
 };
 
 export default function HomeScreen() {
@@ -46,12 +51,15 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  const onRefresh = React.useCallback(() => {
+  const onRefresh = useCallback(() => {
     setRefreshing(true);
+    
     // Simulate fetch delay
     setTimeout(() => {
       setRefreshing(false);
-    }, 1500);
+      // Simulate refreshed data by reversing the order
+      setNews([...mockNewsData].reverse());
+    }, 2000);
   }, []);
 
   const loadMoreData = () => {
@@ -80,7 +88,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.logo}>GlobalEdu News</Text>
+        <Text style={styles.logo}>Edushorts </Text>
         <View style={styles.headerIcons} key="header-icons">
           <TouchableOpacity key="search-icon" onPress={() => navigation.navigate('Discover')}>
             <View>
@@ -136,7 +144,24 @@ export default function HomeScreen() {
           )}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            Platform.select({
+              ios: (
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  tintColor="#0066cc"
+                />
+              ),
+              android: (
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={['#0066cc', '#00cc99']}
+                  progressBackgroundColor="#ffffff"
+                  progressViewOffset={20}
+                />
+              ),
+            })
           }
           onEndReached={loadMoreData}
           onEndReachedThreshold={0.5}

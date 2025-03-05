@@ -11,11 +11,24 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+type RootStackParamList = {
+  Login: undefined;
+  EditProfile: undefined;
+  Bookmarks: undefined;
+  ChangePassword: undefined;
+  HelpSupport: undefined;
+  AboutUs: undefined;
+  PrivacyPolicy: undefined;
+};
+
+type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 import { mockUsers } from '../data/mockData';
 import { toast } from 'sonner-native';
 
 export default function ProfileScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<ProfileScreenNavigationProp>();
   const [user, setUser] = useState(mockUsers[0]); // Using first user as example
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
@@ -25,7 +38,13 @@ export default function ProfileScreen() {
     navigation.navigate('Login');
   };
 
-  const renderSettingsItem = (icon, title, subtitle, rightElement, onPress) => (
+  const renderSettingsItem = (
+    icon: React.ReactNode,
+    title: string,
+    subtitle: string | undefined,
+    rightElement: React.ReactNode,
+    onPress: () => void
+  ) => (
     <TouchableOpacity style={styles.settingsItem} onPress={onPress}>
       <View style={styles.settingsItemLeft}>
         <View style={styles.settingsIconContainer}>
@@ -104,21 +123,6 @@ export default function ProfileScreen() {
             () => {}
           )}
           
-          {renderSettingsItem(
-            <Ionicons name="language-outline" size={22} color="#333" />,
-            'Language',
-            'English',
-            <Feather name="chevron-right" size={20} color="#888" />,
-            () => navigation.navigate('LanguageSettings')
-          )}
-          
-          {renderSettingsItem(
-            <Ionicons name="newspaper-outline" size={22} color="#333" />,
-            'News Categories',
-            'Manage your interests',
-            <Feather name="chevron-right" size={20} color="#888" />,
-            () => navigation.navigate('CategoryPreferences')
-          )}
         </View>
 
         <View style={styles.settingsSection}>
@@ -129,14 +133,6 @@ export default function ProfileScreen() {
             'View your bookmarks',
             <Feather name="chevron-right" size={20} color="#888" />,
             () => navigation.navigate('Bookmarks')
-          )}
-          
-          {renderSettingsItem(
-            <Ionicons name="time-outline" size={22} color="#333" />,
-            'Reading History',
-            'View your recently read articles',
-            <Feather name="chevron-right" size={20} color="#888" />,
-            () => navigation.navigate('ReadingHistory')
           )}
           
           {renderSettingsItem(
@@ -161,7 +157,7 @@ export default function ProfileScreen() {
           {renderSettingsItem(
             <Ionicons name="information-circle-outline" size={22} color="#333" />,
             'About Us',
-            'Learn more about GlobalEdu News',
+            'Learn more about Edushorts',
             <Feather name="chevron-right" size={20} color="#888" />,
             () => navigation.navigate('AboutUs')
           )}
