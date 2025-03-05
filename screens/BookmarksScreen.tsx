@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import {
   View,
   Text,
@@ -9,41 +9,63 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { mockNewsData } from '../data/mockData';
+import { AccessibilityProps } from '../types/accessibility';
+import EmptyState from '../components/EmptyState';
 
-export default function BookmarksScreen() {
-  const navigation = useNavigation();
+type RootStackParamList = {
+  Home: undefined;
+  ArticleDetail: { articleId: string };
+};
+
+type NavigationProp = StackNavigationProp<RootStackParamList>;
+
+const BookmarksScreen = () => {
+  const navigation = useNavigation<NavigationProp>();
   const [bookmarkedArticles, setBookmarkedArticles] = useState(mockNewsData.slice(0, 3));
   const [loading, setLoading] = useState(false);
 
-  const removeBookmark = (articleId) => {
+  const removeBookmark = (articleId: string) => {
     setBookmarkedArticles(bookmarkedArticles.filter(article => article.id !== articleId));
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity 
+          onPress={() => navigation.goBack()}
+          accessible={true}
+          accessibilityLabel="Go back"
+          accessibilityHint="Returns to the previous screen"
+        >
           <Feather name="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Saved Articles</Text>
-        <TouchableOpacity>
+        <TouchableOpacity
+          accessible={true}
+          accessibilityLabel="More options"
+          accessibilityHint="Shows additional options for saved articles"
+        >
           <Feather name="more-horizontal" size={24} color="#333" />
         </TouchableOpacity>
       </View>
 
       {bookmarkedArticles.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="bookmark-outline" size={80} color="#ccc" />
-          <Text style={styles.emptyTitle}>No saved articles</Text>
-          <Text style={styles.emptySubtitle}>
-            Articles you save will appear here for easy access
-          </Text>
+          <EmptyState
+            icon="bookmark"
+            title="No Saved Articles"
+            subtitle="Articles you save will appear here for easy access"
+          />
           <TouchableOpacity 
             style={styles.browseButton}
             onPress={() => navigation.navigate('Home')}
+            accessible={true}
+            accessibilityLabel="Browse Articles"
+            accessibilityHint="Click to explore available articles"
           >
             <Text style={styles.browseButtonText}>Browse Articles</Text>
           </TouchableOpacity>
@@ -57,6 +79,9 @@ export default function BookmarksScreen() {
               <TouchableOpacity 
                 style={styles.articleContent}
                 onPress={() => navigation.navigate('ArticleDetail', { articleId: item.id })}
+                accessible={true}
+                accessibilityLabel={`Article: ${item.title}`}
+                accessibilityHint="Click to read the full article"
               >
                 <Image source={{ uri: item.imageUrl }} style={styles.articleImage} />
                 <View style={styles.articleDetails}>
@@ -73,6 +98,9 @@ export default function BookmarksScreen() {
               <TouchableOpacity 
                 style={styles.removeButton}
                 onPress={() => removeBookmark(item.id)}
+                accessible={true}
+                accessibilityLabel={`Remove ${item.title} from bookmarks`}
+                accessibilityHint="Click to remove this article from your saved articles"
               >
                 <Feather name="trash-2" size={18} color="#ff3b30" />
               </TouchableOpacity>
@@ -83,11 +111,15 @@ export default function BookmarksScreen() {
           ListFooterComponent={loading ? (
             <ActivityIndicator size="large" color="#0066cc" style={styles.loader} />
           ) : null}
+          windowSize={5}
+          maxToRenderPerBatch={5}
+          removeClippedSubviews={true}
+          initialNumToRender={10}
         />
       )}
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -114,24 +146,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
   },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
   browseButton: {
     backgroundColor: '#0066cc',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
+    marginTop: 24,
   },
   browseButtonText: {
     color: 'white',
@@ -208,3 +228,5 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
 });
+
+export default memo(BookmarksScreen);

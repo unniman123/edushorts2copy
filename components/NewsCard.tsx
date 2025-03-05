@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Linking,
 } from 'react-native';
+import { AccessibilityProps } from '../types/accessibility';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 
@@ -42,6 +43,9 @@ const NewsCard = ({ article }: NewsCardProps) => {
     <TouchableOpacity 
       style={styles.card}
       onPress={() => navigation.navigate('ArticleDetail', { articleId: article.id })}
+      accessible={true}
+      accessibilityLabel={`Article: ${article.title}`}
+      accessibilityHint="Click to read the full article"
     >
       <Image 
         source={{ uri: article.imageUrl }} 
@@ -64,6 +68,9 @@ const NewsCard = ({ article }: NewsCardProps) => {
           <TouchableOpacity
             style={styles.readMoreButton}
             onPress={() => article.url && Linking.openURL(article.url)}
+            accessible={true}
+            accessibilityLabel="Read full article"
+            accessibilityHint="Opens article in your browser"
           >
             <Text style={styles.readMoreText}>Read More</Text>
           </TouchableOpacity>

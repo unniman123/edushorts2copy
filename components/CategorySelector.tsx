@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import { AccessibilityProps } from '../types/accessibility';
 
 const categories = [
   { id: '1', name: 'All' },
@@ -37,6 +38,10 @@ const CategorySelector = ({ selectedCategory, onSelectCategory }: CategorySelect
             selectedCategory === category.name && styles.selectedCategory,
           ]}
           onPress={() => onSelectCategory(category.name)}
+          accessible={true}
+          accessibilityLabel={`Category: ${category.name}`}
+          accessibilityHint={`Click to filter articles in ${category.name} category`}
+          accessibilityState={{ selected: selectedCategory === category.name }}
         >
           <Text 
             style={[
@@ -76,4 +81,10 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CategorySelector;
+const areEqual = (prevProps: CategorySelectorProps, nextProps: CategorySelectorProps) => {
+  return (
+    prevProps.selectedCategory === nextProps.selectedCategory
+  );
+};
+
+export default memo(CategorySelector, areEqual);
