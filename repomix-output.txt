@@ -1,0 +1,2982 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+================================================================
+File Summary
+================================================================
+
+Purpose:
+--------
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+
+File Format:
+------------
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Multiple file entries, each consisting of:
+  a. A separator line (================)
+  b. The file path (File: path/to/file)
+  c. Another separator line
+  d. The full contents of the file
+  e. A blank line
+
+Usage Guidelines:
+-----------------
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+
+Notes:
+------
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+
+Additional Info:
+----------------
+
+================================================================
+Directory Structure
+================================================================
+.gitignore
+app.json
+App.tsx
+components/CategorySelector.tsx
+components/NewsCard.tsx
+data/mockData.ts
+index.ts
+newfile
+package.json
+screens/AdminDashboardScreen.tsx
+screens/ArticleDetailScreen.tsx
+screens/BookmarksScreen.tsx
+screens/DiscoverScreen.tsx
+screens/HomeScreen.tsx
+screens/LoginScreen.tsx
+screens/NotificationsScreen.tsx
+screens/ProfileScreen.tsx
+tsconfig.json
+
+================================================================
+Files
+================================================================
+
+================
+File: .gitignore
+================
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+================
+File: app.json
+================
+{
+  "expo": {
+    "name": "a0-project",
+    "slug": "snack-b817e063-ef80-42d1-95bc-110e75455794",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "description": "Quickly generate React Native components with AI"
+  }
+}
+
+================
+File: App.tsx
+================
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { enableScreens } from 'react-native-screens';
+
+import HomeScreen, { RootStackParamList } from './screens/HomeScreen';
+import DiscoverScreen from './screens/DiscoverScreen';
+import ArticleDetailScreen from './screens/ArticleDetailScreen';
+import BookmarksScreen from './screens/BookmarksScreen';
+import ProfileScreen from './screens/ProfileScreen';
+import LoginScreen from './screens/LoginScreen';
+import AdminDashboardScreen from './screens/AdminDashboardScreen';
+import NotificationsScreen from './screens/NotificationsScreen';
+
+enableScreens();
+
+const Tab = createBottomTabNavigator<RootStackParamList>();
+const Stack = createNativeStackNavigator<RootStackParamList>();
+
+const TabNavigator = () => (
+  <Tab.Navigator
+    screenOptions={{
+      headerShown: false,
+      tabBarStyle: { borderTopWidth: 1, borderTopColor: '#eeeeee' },
+      tabBarActiveTintColor: '#0066cc',
+      tabBarInactiveTintColor: '#888888',
+    }}
+  >
+    <Tab.Screen 
+      name="Home" 
+      component={HomeScreen}
+      options={{
+        tabBarIcon: ({ focused, color, size }) => (
+          <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
+        ),
+        tabBarLabel: ({ color }) => (
+          <View>
+            <Text style={{ color, fontSize: 12 }}>Home</Text>
+          </View>
+        ),
+      }}
+    />
+    <Tab.Screen 
+      name="Discover" 
+      component={DiscoverScreen}
+      options={{
+        tabBarIcon: ({ focused, color, size }) => (
+          <Ionicons name={focused ? 'compass' : 'compass-outline'} size={size} color={color} />
+        ),
+        tabBarLabel: ({ color }) => (
+          <View>
+            <Text style={{ color, fontSize: 12 }}>Discover</Text>
+          </View>
+        ),
+      }}
+    />
+    <Tab.Screen 
+      name="Bookmarks" 
+      component={BookmarksScreen}
+      options={{
+        tabBarIcon: ({ focused, color, size }) => (
+          <Ionicons name={focused ? 'bookmark' : 'bookmark-outline'} size={size} color={color} />
+        ),
+        tabBarLabel: ({ color }) => (
+          <View>
+            <Text style={{ color, fontSize: 12 }}>Saved</Text>
+          </View>
+        ),
+      }}
+    />
+    <Tab.Screen 
+      name="Profile" 
+      component={ProfileScreen}
+      options={{
+        tabBarIcon: ({ focused, color, size }) => (
+          <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
+        ),
+        tabBarLabel: ({ color }) => (
+          <View>
+            <Text style={{ color, fontSize: 12 }}>Profile</Text>
+          </View>
+        ),
+      }}
+    />
+  </Tab.Navigator>
+);
+
+const App = () => (
+  <GestureHandlerRootView style={styles.container}>
+    <SafeAreaProvider>
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Main" component={TabNavigator} />
+          <Stack.Screen name="ArticleDetail" component={ArticleDetailScreen} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
+          <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </SafeAreaProvider>
+  </GestureHandlerRootView>
+);
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
+
+export default App;
+
+================
+File: components/CategorySelector.tsx
+================
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
+
+const categories = [
+  { id: '1', name: 'All' },
+  { id: '2', name: 'Education' },
+  { id: '3', name: 'Scholarships' },
+  { id: '4', name: 'Visas' },
+  { id: '5', name: 'Immigration' },
+  { id: '6', name: 'Study Abroad' },
+  { id: '7', name: 'Research' },
+];
+
+interface CategorySelectorProps {
+  selectedCategory: string;
+  onSelectCategory: (category: string) => void;
+}
+
+const CategorySelector = ({ selectedCategory, onSelectCategory }: CategorySelectorProps) => {
+  return (
+    <ScrollView 
+      horizontal 
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.container}
+    >
+      {categories.map((category) => (
+        <TouchableOpacity
+          key={category.id}
+          style={[
+            styles.categoryItem,
+            selectedCategory === category.name && styles.selectedCategory,
+          ]}
+          onPress={() => onSelectCategory(category.name)}
+        >
+          <Text 
+            style={[
+              styles.categoryText,
+              selectedCategory === category.name && styles.selectedCategoryText,
+            ]}
+          >
+            {category.name}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    paddingVertical: 8,
+  },
+  categoryItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 8,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+  },
+  selectedCategory: {
+    backgroundColor: '#0066cc',
+  },
+  categoryText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  selectedCategoryText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+});
+
+export default CategorySelector;
+
+================
+File: components/NewsCard.tsx
+================
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+
+import { RootStackParamList } from '../screens/HomeScreen';
+
+interface Article {
+  id: string;
+  title: string;
+  summary: string;
+  category: string;
+  source: string;
+  timeAgo: string;
+  imageUrl: string;
+  sourceIconUrl: string;
+}
+
+interface NewsCardProps {
+  article: Article;
+}
+
+const NewsCard = ({ article }: NewsCardProps) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+
+  // Ensure all required properties exist before rendering
+  if (!article || !article.id || !article.title || !article.summary || 
+      !article.category || !article.source || !article.timeAgo || 
+      !article.imageUrl || !article.sourceIconUrl) {
+    return null;
+  }
+
+  return (
+    <TouchableOpacity 
+      style={styles.card}
+      onPress={() => navigation.navigate('ArticleDetail', { articleId: article.id })}
+    >
+      <Image 
+        source={{ uri: article.imageUrl }} 
+        style={styles.image} 
+      />
+      <View style={styles.contentContainer}>
+        <View style={styles.categoryRow}>
+          <View style={styles.categoryBadge}>
+            <Text style={styles.categoryText}>{article.category}</Text>
+          </View>
+          <Text style={styles.timeAgo}>{article.timeAgo}</Text>
+        </View>
+        <Text style={styles.title} numberOfLines={2}>{article.title}</Text>
+        <Text style={styles.summary} numberOfLines={2}>{article.summary}</Text>
+        <View style={styles.sourceRow}>
+          <Image source={{ uri: article.sourceIconUrl }} style={styles.sourceIcon} />
+          <Text style={styles.sourceName}>{article.source}</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    marginBottom: 16,
+    overflow: 'hidden',
+    flexDirection: 'row',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  image: {
+    width: 100,
+    height: '100%',
+  },
+  contentContainer: {
+    flex: 1,
+    padding: 12,
+    justifyContent: 'space-between',
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  categoryBadge: {
+    backgroundColor: '#0066cc',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  categoryText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  timeAgo: {
+    fontSize: 10,
+    color: '#888',
+  },
+  title: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    color: '#333',
+  },
+  summary: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 6,
+  },
+  sourceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sourceIcon: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    marginRight: 6,
+  },
+  sourceName: {
+    fontSize: 10,
+    color: '#888',
+    fontWeight: '500',
+  },
+});
+
+export default NewsCard;
+
+================
+File: data/mockData.ts
+================
+// Mock data for the news app
+export const mockNewsData = [
+  {
+    id: '1',
+    title: 'New Scholarship Program for International Students Announced',
+    summary: 'The Global Education Foundation has announced a new scholarship program offering full tuition coverage for international students pursuing STEM degrees.',
+    content: 'The Global Education Foundation has announced a new scholarship program that will provide full tuition coverage for international students pursuing degrees in Science, Technology, Engineering, and Mathematics (STEM) fields. The program aims to support talented students from developing countries who demonstrate exceptional academic achievement and leadership potential. Applications open next month, with scholarships available for the upcoming academic year.',
+    category: 'Scholarships',
+    source: 'Education Daily',
+    sourceIconUrl: 'https://api.a0.dev/assets/image?text=ED%20logo&aspect=1:1&seed=123',
+    imageUrl: 'https://api.a0.dev/assets/image?text=students%20receiving%20scholarships&aspect=4:3&seed=1',
+    timeAgo: '2 hours ago',
+    url: 'https://example.com/scholarship-program',
+    timestamp: '2025-03-01T10:30:00Z',
+  },
+  {
+    id: '2',
+    title: 'UK Announces New Post-Study Work Visa Extensions',
+    summary: 'International graduates from UK universities will now have extended periods to find work after completing their studies, in a major immigration policy update.',    content: 'The UK government has announced significant changes to its post-study work visa program, extending the period international students can remain in the country after graduation. Under the new rules, graduates with bachelor\'s and master\'s degrees can stay for three years, up from the previous two years, while PhD graduates can remain for five years. This policy change aims to attract and retain global talent, particularly in high-demand sectors like technology and healthcare.',
+    category: 'Visas',
+    source: 'Global Immigration News',
+    sourceIconUrl: 'https://api.a0.dev/assets/image?text=GIN%20logo&aspect=1:1&seed=456',
+    imageUrl: 'https://api.a0.dev/assets/image?text=UK%20passport%20control&aspect=4:3&seed=2',
+    timeAgo: '5 hours ago',
+    url: 'https://example.com/uk-visa-extension',
+    timestamp: '2025-03-02T08:15:00Z',
+  },
+  {
+    id: '3',
+    title: 'Canadian Universities Report Record International Enrollment',
+    summary: 'Universities across Canada are experiencing unprecedented growth in international student applications, with enrollment numbers reaching all-time highs.',    content: 'Universities across Canada are reporting record-breaking international student enrollment numbers for the upcoming academic year. According to the Canadian Bureau for International Education, applications from overseas students have increased by 25% compared to last year, with particularly strong growth from countries in South Asia and Africa. Experts attribute this surge to Canada\'s reputation for high-quality education, relatively affordable tuition compared to other English-speaking countries, and straightforward pathways to permanent residency after graduation.',
+    category: 'Education',
+    source: 'Canada Education Review',
+    sourceIconUrl: 'https://api.a0.dev/assets/image?text=CER%20logo&aspect=1:1&seed=789',
+    imageUrl: 'https://api.a0.dev/assets/image?text=diverse%20students%20on%20canadian%20campus&aspect=4:3&seed=3',
+    timeAgo: '1 day ago',
+    url: 'https://example.com/canada-enrollment',
+    timestamp: '2025-03-02T15:45:00Z',
+  },
+  {
+    id: '4',
+    title: 'New AI Tool Helps International Students Find Suitable Universities',
+    summary: 'A newly launched artificial intelligence platform matches students with universities based on academic profile, budget, and career goals.',    content: 'A groundbreaking artificial intelligence platform called EduMatch has been launched to help international students find their ideal universities. The tool analyzes a student\'s academic profile, budget constraints, career aspirations, and personal preferences to generate personalized university recommendations. Early tests show that EduMatch has a 85% satisfaction rate among users, with many reporting that the platform suggested institutions they hadn\'t previously considered but that proved to be excellent matches for their needs and goals.',
+    category: 'Education',
+    source: 'Tech in Education',
+    sourceIconUrl: 'https://api.a0.dev/assets/image?text=TIE%20logo&aspect=1:1&seed=101',
+    imageUrl: 'https://api.a0.dev/assets/image?text=student%20using%20laptop%20to%20research%20universities&aspect=4:3&seed=4',
+    timeAgo: '2 days ago',
+    url: 'https://example.com/ai-university-matching',
+    timestamp: '2025-03-01T09:20:00Z',
+  },
+  {
+    id: '5',
+    title: 'Australia Simplifies Student Visa Application Process',
+    summary: 'The Australian government has streamlined its student visa process, reducing processing times and documentation requirements for applicants from select countries.',    content: 'The Australian Department of Home Affairs has announced significant changes to simplify the student visa application process. The reforms include shorter processing times, reduced documentation requirements for applicants from certain countries, and a more streamlined online application system. Additionally, the government has expanded the Simplified Student Visa Framework to include more countries, making it easier for students from these regions to study in Australia. Education experts predict these changes will boost Australia\'s competitiveness in the international education market.',
+    category: 'Visas',
+    source: 'Australian Education Herald',
+    sourceIconUrl: 'https://api.a0.dev/assets/image?text=AEH%20logo&aspect=1:1&seed=202',
+    imageUrl: 'https://api.a0.dev/assets/image?text=australian%20university%20campus&aspect=4:3&seed=5',
+    timeAgo: '3 days ago',
+    url: 'https://example.com/australia-visa-process',
+    timestamp: '2025-02-28T11:10:00Z',
+  },
+];
+
+export const mockUsers = [
+  {
+    id: '1',
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+    password: 'password123', // In a real app, this would be hashed
+    role: 'user',
+    preferences: {
+      categories: ['Education', 'Scholarships'],
+      sources: ['Education Daily', 'Global Immigration News'],
+    },
+    savedArticles: ['1', '3'],
+    readingHistory: ['2', '4', '5'],
+  },
+  {
+    id: '2',
+    name: 'Admin User',
+    email: 'admin@globaledu.com',
+    password: 'admin123', // In a real app, this would be hashed
+    role: 'admin',
+    preferences: {
+      categories: ['All'],
+      sources: ['All'],
+    },
+    savedArticles: [],
+    readingHistory: [],
+  },
+];
+
+================
+File: index.ts
+================
+import { registerRootComponent } from 'expo';
+
+import App from './App';
+
+// registerRootComponent calls AppRegistry.registerComponent('main', () => App);
+// It also ensures that whether you load the app in Expo Go or in a native build,
+// the environment is set up appropriately
+registerRootComponent(App);
+
+================
+File: newfile
+================
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+export default function NotificationsScreen() {
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.content}>
+        <Text style={styles.title}>Notifications</Text>
+        <Text style={styles.subtitle}>Your recent notifications will appear here.</Text>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  content: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  title: {
+    fontSize: 24,
+    color: '#333',
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+  },
+});
+
+================
+File: package.json
+================
+{
+  "license": "0BSD",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "latest",
+    "@react-native-async-storage/async-storage": "1.23.1",
+    "@react-native-community/slider": "^4.5.5",
+    "@react-native-masked-view/masked-view": "^0.3.2",
+    "@react-navigation/bottom-tabs": "^7.2.1",
+    "@react-navigation/native": "^7.0.15",
+    "@react-navigation/native-stack": "^7.2.1",
+    "@react-navigation/stack": "^7.1.2",
+    "@supabase/supabase-js": "latest",
+    "expo": "~52.0.37",
+    "expo-camera": "latest",
+    "expo-linear-gradient": "latest",
+    "expo-status-bar": "~2.0.1",
+    "lucide-react-native": "latest",
+    "react": "18.3.1",
+    "react-native": "0.76.7",
+    "react-native-gesture-handler": "~2.20.2",
+    "react-native-reanimated": "~3.16.1",
+    "react-native-safe-area-context": "4.12.0",
+    "react-native-screens": "~4.4.0",
+    "react-native-svg": "^15.8.0",
+    "sonner-native": "latest"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@types/babel__core": "^7.20.5",
+    "@types/expo": "^32.0.13",
+    "@types/react": "~18.3.12",
+    "@types/react-native": "^0.72.8",
+    "@types/react-navigation": "^3.0.8",
+    "expo-module-scripts": "^4.0.4",
+    "typescript": "^5.3.3"
+  },
+  "private": true
+}
+
+================
+File: screens/AdminDashboardScreen.tsx
+================
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  FlatList,
+  TextInput,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { mockNewsData } from '../data/mockData';
+import { toast } from 'sonner-native';
+
+export default function AdminDashboardScreen() {
+  const navigation = useNavigation();
+  const [articles, setArticles] = useState(mockNewsData);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('analytics');
+
+  const totalUsers = 230;
+  const totalArticles = articles.length;
+  const totalViews = 12543;
+  
+  const statCards = [
+    {
+      title: 'Total Users',
+      value: totalUsers,
+      icon: <MaterialIcons name="people" size={24} color="#0066cc" />,
+      color: '#e3f2fd',
+    },
+    {
+      title: 'Articles',
+      value: totalArticles,
+      icon: <MaterialIcons name="article" size={24} color="#4caf50" />,
+      color: '#e8f5e9',
+    },
+    {
+      title: 'Total Views',
+      value: totalViews,
+      icon: <MaterialIcons name="visibility" size={24} color="#ff9800" />,
+      color: '#fff3e0',
+    },
+  ];
+
+  const filterArticles = () => {
+    if (searchQuery.trim() === '') {
+      return articles;
+    }
+    
+    return articles.filter(article => 
+      article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      article.category.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  };
+
+  const deleteArticle = (id) => {
+    setArticles(articles.filter(article => article.id !== id));
+    toast.success('Article deleted successfully');
+  };
+
+  const renderAnalyticsTab = () => (
+    <ScrollView showsVerticalScrollIndicator={false}>
+      <View style={styles.statsContainer}>
+        {statCards.map((stat, index) => (
+          <View key={index} style={[styles.statCard, { backgroundColor: stat.color }]}>
+            <View style={styles.statIconContainer}>
+              {stat.icon}
+            </View>
+            <Text style={styles.statValue}>{stat.value}</Text>
+            <Text style={styles.statTitle}>{stat.title}</Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.sectionContainer}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recent Activity</Text>
+          <TouchableOpacity>
+            <Text style={styles.seeAllText}>See All</Text>
+          </TouchableOpacity>
+        </View>
+        
+        <View style={styles.activityCard}>
+          <View style={styles.activityItem}>
+            <MaterialCommunityIcons name="account-plus" size={18} color="#4caf50" />
+            <Text style={styles.activityText}>
+              <Text style={styles.activityHighlight}>12 new users</Text> registered today
+            </Text>
+            <Text style={styles.activityTime}>2h ago</Text>
+          </View>
+          
+          <View style={styles.activityItem}>
+            <MaterialCommunityIcons name="file-document-edit" size={18} color="#0066cc" />
+            <Text style={styles.activityText}>
+              <Text style={styles.activityHighlight}>New article</Text> about scholarships published
+            </Text>
+            <Text style={styles.activityTime}>5h ago</Text>
+          </View>
+          
+          <View style={styles.activityItem}>
+            <MaterialCommunityIcons name="alert" size={18} color="#ff9800" />
+            <Text style={styles.activityText}>
+              <Text style={styles.activityHighlight}>System update</Text> scheduled for tomorrow
+            </Text>
+            <Text style={styles.activityTime}>1d ago</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.sectionContainer}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Popular Categories</Text>
+        </View>
+        
+        <View style={styles.categoryStats}>
+          <View style={styles.categoryItem}>
+            <View style={styles.categoryBar}>
+              <View style={[styles.categoryProgress, { width: '80%', backgroundColor: '#0066cc' }]} />
+            </View>
+            <View style={styles.categoryDetails}>
+              <Text style={styles.categoryName}>Scholarships</Text>
+              <Text style={styles.categoryValue}>80%</Text>
+            </View>
+          </View>
+          
+          <View style={styles.categoryItem}>
+            <View style={styles.categoryBar}>
+              <View style={[styles.categoryProgress, { width: '65%', backgroundColor: '#4caf50' }]} />
+            </View>
+            <View style={styles.categoryDetails}>
+              <Text style={styles.categoryName}>Visas</Text>
+              <Text style={styles.categoryValue}>65%</Text>
+            </View>
+          </View>
+          
+          <View style={styles.categoryItem}>
+            <View style={styles.categoryBar}>
+              <View style={[styles.categoryProgress, { width: '45%', backgroundColor: '#ff9800' }]} />
+            </View>
+            <View style={styles.categoryDetails}>
+              <Text style={styles.categoryName}>Immigration</Text>
+              <Text style={styles.categoryValue}>45%</Text>
+            </View>
+          </View>
+          
+          <View style={styles.categoryItem}>
+            <View style={styles.categoryBar}>
+              <View style={[styles.categoryProgress, { width: '30%', backgroundColor: '#9c27b0' }]} />
+            </View>
+            <View style={styles.categoryDetails}>
+              <Text style={styles.categoryName}>Education</Text>
+              <Text style={styles.categoryValue}>30%</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    </ScrollView>
+  );
+
+  const renderArticlesTab = () => (
+    <View style={styles.tabContent}>
+      <View style={styles.searchContainer}>
+        <Feather name="search" size={20} color="#888" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search articles..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+      
+      <View style={styles.listHeader}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => navigation.navigate('CreateArticle')}
+        >
+          <Feather name="plus" size={16} color="white" />
+          <Text style={styles.addButtonText}>New Article</Text>
+        </TouchableOpacity>
+      </View>
+      
+      <FlatList
+        data={filterArticles()}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.articleItem}>
+            <View style={styles.articleInfo}>
+              <Text style={styles.articleTitle} numberOfLines={1}>{item.title}</Text>
+              <View style={styles.articleMeta}>
+                <View style={styles.categoryBadge}>
+                  <Text style={styles.categoryText}>{item.category}</Text>
+                </View>
+                <Text style={styles.articleDate}>{item.timeAgo}</Text>
+              </View>
+            </View>
+            <View style={styles.articleActions}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.editButton]}
+                onPress={() => navigation.navigate('EditArticle', { articleId: item.id })}
+              >
+                <Feather name="edit-2" size={16} color="#0066cc" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.deleteButton]}
+                onPress={() => deleteArticle(item.id)}
+              >
+                <Feather name="trash-2" size={16} color="#ff3b30" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.articlesList}
+      />
+    </View>
+  );
+
+  const renderUsersTab = () => (
+    <View style={styles.tabContent}>
+      <Text style={styles.tabContentText}>User management functionality</Text>
+    </View>
+  );
+
+  const renderSettingsTab = () => (
+    <View style={styles.tabContent}>
+      <Text style={styles.tabContentText}>Admin settings functionality</Text>
+    </View>
+  );
+
+  const renderActiveTab = () => {
+    switch (activeTab) {
+      case 'analytics':
+        return renderAnalyticsTab();
+      case 'articles':
+        return renderArticlesTab();
+      case 'users':
+        return renderUsersTab();
+      case 'settings':
+        return renderSettingsTab();
+      default:
+        return renderAnalyticsTab();
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Admin Dashboard</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+          <Feather name="user" size={24} color="#333" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.content}>
+        {renderActiveTab()}
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eeeeee',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  content: {
+    flex: 1,
+    padding: 16,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    marginBottom: 16,
+  },
+  statCard: {
+    width: '31%',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  statTitle: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
+  sectionContainer: {
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  seeAllText: {
+    fontSize: 14,
+    color: '#0066cc',
+    fontWeight: '500',
+  },
+  activityCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  activityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  activityText: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 14,
+    color: '#333',
+  },
+  activityHighlight: {
+    fontWeight: 'bold',
+  },
+  activityTime: {
+    fontSize: 12,
+    color: '#888',
+  },
+  categoryStats: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  categoryItem: {
+    marginBottom: 16,
+  },
+  categoryBar: {
+    height: 8,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  categoryProgress: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  categoryDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  categoryName: {
+    fontSize: 14,
+    color: '#333',
+  },
+  categoryValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  tabContent: {
+    flex: 1,
+  },
+  tabContentText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 24,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    height: 48,
+    fontSize: 16,
+    color: '#333',
+  },
+  listHeader: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: 16,
+  },
+  addButton: {
+    backgroundColor: '#0066cc',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  addButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    marginLeft: 4,
+  },
+  articlesList: {
+    paddingBottom: 16,
+  },
+  articleItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  articleInfo: {
+    flex: 1,
+    marginRight: 16,
+  },
+  articleTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  articleMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  categoryBadge: {
+    backgroundColor: '#0066cc',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  categoryText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  articleDate: {
+    fontSize: 12,
+    color: '#888',
+  },
+  articleActions: {
+    flexDirection: 'row',
+  },
+  actionButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  editButton: {
+    backgroundColor: '#e3f2fd',
+  },
+  deleteButton: {
+    backgroundColor: '#ffebee',
+  },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: 'white',
+    borderTopWidth: 1,
+    borderTopColor: '#eeeeee',
+    paddingVertical: 8,
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  activeTabItem: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#0066cc',
+  },
+  tabLabel: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 4,
+  },
+  activeTabLabel: {
+    color: '#0066cc',
+    fontWeight: 'bold',
+  },
+});
+
+================
+File: screens/ArticleDetailScreen.tsx
+================
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+  Share,
+  ActivityIndicator,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather, Ionicons } from '@expo/vector-icons';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { mockNewsData } from '../data/mockData';
+
+export default function ArticleDetailScreen() {
+  const navigation = useNavigation();
+  const route = useRoute();
+  const { articleId } = route.params;
+  const [article, setArticle] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [bookmarked, setBookmarked] = useState(false);
+
+  useEffect(() => {
+    // In a real app, we would fetch the article from an API
+    const foundArticle = mockNewsData.find(item => item.id === articleId);
+    setArticle(foundArticle);
+    setLoading(false);
+  }, [articleId]);
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `Check out this article: ${article.title} ${article.url}`,
+      });
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
+
+  const toggleBookmark = () => {
+    setBookmarked(!bookmarked);
+    // In a real app, we would update the user's bookmarks in the backend
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0066cc" />
+      </View>
+    );
+  }
+
+  if (!article) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>Article not found</Text>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backButtonText}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Feather name="arrow-left" size={24} color="#333" />
+        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.actionButton} onPress={toggleBookmark}>
+            <Ionicons 
+              name={bookmarked ? "bookmark" : "bookmark-outline"} 
+              size={24} 
+              color={bookmarked ? "#0066cc" : "#333"} 
+            />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
+            <Feather name="share" size={22} color="#333" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton}>
+            <Feather name="more-horizontal" size={24} color="#333" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={styles.heroContainer}>
+          <Image source={{ uri: article.imageUrl }} style={styles.heroImage} />
+          <View style={styles.categoryBadge}>
+            <Text style={styles.categoryText}>{article.category}</Text>
+          </View>
+        </View>
+
+        <View style={styles.contentContainer}>
+          <Text style={styles.title}>{article.title}</Text>
+          
+          <View style={styles.publisherContainer}>
+            <Image source={{ uri: article.sourceIconUrl }} style={styles.publisherIcon} />
+            <View style={styles.publisherInfo}>
+              <Text style={styles.publisherName}>{article.source}</Text>
+              <Text style={styles.publishDate}>{article.timeAgo}</Text>
+            </View>
+          </View>
+          
+          <Text style={styles.summary}>{article.summary}</Text>
+          
+          <View style={styles.divider} />
+          
+          <Text style={styles.content}>{article.content}</Text>
+          
+          <TouchableOpacity 
+            style={styles.sourceLink}
+            onPress={() => {/* Open the source URL */}}
+          >
+            <Text style={styles.sourceLinkText}>Read full article on {article.source}</Text>
+            <Feather name="external-link" size={16} color="#0066cc" />
+          </TouchableOpacity>
+        </View>        
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 18,
+    color: '#666',
+    marginBottom: 20,
+  },
+  backButton: {
+    backgroundColor: '#0066cc',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 6,
+  },
+  backButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  headerActions: {
+    flexDirection: 'row',
+  },
+  actionButton: {
+    marginLeft: 20,
+  },
+  heroContainer: {
+    position: 'relative',
+  },
+  heroImage: {
+    width: '100%',
+    height: 250,
+  },
+  categoryBadge: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    backgroundColor: '#0066cc',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  categoryText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  contentContainer: {
+    padding: 16,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 16,
+  },
+  publisherContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  publisherIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 10,
+  },
+  publisherInfo: {
+    flex: 1,
+  },
+  publisherName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  publishDate: {
+    fontSize: 12,
+    color: '#888',
+  },
+  summary: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#444',
+    lineHeight: 24,
+    marginBottom: 16,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#eee',
+    marginVertical: 16,
+  },
+  content: {
+    fontSize: 16,
+    color: '#333',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  sourceLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  sourceLinkText: {
+    fontSize: 14,
+    color: '#0066cc',
+    marginRight: 4,
+  },
+  relatedSection: {
+    padding: 16,
+    backgroundColor: '#f8f9fa',
+  },
+  relatedTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12,
+  },
+  relatedArticlesContainer: {
+    paddingBottom: 16,
+  },
+  relatedArticleCard: {
+    width: 250,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  relatedArticleImage: {
+    width: '100%',
+    height: 130,
+  },
+  relatedArticleContent: {
+    padding: 12,
+  },
+  relatedArticleTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 6,
+  },
+  relatedArticleSource: {
+    fontSize: 12,
+    color: '#888',
+  },
+});
+
+================
+File: screens/BookmarksScreen.tsx
+================
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather, Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { mockNewsData } from '../data/mockData';
+
+export default function BookmarksScreen() {
+  const navigation = useNavigation();
+  const [bookmarkedArticles, setBookmarkedArticles] = useState(mockNewsData.slice(0, 3));
+  const [loading, setLoading] = useState(false);
+
+  const removeBookmark = (articleId) => {
+    setBookmarkedArticles(bookmarkedArticles.filter(article => article.id !== articleId));
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Feather name="arrow-left" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Saved Articles</Text>
+        <TouchableOpacity>
+          <Feather name="more-horizontal" size={24} color="#333" />
+        </TouchableOpacity>
+      </View>
+
+      {bookmarkedArticles.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="bookmark-outline" size={80} color="#ccc" />
+          <Text style={styles.emptyTitle}>No saved articles</Text>
+          <Text style={styles.emptySubtitle}>
+            Articles you save will appear here for easy access
+          </Text>
+          <TouchableOpacity 
+            style={styles.browseButton}
+            onPress={() => navigation.navigate('Home')}
+          >
+            <Text style={styles.browseButtonText}>Browse Articles</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          data={bookmarkedArticles}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.articleCard}>
+              <TouchableOpacity 
+                style={styles.articleContent}
+                onPress={() => navigation.navigate('ArticleDetail', { articleId: item.id })}
+              >
+                <Image source={{ uri: item.imageUrl }} style={styles.articleImage} />
+                <View style={styles.articleDetails}>
+                  <View style={styles.categoryBadge}>
+                    <Text style={styles.categoryText}>{item.category}</Text>
+                  </View>
+                  <Text style={styles.articleTitle} numberOfLines={2}>{item.title}</Text>
+                  <View style={styles.articleMeta}>
+                    <Text style={styles.sourceText}>{item.source}</Text>
+                    <Text style={styles.timeText}>{item.timeAgo}</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.removeButton}
+                onPress={() => removeBookmark(item.id)}
+              >
+                <Feather name="trash-2" size={18} color="#ff3b30" />
+              </TouchableOpacity>
+            </View>
+          )}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.list}
+          ListFooterComponent={loading ? (
+            <ActivityIndicator size="large" color="#0066cc" style={styles.loader} />
+          ) : null}
+        />
+      )}
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eeeeee',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  browseButton: {
+    backgroundColor: '#0066cc',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  browseButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  list: {
+    padding: 16,
+  },
+  articleCard: {
+    flexDirection: 'row',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  articleContent: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  articleImage: {
+    width: 100,
+    height: 100,
+  },
+  articleDetails: {
+    flex: 1,
+    padding: 12,
+    justifyContent: 'space-between',
+  },
+  categoryBadge: {
+    backgroundColor: '#0066cc',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginBottom: 6,
+  },
+  categoryText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  articleTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 6,
+  },
+  articleMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sourceText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  timeText: {
+    fontSize: 10,
+    color: '#888',
+  },
+  removeButton: {
+    padding: 16,
+    justifyContent: 'center',
+    borderLeftWidth: 1,
+    borderLeftColor: '#eeeeee',
+  },
+  loader: {
+    marginVertical: 16,
+  },
+});
+
+================
+File: screens/DiscoverScreen.tsx
+================
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  FlatList,
+  TouchableOpacity,
+  Image,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather, Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import CategorySelector from '../components/CategorySelector';
+import { mockNewsData } from '../data/mockData';
+
+export default function DiscoverScreen() {
+  const navigation = useNavigation();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchResults, setSearchResults] = useState(mockNewsData);
+
+  const handleSearch = (text) => {
+    setSearchQuery(text);
+    if (text.trim() === '') {
+      setSearchResults(mockNewsData);
+      return;
+    }
+    
+    const filtered = mockNewsData.filter(
+      (item) => 
+        item.title.toLowerCase().includes(text.toLowerCase()) ||
+        item.summary.toLowerCase().includes(text.toLowerCase()) ||
+        item.content.toLowerCase().includes(text.toLowerCase())
+    );
+    setSearchResults(filtered);
+  };
+
+  const filterByCategory = (category) => {
+    setSelectedCategory(category);
+    if (category === 'All') {
+      setSearchResults(mockNewsData);
+      return;
+    }
+    
+    const filtered = mockNewsData.filter(item => item.category === category);
+    setSearchResults(filtered);
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Feather name="arrow-left" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Discover</Text>
+        <View style={{ width: 24 }} />
+      </View>
+      
+      <Text style={styles.subtitle}>News from all around the world</Text>
+      
+      <View style={styles.searchContainer}>
+        <Feather name="search" size={20} color="#888" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search for news..."
+          value={searchQuery}
+          onChangeText={handleSearch}
+        />
+        <TouchableOpacity style={styles.filterButton}>
+          <Feather name="sliders" size={20} color="#0066cc" />
+        </TouchableOpacity>
+      </View>
+      
+      <View style={styles.categoryContainer}>
+        <CategorySelector 
+          selectedCategory={selectedCategory}
+          onSelectCategory={filterByCategory}
+        />
+      </View>
+      
+      <FlatList
+        data={searchResults}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <TouchableOpacity 
+            style={styles.resultItem}
+            onPress={() => navigation.navigate('ArticleDetail', { articleId: item.id })}
+          >
+            <Image source={{ uri: item.imageUrl }} style={styles.resultImage} />
+            <View style={styles.resultContent}>
+              <View style={styles.categoryWrapper}>
+                <Text style={styles.categoryLabel}>{item.category}</Text>
+              </View>
+              <Text style={styles.resultTitle} numberOfLines={2}>{item.title}</Text>
+              <View style={styles.resultMeta}>
+                <Image source={{ uri: item.sourceIconUrl }} style={styles.sourceIcon} />
+                <Text style={styles.sourceText}>{item.source}</Text>
+                <Text style={styles.timeText}> • {item.timeAgo}</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        )}
+        contentContainerStyle={styles.resultsList}
+        showsVerticalScrollIndicator={false}
+      />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+    paddingVertical: 8,
+  },
+  filterButton: {
+    padding: 4,
+  },
+  categoryContainer: {
+    marginBottom: 16,
+    paddingHorizontal: 16,
+  },
+  resultsList: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  resultItem: {
+    flexDirection: 'row',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  resultImage: {
+    width: 120,
+    height: 120,
+  },
+  resultContent: {
+    flex: 1,
+    padding: 12,
+    justifyContent: 'space-between',
+  },
+  categoryWrapper: {
+    backgroundColor: '#0066cc',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  categoryLabel: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  resultTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  resultMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sourceIcon: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    marginRight: 4,
+  },
+  sourceText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  timeText: {
+    fontSize: 12,
+    color: '#888',
+  },
+});
+
+================
+File: screens/HomeScreen.tsx
+================
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  RefreshControl,
+  Image,
+  ActivityIndicator,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import NewsCard from '../components/NewsCard';
+import CategorySelector from '../components/CategorySelector';
+import { mockNewsData } from '../data/mockData';
+
+export type RootStackParamList = {
+  Main: undefined;
+  Home: undefined;
+  Discover: undefined;
+  ArticleDetail: { articleId: string };
+  Notifications: undefined;
+  Bookmarks: undefined;
+  Profile: undefined;
+  AdminDashboard: undefined;
+};
+
+export type NewsItem = {
+  id: string;
+  title: string;
+  summary: string;
+  category: string;
+  source: string;
+  timeAgo: string;
+  imageUrl: string;
+  sourceIconUrl: string;
+};
+
+export default function HomeScreen() {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const [news, setNews] = useState<NewsItem[]>(mockNewsData);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    // Simulate fetch delay
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1500);
+  }, []);
+
+  const loadMoreData = () => {
+    if (loading) return;
+    setLoading(true);
+    // Simulate loading more data
+    setTimeout(() => {
+      setNews([...news, ...mockNewsData.slice(0, 3)]);
+      setLoading(false);
+    }, 1000);
+  };
+
+  const filterNewsByCategory = (category: string) => {
+    setSelectedCategory(category);
+  };
+
+  const renderFooter = () => {
+    if (!loading) return null;
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#0066cc" />
+      </View>
+    );
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.logo}>GlobalEdu News</Text>
+        <View style={styles.headerIcons} key="header-icons">
+          <TouchableOpacity key="search-icon" onPress={() => navigation.navigate('Discover')}>
+            <View>
+              <Feather name="search" size={24} color="#333" style={styles.icon} />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity key="notifications-icon" onPress={() => navigation.navigate('Notifications')}>
+            <View>
+              <Feather name="bell" size={24} color="#333" style={styles.icon} />
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.content}>
+        <Text style={styles.sectionTitle}>Breaking News</Text>
+        {news && news.length > 0 && (
+          <View style={styles.featuredNewsContainer}>
+            <TouchableOpacity 
+              style={styles.featuredNews}
+              onPress={() => navigation.navigate('ArticleDetail', { articleId: news[0].id })}
+            >
+              <Image
+                source={{ uri: `https://api.a0.dev/assets/image?text=students%20at%20university%20campus&aspect=16:9&seed=1` }}
+                style={styles.featuredImage}
+              />
+              <View style={styles.featuredNewsOverlay}>
+                <View style={styles.categoryBadge} key="featured-category">
+                  <Text style={styles.categoryText} key="featured-category-text">Education</Text>
+                </View>
+                <Text style={styles.featuredNewsTitle} key="featured-title">{news[0].title}</Text>
+                <View style={styles.newsMetaData} key="featured-metadata">
+                  <Text style={styles.newsSource} key="featured-source">{news[0].source}</Text>
+                  <Text style={styles.newsTime} key="featured-time">{news[0].timeAgo}</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={styles.categoryContainer}>
+          <CategorySelector 
+            selectedCategory={selectedCategory}
+            onSelectCategory={filterNewsByCategory}
+          />
+        </View>
+
+        <FlatList
+          data={news.slice(1)}
+          keyExtractor={(item, index) => item.id + index.toString()}
+          renderItem={({ item }) => (
+            item ? <NewsCard article={item} /> : null
+          )}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          onEndReached={loadMoreData}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={renderFooter}
+          contentContainerStyle={styles.newsList}
+        />
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eeeeee',
+    backgroundColor: '#ffffff',
+  },
+  logo: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#0066cc',
+  },
+  headerIcons: {
+    flexDirection: 'row',
+  },
+  icon: {
+    marginLeft: 20,
+  },
+  content: {
+    flex: 1,
+    padding: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    color: '#333',
+  },
+  featuredNewsContainer: {
+    height: 200,
+    marginBottom: 20,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  featuredNews: {
+    flex: 1,
+    position: 'relative',
+  },
+  featuredImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+  },
+  featuredNewsOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+  },
+  categoryBadge: {
+    backgroundColor: '#0066cc',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+    marginBottom: 6,
+  },
+  categoryText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  featuredNewsTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 6,
+  },
+  newsMetaData: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  newsSource: {
+    color: 'white',
+    fontSize: 12,
+  },
+  newsTime: {
+    color: 'white',
+    fontSize: 12,
+  },
+  categoryContainer: {
+    marginBottom: 15,
+  },
+  newsList: {
+    paddingBottom: 16,
+  },  loaderContainer: {
+    marginVertical: 16,
+    alignItems: 'center',
+  },
+  activeTab: {
+    color: '#0066cc',
+    fontWeight: 'bold',
+  },
+});
+
+================
+File: screens/LoginScreen.tsx
+================
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { mockUsers } from '../data/mockData';
+import { toast } from 'sonner-native';
+
+export default function LoginScreen() {
+  const navigation = useNavigation();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLogin = () => {
+    if (!email || !password) {
+      toast.error('Please enter both email and password');
+      return;
+    }
+
+    setIsLoading(true);
+    
+    // Simulate API call delay
+    setTimeout(() => {
+      const user = mockUsers.find(
+        user => user.email === email && user.password === password
+      );
+      
+      if (user) {
+        toast.success('Login successful!');
+        navigation.navigate('Home');
+      } else {
+        toast.error('Invalid email or password');
+      }
+      
+      setIsLoading(false);
+    }, 1500);
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingView}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.logoContainer}>
+            <Image
+              source={{ uri: 'https://api.a0.dev/assets/image?text=GlobalEdu%20News%20Logo&aspect=1:1&seed=123' }}
+              style={styles.logo}
+            />
+            <Text style={styles.logoText}>GlobalEdu News</Text>
+          </View>
+          
+          <Text style={styles.welcomeText}>Welcome Back!</Text>
+          <Text style={styles.subtitle}>Login to access personalized news for international students</Text>
+          
+          <View style={styles.formContainer}>
+            <View style={styles.inputContainer}>
+              <Feather name="mail" size={20} color="#888" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Email Address"
+                placeholderTextColor="#888"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
+              />
+            </View>
+            
+            <View style={styles.inputContainer}>
+              <Feather name="lock" size={20} color="#888" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor="#888"
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
+              />
+              <TouchableOpacity
+                style={styles.eyeIcon}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Feather name={showPassword ? "eye-off" : "eye"} size={20} color="#888" />
+              </TouchableOpacity>
+            </View>
+            
+            <TouchableOpacity style={styles.forgotPassword}>
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+              onPress={handleLogin}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <Text style={styles.loginButtonText}>Logging in...</Text>
+              ) : (
+                <Text style={styles.loginButtonText}>Login</Text>
+              )}
+            </TouchableOpacity>
+            
+            <View style={styles.orContainer}>
+              <View style={styles.divider} />
+              <Text style={styles.orText}>OR</Text>
+              <View style={styles.divider} />
+            </View>
+            
+            <View style={styles.socialButtonsContainer}>
+              <TouchableOpacity style={styles.socialButton}>
+                <Feather name="github" size={20} color="#333" />
+                <Text style={styles.socialButtonText}>GitHub</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.socialButton}>
+                <Feather name="twitter" size={20} color="#1DA1F2" />
+                <Text style={styles.socialButtonText}>Twitter</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          
+          <View style={styles.registerContainer}>
+            <Text style={styles.registerText}>Don't have an account?</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+              <Text style={styles.registerLink}>Sign Up</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <TouchableOpacity 
+            style={styles.guestButton}
+            onPress={() => navigation.navigate('Home')}
+          >
+            <Text style={styles.guestButtonText}>Continue as Guest</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    padding: 24,
+    justifyContent: 'center',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  logoText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#0066cc',
+    marginTop: 12,
+  },
+  welcomeText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 32,
+  },
+  formContainer: {
+    marginBottom: 24,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    height: 56,
+  },
+  inputIcon: {
+    marginRight: 12,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+  },
+  eyeIcon: {
+    padding: 4,
+  },
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    marginBottom: 24,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    color: '#0066cc',
+  },
+  loginButton: {
+    backgroundColor: '#0066cc',
+    borderRadius: 12,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  loginButtonDisabled: {
+    opacity: 0.7,
+  },
+  loginButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  orContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 16,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#eeeeee',
+  },
+  orText: {
+    color: '#888',
+    marginHorizontal: 16,
+  },
+  socialButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  socialButton: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    height: 56,
+    flex: 0.48,
+  },
+  socialButtonText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#333',
+  },
+  registerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  registerText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  registerLink: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#0066cc',
+    marginLeft: 4,
+  },
+  guestButton: {
+    borderWidth: 1,
+    borderColor: '#eeeeee',
+    borderRadius: 12,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  guestButtonText: {
+    fontSize: 14,
+    color: '#666',
+  },
+});
+
+================
+File: screens/NotificationsScreen.tsx
+================
+import React from 'react';
+    import { View, Text, StyleSheet } from 'react-native';
+    import { SafeAreaView } from 'react-native-safe-area-context';
+    
+    export default function NotificationsScreen() {
+      return (
+        <SafeAreaView style={styles.container}>
+          <View style={styles.content}>
+            <Text style={styles.title}>Notifications</Text>
+            <Text style={styles.subtitle}>Your recent notifications will appear here.</Text>
+          </View>
+        </SafeAreaView>
+      );
+    }
+    
+    const styles = StyleSheet.create({
+      container: {
+        flex: 1,
+        backgroundColor: '#ffffff',
+      },
+      content: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+      },
+      title: {
+        fontSize: 24,
+        color: '#333',
+        fontWeight: 'bold',
+        marginBottom: 8,
+      },
+      subtitle: {
+        fontSize: 16,
+        color: '#666',
+      },
+    });
+
+================
+File: screens/ProfileScreen.tsx
+================
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  Switch,
+  ScrollView,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather, MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { mockUsers } from '../data/mockData';
+import { toast } from 'sonner-native';
+
+export default function ProfileScreen() {
+  const navigation = useNavigation();
+  const [user, setUser] = useState(mockUsers[0]); // Using first user as example
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+  
+  const handleLogout = () => {
+    toast.success('Logged out successfully');
+    navigation.navigate('Login');
+  };
+
+  const renderSettingsItem = (icon, title, subtitle, rightElement, onPress) => (
+    <TouchableOpacity style={styles.settingsItem} onPress={onPress}>
+      <View style={styles.settingsItemLeft}>
+        <View style={styles.settingsIconContainer}>
+          {icon}
+        </View>
+        <View style={styles.settingsTextContainer}>
+          <Text style={styles.settingsItemTitle}>{title}</Text>
+          {subtitle && <Text style={styles.settingsItemSubtitle}>{subtitle}</Text>}
+        </View>
+      </View>
+      <View style={styles.settingsItemRight}>
+        {rightElement}
+      </View>
+    </TouchableOpacity>
+  );
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Profile</Text>
+        <TouchableOpacity 
+          style={styles.editButton}
+          onPress={() => navigation.navigate('EditProfile')}
+        >
+          <Feather name="edit-2" size={16} color="#0066cc" />
+          <Text style={styles.editButtonText}>Edit</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={styles.profileSection}>
+          <Image
+            source={{ uri: 'https://api.a0.dev/assets/image?text=profile%20picture&aspect=1:1&seed=42' }}
+            style={styles.profileImage}
+          />
+          <Text style={styles.userName}>{user.name}</Text>
+          <Text style={styles.userEmail}>{user.email}</Text>
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{user.savedArticles.length}</Text>
+              <Text style={styles.statLabel}>Saved</Text>
+            </View>
+            <View style={styles.statSeparator} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{user.readingHistory.length}</Text>
+              <Text style={styles.statLabel}>Read</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.settingsSection}>
+          <Text style={styles.sectionTitle}>Preferences</Text>
+          {renderSettingsItem(
+            <Ionicons name="notifications-outline" size={22} color="#333" />,
+            'Push Notifications',
+            'Get notified about important news',
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={setNotificationsEnabled}
+              trackColor={{ false: '#d1d1d1', true: '#0066cc' }}
+              thumbColor="#ffffff"
+            />,
+            () => {}
+          )}
+          
+          {renderSettingsItem(
+            <Ionicons name="moon-outline" size={22} color="#333" />,
+            'Dark Mode',
+            'Change app appearance',
+            <Switch
+              value={darkModeEnabled}
+              onValueChange={setDarkModeEnabled}
+              trackColor={{ false: '#d1d1d1', true: '#0066cc' }}
+              thumbColor="#ffffff"
+            />,
+            () => {}
+          )}
+          
+          {renderSettingsItem(
+            <Ionicons name="language-outline" size={22} color="#333" />,
+            'Language',
+            'English',
+            <Feather name="chevron-right" size={20} color="#888" />,
+            () => navigation.navigate('LanguageSettings')
+          )}
+          
+          {renderSettingsItem(
+            <Ionicons name="newspaper-outline" size={22} color="#333" />,
+            'News Categories',
+            'Manage your interests',
+            <Feather name="chevron-right" size={20} color="#888" />,
+            () => navigation.navigate('CategoryPreferences')
+          )}
+        </View>
+
+        <View style={styles.settingsSection}>
+          <Text style={styles.sectionTitle}>Account</Text>
+          {renderSettingsItem(
+            <Ionicons name="bookmark-outline" size={22} color="#333" />,
+            'Saved Articles',
+            'View your bookmarks',
+            <Feather name="chevron-right" size={20} color="#888" />,
+            () => navigation.navigate('Bookmarks')
+          )}
+          
+          {renderSettingsItem(
+            <Ionicons name="time-outline" size={22} color="#333" />,
+            'Reading History',
+            'View your recently read articles',
+            <Feather name="chevron-right" size={20} color="#888" />,
+            () => navigation.navigate('ReadingHistory')
+          )}
+          
+          {renderSettingsItem(
+            <Ionicons name="lock-closed-outline" size={22} color="#333" />,
+            'Change Password',
+            'Update your security credentials',
+            <Feather name="chevron-right" size={20} color="#888" />,
+            () => navigation.navigate('ChangePassword')
+          )}
+        </View>
+
+        <View style={styles.settingsSection}>
+          <Text style={styles.sectionTitle}>Support</Text>
+          {renderSettingsItem(
+            <Ionicons name="help-circle-outline" size={22} color="#333" />,
+            'Help & Support',
+            'Get assistance and find answers',
+            <Feather name="chevron-right" size={20} color="#888" />,
+            () => navigation.navigate('HelpSupport')
+          )}
+          
+          {renderSettingsItem(
+            <Ionicons name="information-circle-outline" size={22} color="#333" />,
+            'About Us',
+            'Learn more about GlobalEdu News',
+            <Feather name="chevron-right" size={20} color="#888" />,
+            () => navigation.navigate('AboutUs')
+          )}
+          
+          {renderSettingsItem(
+            <Ionicons name="shield-checkmark-outline" size={22} color="#333" />,
+            'Privacy Policy',
+            'Review our privacy terms',
+            <Feather name="chevron-right" size={20} color="#888" />,
+            () => navigation.navigate('PrivacyPolicy')
+          )}
+        </View>
+
+        <TouchableOpacity 
+          style={styles.logoutButton}
+          onPress={handleLogout}
+        >
+          <Ionicons name="log-out-outline" size={22} color="#ff3b30" />
+          <Text style={styles.logoutText}>Logout</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.versionText}>Version 1.0.0</Text>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eeeeee',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  editButtonText: {
+    marginLeft: 4,
+    fontSize: 14,
+    color: '#0066cc',
+    fontWeight: '500',
+  },
+  profileSection: {
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    padding: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eeeeee',
+  },
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginBottom: 16,
+  },
+  userName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  userEmail: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    width: '60%',
+    justifyContent: 'space-between',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
+  statSeparator: {
+    width: 1,
+    height: '80%',
+    backgroundColor: '#eeeeee',
+  },
+  settingsSection: {
+    marginTop: 24,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eeeeee',
+  },
+  settingsItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eeeeee',
+  },
+  settingsItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  settingsIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  settingsTextContainer: {
+    flex: 1,
+  },
+  settingsItemTitle: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 2,
+  },
+  settingsItemSubtitle: {
+    fontSize: 12,
+    color: '#888',
+  },
+  settingsItemRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
+    marginHorizontal: 16,
+    marginBottom: 24,
+    marginTop: 8,
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  logoutText: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#ff3b30',
+  },
+  versionText: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 24,
+  }
+});
+
+================
+File: tsconfig.json
+================
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "jsx": "react-native",
+    "lib": [
+      "es2017"
+    ],
+    "moduleResolution": "node",
+    "noEmit": true,
+    "strict": true,
+    "target": "esnext",
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "baseUrl": "."
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "babel.config.js",
+    "metro.config.js",
+    "jest.config.js"
+  ],
+  "extends": "expo/tsconfig.base"
+}
+
+
+
+================================================================
+End of Codebase
+================================================================

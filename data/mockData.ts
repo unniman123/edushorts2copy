@@ -1,0 +1,93 @@
+// Mock data for the news app
+export const mockNewsData = [
+  {
+    id: '1',
+    title: 'New Scholarship Program for International Students Announced',
+    summary: 'The Global Education Foundation has announced a new scholarship program offering full tuition coverage for international students pursuing STEM degrees.',
+    content: 'The Global Education Foundation has announced a new scholarship program that will provide full tuition coverage for international students pursuing degrees in Science, Technology, Engineering, and Mathematics (STEM) fields. The program aims to support talented students from developing countries who demonstrate exceptional academic achievement and leadership potential. Applications open next month, with scholarships available for the upcoming academic year.',
+    category: 'Scholarships',
+    source: 'Education Daily',
+    sourceIconUrl: 'https://api.a0.dev/assets/image?text=ED%20logo&aspect=1:1&seed=123',
+    imageUrl: 'https://api.a0.dev/assets/image?text=students%20receiving%20scholarships&aspect=4:3&seed=1',
+    timeAgo: '2 hours ago',
+    url: 'https://example.com/scholarship-program',
+    timestamp: '2025-03-01T10:30:00Z',
+  },
+  {
+    id: '2',
+    title: 'UK Announces New Post-Study Work Visa Extensions',
+    summary: 'International graduates from UK universities will now have extended periods to find work after completing their studies, in a major immigration policy update.',    content: 'The UK government has announced significant changes to its post-study work visa program, extending the period international students can remain in the country after graduation. Under the new rules, graduates with bachelor\'s and master\'s degrees can stay for three years, up from the previous two years, while PhD graduates can remain for five years. This policy change aims to attract and retain global talent, particularly in high-demand sectors like technology and healthcare.',
+    category: 'Visas',
+    source: 'Global Immigration News',
+    sourceIconUrl: 'https://api.a0.dev/assets/image?text=GIN%20logo&aspect=1:1&seed=456',
+    imageUrl: 'https://api.a0.dev/assets/image?text=UK%20passport%20control&aspect=4:3&seed=2',
+    timeAgo: '5 hours ago',
+    url: 'https://example.com/uk-visa-extension',
+    timestamp: '2025-03-02T08:15:00Z',
+  },
+  {
+    id: '3',
+    title: 'Canadian Universities Report Record International Enrollment',
+    summary: 'Universities across Canada are experiencing unprecedented growth in international student applications, with enrollment numbers reaching all-time highs.',    content: 'Universities across Canada are reporting record-breaking international student enrollment numbers for the upcoming academic year. According to the Canadian Bureau for International Education, applications from overseas students have increased by 25% compared to last year, with particularly strong growth from countries in South Asia and Africa. Experts attribute this surge to Canada\'s reputation for high-quality education, relatively affordable tuition compared to other English-speaking countries, and straightforward pathways to permanent residency after graduation.',
+    category: 'Education',
+    source: 'Canada Education Review',
+    sourceIconUrl: 'https://api.a0.dev/assets/image?text=CER%20logo&aspect=1:1&seed=789',
+    imageUrl: 'https://api.a0.dev/assets/image?text=diverse%20students%20on%20canadian%20campus&aspect=4:3&seed=3',
+    timeAgo: '1 day ago',
+    url: 'https://example.com/canada-enrollment',
+    timestamp: '2025-03-02T15:45:00Z',
+  },
+  {
+    id: '4',
+    title: 'New AI Tool Helps International Students Find Suitable Universities',
+    summary: 'A newly launched artificial intelligence platform matches students with universities based on academic profile, budget, and career goals.',    content: 'A groundbreaking artificial intelligence platform called EduMatch has been launched to help international students find their ideal universities. The tool analyzes a student\'s academic profile, budget constraints, career aspirations, and personal preferences to generate personalized university recommendations. Early tests show that EduMatch has a 85% satisfaction rate among users, with many reporting that the platform suggested institutions they hadn\'t previously considered but that proved to be excellent matches for their needs and goals.',
+    category: 'Education',
+    source: 'Tech in Education',
+    sourceIconUrl: 'https://api.a0.dev/assets/image?text=TIE%20logo&aspect=1:1&seed=101',
+    imageUrl: 'https://api.a0.dev/assets/image?text=student%20using%20laptop%20to%20research%20universities&aspect=4:3&seed=4',
+    timeAgo: '2 days ago',
+    url: 'https://example.com/ai-university-matching',
+    timestamp: '2025-03-01T09:20:00Z',
+  },
+  {
+    id: '5',
+    title: 'Australia Simplifies Student Visa Application Process',
+    summary: 'The Australian government has streamlined its student visa process, reducing processing times and documentation requirements for applicants from select countries.',    content: 'The Australian Department of Home Affairs has announced significant changes to simplify the student visa application process. The reforms include shorter processing times, reduced documentation requirements for applicants from certain countries, and a more streamlined online application system. Additionally, the government has expanded the Simplified Student Visa Framework to include more countries, making it easier for students from these regions to study in Australia. Education experts predict these changes will boost Australia\'s competitiveness in the international education market.',
+    category: 'Visas',
+    source: 'Australian Education Herald',
+    sourceIconUrl: 'https://api.a0.dev/assets/image?text=AEH%20logo&aspect=1:1&seed=202',
+    imageUrl: 'https://api.a0.dev/assets/image?text=australian%20university%20campus&aspect=4:3&seed=5',
+    timeAgo: '3 days ago',
+    url: 'https://example.com/australia-visa-process',
+    timestamp: '2025-02-28T11:10:00Z',
+  },
+];
+
+export const mockUsers = [
+  {
+    id: '1',
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+    password: 'password123', // In a real app, this would be hashed
+    role: 'user',
+    preferences: {
+      categories: ['Education', 'Scholarships'],
+      sources: ['Education Daily', 'Global Immigration News'],
+    },
+    savedArticles: ['1', '3'],
+    readingHistory: ['2', '4', '5'],
+  },
+  {
+    id: '2',
+    name: 'Admin User',
+    email: 'admin@globaledu.com',
+    password: 'admin123', // In a real app, this would be hashed
+    role: 'admin',
+    preferences: {
+      categories: ['All'],
+      sources: ['All'],
+    },
+    savedArticles: [],
+    readingHistory: [],
+  },
+];
