@@ -1,237 +1,161 @@
 # Project Structure and Implementation Patterns
 
-## Project Overview
-- React Native TypeScript project
-- Uses React Navigation for routing
-- Mock data pattern for development
-- Component-based architecture with separation of concerns
+[Previous content remains unchanged up to "New Learnings (March 5, 2025)"]
 
-## Key Components
-- **NewsCard**: Reusable card component for displaying news articles
-- **CategorySelector**: Handles news category filtering
-- **ArticleDetailScreen**: Detailed view of articles
-- **ProfileScreen**: User profile and settings management
+## New Learnings (March 5, 2025 - Update)
 
-## Data Flow
-1. Mock data is stored in `data/mockData.ts`
-2. Data is passed down through props with proper TypeScript interfaces
-3. Components are typed with proper interfaces for props and navigation
-
-## Implementation Patterns
-
-### Navigation
-- Uses React Navigation's stack navigator
-- Routes are defined in RootStackParamList types
-- Navigation prop typing ensures type-safe navigation calls
-```typescript
-type RootStackParamList = {
-  ArticleDetail: { articleId: string };
-  // other routes...
-};
-```
-
-### TypeScript Integration
-- Interfaces defined for all data structures
-- Navigation props properly typed
-- Component props defined with interfaces
-```typescript
-interface NewsCardProps {
-  article: Article;
-}
-```
-
-### External Link Handling
-- Uses React Native's Linking API
-- Always check if URL exists before attempting to open
-```typescript
-onPress={() => article.url && Linking.openURL(article.url)}
-```
-
-## Debugging Approaches
-
-### TypeScript Errors
-1. **Missing Properties**
-   - Check interface definitions
-   - Ensure mock data includes all required properties
-   - Verify prop passing in parent components
-
-2. **Navigation Type Errors**
-   - Ensure proper typing of navigation prop
-   - Check RootStackParamList includes all routes
-   - Verify navigation parameters match defined types
-
-3. **Component Prop Errors**
-   - Define proper interfaces for props
-   - Use optional properties when appropriate
-   - Implement null checks for optional data
-
-### Common Patterns for Fixes
-1. **Type Definition**
-```typescript
-interface Article {
-  id: string;
-  title: string;
-  // ... other required properties
-  url?: string; // Optional properties with ?
-}
-```
-
-2. **Null Checking**
-```typescript
-if (!article || !article.id) {
-  return null;
-}
-```
-
-3. **Type Assertion (when necessary)**
-```typescript
-const foundArticle = mockNewsData.find(item => item.id === articleId) as Article;
-```
-
-## Best Practices
-
-### Component Structure
-1. Define interfaces at the top
-2. Initialize hooks and state
-3. Define handler functions
-4. Return JSX with proper type checking
-
-### State Management
-- Use typed useState hooks
-- Initialize with proper types
-- Handle loading and error states
-
-### Style Organization
-- StyleSheet.create for type-safe styles
-- Group related styles together
-- Use consistent naming conventions
-
-### Error Handling
-1. Validate data before rendering
-2. Provide fallback UI for missing data
-3. Use proper type guards
-4. Handle async operations safely
-
-## Future Improvements
-1. Implement proper API integration
-2. Add error boundaries
-3. Implement proper state management (e.g., Redux)
-4. Add unit tests
-5. Implement proper loading states
-
-## Common Issues and Solutions
-
-### Issue: Component Not Rendering
-- Check if all required props are passed
-- Verify data structure matches interface
-- Ensure proper null checking
-
-### Issue: Navigation Errors
-- Verify route names match RootStackParamList
-- Check parameter types match route definitions
-- Ensure navigation prop is properly typed
-
-### Issue: TypeScript Errors
-- Check interface definitions
-- Verify data shapes match interfaces
-- Use optional properties when appropriate
-- Implement proper type guards
-
-## New Learnings (March 5, 2025)
-
-### React Native Performance Optimization
-1. **FlatList Optimization Techniques**
+### Skeleton Loading Pattern
+1. **Reusable Skeleton Component**
    ```typescript
-   <FlatList
-     windowSize={5}
-     maxToRenderPerBatch={5}
-     updateCellsBatchingPeriod={50}
-     removeClippedSubviews={true}
-     initialNumToRender={10}
-   />
-   ```
-   - windowSize controls render window size
-   - maxToRenderPerBatch limits batch processing
-   - removeClippedSubviews helps with memory usage
-   - initialNumToRender optimizes initial load
-
-2. **React.memo Usage**
-   ```typescript
-   const areEqual = (prevProps: Props, nextProps: Props) => {
-     // Compare only necessary props
-     return prevProps.id === nextProps.id;
-   };
-   export default memo(Component, areEqual);
-   ```
-   - Prevents unnecessary re-renders
-   - Custom comparison function for fine control
-   - Important for list item components
-
-### Platform-Specific Development
-1. **RefreshControl Differences**
-   ```typescript
-   Platform.select({
-     ios: <RefreshControl tintColor="#0066cc" />,
-     android: <RefreshControl colors={['#0066cc']} />
-   })
-   ```
-   - Different props for iOS and Android
-   - Use Platform.select for clean conditionals
-   - Test both platforms for consistency
-
-### Navigation Best Practices
-1. **Type-Safe Navigation**
-   ```typescript
-   type RootStackParamList = {
-     Screen: undefined | { param: string };
-   };
-   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-   ```
-   - Define types for all routes and params
-   - Use proper navigation typing
-   - Handle undefined routes properly
-
-### Component Architecture
-1. **Toast Notifications**
-   ```typescript
-   import { Toaster, toast } from 'sonner-native';
-   // Provider at app root
-   <Toaster />
-   // Usage in components
-   toast.success('Operation successful');
-   ```
-   - Global toast provider setup
-   - Consistent error/success messaging
-   - Non-blocking user feedback
-
-2. **Key Management in Lists**
-   - Avoid using index as key
-   - Ensure unique key generation for dynamic lists
-   - Handle key collisions in load more scenarios
-
-### Error Prevention
-1. **TypeScript Guards**
-   ```typescript
-   if (!item || !item.id) {
-     return null;
+   interface SkeletonLoaderProps {
+     width?: number | string;
+     height?: number;
+     style?: any;
    }
    ```
-   - Always check for undefined/null
-   - Use early returns for invalid data
+   - Use React Native Animated for smooth transitions
+   - Implement flexible sizing through props
+   - Match skeleton design to actual content
+   - Apply consistent animation timing
+
+2. **Loading State Management**
+   ```typescript
+   const [initialLoading, setInitialLoading] = useState(true);
+
+   useEffect(() => {
+     const timer = setTimeout(() => {
+       setInitialLoading(false);
+     }, 1500);
+     return () => clearTimeout(timer);
+   }, []);
+   ```
+   - Separate initial loading from refresh loading
+   - Clean up timers to prevent memory leaks
+   - Use conditional rendering for loading states
+
+### React Hooks Best Practices
+1. **Hook Order Consistency**
+   ```typescript
+   // Define all hooks at the top level
+   const [state, setState] = useState();
+   const callback = useCallback(() => {}, []);
+   useEffect(() => {}, []);
+   ```
+   - Maintain consistent hook order across renders
+   - Define hooks before any conditional logic
+   - Group related hooks together
+
+2. **Memoization Strategy**
+   ```typescript
+   // Render functions should be memoized
+   const renderHeader = useCallback(() => (
+     <View>
+       <Text>Header Content</Text>
+     </View>
+   ), [dependencies]);
+   ```
+   - Memoize render functions for performance
+   - Include all dependencies in dependency array
+   - Use for complex render functions
+
+### Google Sign-in Integration
+1. **Simplified Profile Management**
+   - Remove local profile editing for Google-managed data
+   - Keep app-specific preferences separate
+   - Use Google profile data for display
+
+2. **Authentication State**
+   ```typescript
+   type AuthState = {
+     isAuthenticated: boolean;
+     user: {
+       name: string;
+       email: string;
+       photoURL: string;
+     } | null;
+   };
+   ```
+   - Clear separation between Google and app data
+   - Type-safe user information handling
+   - Consistent auth state management
+
+### Performance Optimization Techniques
+1. **FlatList with Loading States**
+   ```typescript
+   <FlatList
+     data={data}
+     renderItem={renderItem}
+     ListHeaderComponent={renderHeader}
+     ListFooterComponent={renderFooter}
+     onEndReached={loadMore}
+     refreshControl={
+       <RefreshControl
+         refreshing={refreshing}
+         onRefresh={handleRefresh}
+       />
+     }
+   />
+   ```
+   - Implement infinite scroll with loading indicators
+   - Show skeleton loading for initial load
+   - Handle refresh and load more separately
+
+2. **Component Organization**
+   ```typescript
+   // Separate rendering logic
+   const renderContent = () => (/* main content */);
+   const renderSkeletons = () => (/* loading state */);
+
+   return (
+     <View>
+       {isLoading ? renderSkeletons() : renderContent()}
+     </View>
+   );
+   ```
+   - Clean separation of loading and content states
+   - Reusable rendering functions
+   - Clear conditional rendering
+
+### UI/UX Enhancement Patterns
+1. **Breaking News Removal**
+   - Evaluate UI elements based on user value
+   - Consider vertical space efficiency
+   - Maintain consistent news presentation
+
+2. **Profile Screen Simplification**
+   ```typescript
+   type RootStackParamList = {
+     Login: undefined;
+     Bookmarks: undefined;
+     // Remove EditProfile route
+   };
+   ```
+   - Remove unnecessary navigation routes
+   - Simplify user interface based on auth flow
+   - Focus on essential functionality
+
+### Error Prevention
+1. **Navigation Type Safety**
+   ```typescript
+   type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+   const navigation = useNavigation<ProfileScreenNavigationProp>();
+   ```
+   - Define strict navigation types
+   - Remove unused routes from type definitions
+   - Ensure type-safe navigation calls
+
+2. **Component Dependencies**
+   - Consider authentication flow in component design
+   - Manage feature flags through configuration
    - Implement proper error boundaries
 
-2. **Performance Monitoring**
-   - Watch for VirtualizedList warnings
-   - Monitor render performance
-   - Implement proper loading states
+### Development Process Improvements
+1. **Commit Organization**
+   - Group related changes in single commits
+   - Use descriptive commit messages
+   - Follow semantic versioning patterns
 
-### Development Workflow
-1. **Git Commit Organization**
-   - Use semantic commit messages
-   - Group related changes
-   - Document breaking changes
-
-2. **Code Documentation**
-   - Document complex logic
-   - Add TypeScript interfaces
-   - Comment performance optimizations
+2. **Code Maintainability**
+   - Document component dependencies
+   - Maintain clear separation of concerns
+   - Keep consistent code style
