@@ -14,20 +14,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { mockUsers } from '../data/mockData';
-import { toast } from 'sonner-native';
 import { RootStackParamList } from './HomeScreen';
+import { toast } from 'sonner-native';
 
-export default function LoginScreen() {
+export default function RegisterScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
-    if (!email || !password) {
-      toast.error('Please enter both email and password');
+  const handleRegister = () => {
+    if (!email || !password || !confirmPassword) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match');
       return;
     }
 
@@ -35,17 +41,8 @@ export default function LoginScreen() {
     
     // Simulate API call delay
     setTimeout(() => {
-      const user = mockUsers.find(
-        user => user.email === email && user.password === password
-      );
-      
-      if (user) {
-        toast.success('Login successful!');
-        navigation.navigate('Main');
-      } else {
-        toast.error('Invalid email or password');
-      }
-      
+      toast.success('Registration successful!');
+      navigation.navigate('Login');
       setIsLoading(false);
     }, 1500);
   };
@@ -68,8 +65,8 @@ export default function LoginScreen() {
             <Text style={styles.logoText}>Edushorts</Text>
           </View>
           
-          <Text style={styles.welcomeText}>Welcome Back!</Text>
-          <Text style={styles.subtitle}>Login to access personalized news for international students</Text>
+          <Text style={styles.welcomeText}>Create Account</Text>
+          <Text style={styles.subtitle}>Join our community of international students</Text>
           
           <View style={styles.formContainer}>
             <View style={styles.inputContainer}>
@@ -82,6 +79,8 @@ export default function LoginScreen() {
                 autoCapitalize="none"
                 value={email}
                 onChangeText={setEmail}
+                accessible={true}
+                accessibilityLabel="Email input field"
               />
             </View>
             
@@ -94,61 +93,68 @@ export default function LoginScreen() {
                 secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={setPassword}
+                accessible={true}
+                accessibilityLabel="Password input field"
               />
               <TouchableOpacity
                 style={styles.eyeIcon}
                 onPress={() => setShowPassword(!showPassword)}
+                accessible={true}
+                accessibilityLabel={showPassword ? "Hide password" : "Show password"}
               >
                 <Feather name={showPassword ? "eye-off" : "eye"} size={20} color="#888" />
               </TouchableOpacity>
             </View>
-            
-            <TouchableOpacity style={styles.forgotPassword}>
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
-              onPress={handleLogin}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <Text style={styles.loginButtonText}>Logging in...</Text>
-              ) : (
-                <Text style={styles.loginButtonText}>Login</Text>
-              )}
-            </TouchableOpacity>
-            
-            <View style={styles.orContainer}>
-              <View style={styles.divider} />
-              <Text style={styles.orText}>OR</Text>
-              <View style={styles.divider} />
+
+            <View style={styles.inputContainer}>
+              <Feather name="lock" size={20} color="#888" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Confirm Password"
+                placeholderTextColor="#888"
+                secureTextEntry={!showConfirmPassword}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                accessible={true}
+                accessibilityLabel="Confirm password input field"
+              />
+              <TouchableOpacity
+                style={styles.eyeIcon}
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                accessible={true}
+                accessibilityLabel={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+              >
+                <Feather name={showConfirmPassword ? "eye-off" : "eye"} size={20} color="#888" />
+              </TouchableOpacity>
             </View>
             
-            <TouchableOpacity 
-              style={[styles.socialButton, styles.googleButton]}
+            <TouchableOpacity
+              style={[styles.registerButton, isLoading && styles.registerButtonDisabled]}
+              onPress={handleRegister}
+              disabled={isLoading}
               accessible={true}
-              accessibilityLabel="Sign in with Google button"
-              accessibilityHint="Sign in using your Google account"
+              accessibilityLabel="Register button"
+              accessibilityHint="Creates a new account with the provided information"
             >
-              <Feather name="chrome" size={20} color="#EA4335" />
-              <Text style={styles.socialButtonText}>Sign in with Google</Text>
+              {isLoading ? (
+                <Text style={styles.registerButtonText}>Creating Account...</Text>
+              ) : (
+                <Text style={styles.registerButtonText}>Create Account</Text>
+              )}
             </TouchableOpacity>
           </View>
           
-          <View style={styles.registerContainer}>
-            <Text style={styles.registerText}>Don't have an account?</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text style={styles.registerLink}>Sign Up</Text>
+          <View style={styles.loginContainer}>
+            <Text style={styles.loginText}>Already have an account?</Text>
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('Login')}
+              accessible={true}
+              accessibilityLabel="Login link"
+              accessibilityHint="Navigate to login screen"
+            >
+              <Text style={styles.loginLink}>Login</Text>
             </TouchableOpacity>
           </View>
-          
-          <TouchableOpacity 
-            style={styles.guestButton}
-            onPress={() => navigation.navigate('Main')}
-          >
-            <Text style={styles.guestButtonText}>Continue as Guest</Text>
-          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -217,88 +223,35 @@ const styles = StyleSheet.create({
   eyeIcon: {
     padding: 4,
   },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: 24,
-  },
-  forgotPasswordText: {
-    fontSize: 14,
-    color: '#0066cc',
-  },
-  loginButton: {
+  registerButton: {
     backgroundColor: '#0066cc',
     borderRadius: 12,
     height: 56,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginTop: 16,
   },
-  loginButtonDisabled: {
+  registerButtonDisabled: {
     opacity: 0.7,
   },
-  loginButtonText: {
+  registerButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
     color: 'white',
   },
-  orContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 16,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#eeeeee',
-  },
-  orText: {
-    color: '#888',
-    marginHorizontal: 16,
-  },
-  socialButton: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-    height: 56,
-    width: '100%',
-  },
-  googleButton: {
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#eeeeee',
-  },
-  socialButtonText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#333',
-  },
-  registerContainer: {
+  loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginBottom: 24,
   },
-  registerText: {
+  loginText: {
     fontSize: 14,
     color: '#666',
   },
-  registerLink: {
+  loginLink: {
     fontSize: 14,
     fontWeight: 'bold',
     color: '#0066cc',
     marginLeft: 4,
-  },
-  guestButton: {
-    borderWidth: 1,
-    borderColor: '#eeeeee',
-    borderRadius: 12,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  guestButtonText: {
-    fontSize: 14,
-    color: '#666',
   },
 });
