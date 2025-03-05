@@ -136,3 +136,102 @@ const foundArticle = mockNewsData.find(item => item.id === articleId) as Article
 - Verify data shapes match interfaces
 - Use optional properties when appropriate
 - Implement proper type guards
+
+## New Learnings (March 5, 2025)
+
+### React Native Performance Optimization
+1. **FlatList Optimization Techniques**
+   ```typescript
+   <FlatList
+     windowSize={5}
+     maxToRenderPerBatch={5}
+     updateCellsBatchingPeriod={50}
+     removeClippedSubviews={true}
+     initialNumToRender={10}
+   />
+   ```
+   - windowSize controls render window size
+   - maxToRenderPerBatch limits batch processing
+   - removeClippedSubviews helps with memory usage
+   - initialNumToRender optimizes initial load
+
+2. **React.memo Usage**
+   ```typescript
+   const areEqual = (prevProps: Props, nextProps: Props) => {
+     // Compare only necessary props
+     return prevProps.id === nextProps.id;
+   };
+   export default memo(Component, areEqual);
+   ```
+   - Prevents unnecessary re-renders
+   - Custom comparison function for fine control
+   - Important for list item components
+
+### Platform-Specific Development
+1. **RefreshControl Differences**
+   ```typescript
+   Platform.select({
+     ios: <RefreshControl tintColor="#0066cc" />,
+     android: <RefreshControl colors={['#0066cc']} />
+   })
+   ```
+   - Different props for iOS and Android
+   - Use Platform.select for clean conditionals
+   - Test both platforms for consistency
+
+### Navigation Best Practices
+1. **Type-Safe Navigation**
+   ```typescript
+   type RootStackParamList = {
+     Screen: undefined | { param: string };
+   };
+   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+   ```
+   - Define types for all routes and params
+   - Use proper navigation typing
+   - Handle undefined routes properly
+
+### Component Architecture
+1. **Toast Notifications**
+   ```typescript
+   import { Toaster, toast } from 'sonner-native';
+   // Provider at app root
+   <Toaster />
+   // Usage in components
+   toast.success('Operation successful');
+   ```
+   - Global toast provider setup
+   - Consistent error/success messaging
+   - Non-blocking user feedback
+
+2. **Key Management in Lists**
+   - Avoid using index as key
+   - Ensure unique key generation for dynamic lists
+   - Handle key collisions in load more scenarios
+
+### Error Prevention
+1. **TypeScript Guards**
+   ```typescript
+   if (!item || !item.id) {
+     return null;
+   }
+   ```
+   - Always check for undefined/null
+   - Use early returns for invalid data
+   - Implement proper error boundaries
+
+2. **Performance Monitoring**
+   - Watch for VirtualizedList warnings
+   - Monitor render performance
+   - Implement proper loading states
+
+### Development Workflow
+1. **Git Commit Organization**
+   - Use semantic commit messages
+   - Group related changes
+   - Document breaking changes
+
+2. **Code Documentation**
+   - Document complex logic
+   - Add TypeScript interfaces
+   - Comment performance optimizations
