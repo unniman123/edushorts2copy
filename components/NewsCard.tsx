@@ -6,6 +6,7 @@ import {
   Image,
   TouchableOpacity,
   Linking,
+  Platform,
 } from 'react-native';
 import { AccessibilityProps } from '../types/accessibility';
 import { useNavigation } from '@react-navigation/native';
@@ -49,7 +50,10 @@ const NewsCard = ({ article }: NewsCardProps) => {
     >
       <Image 
         source={{ uri: article.imageUrl }} 
-        style={styles.image} 
+        style={styles.image}
+        fadeDuration={Platform.select({ android: 300, ios: 200 })}
+        progressiveRenderingEnabled={true}
+        onError={() => {/* Handle error silently */}}
       />
       <View style={styles.contentContainer}>
         <View style={styles.categoryRow}>
@@ -58,11 +62,29 @@ const NewsCard = ({ article }: NewsCardProps) => {
           </View>
           <Text style={styles.timeAgo}>{article.timeAgo}</Text>
         </View>
-        <Text style={styles.title} numberOfLines={2}>{article.title}</Text>
-        <Text style={styles.summary} numberOfLines={2}>{article.summary}</Text>
+        <Text 
+          style={styles.title} 
+          numberOfLines={2}
+          ellipsizeMode="tail"
+        >
+          {article.title}
+        </Text>
+        <Text 
+          style={styles.summary} 
+          numberOfLines={2}
+          ellipsizeMode="tail"
+        >
+          {article.summary}
+        </Text>
         <View>
           <View style={styles.sourceRow}>
-            <Image source={{ uri: article.sourceIconUrl }} style={styles.sourceIcon} />
+            <Image 
+              source={{ uri: article.sourceIconUrl }} 
+              style={styles.sourceIcon}
+              fadeDuration={Platform.select({ android: 300, ios: 200 })}
+              progressiveRenderingEnabled={true}
+              onError={() => {/* Handle error silently */}}
+            />
             <Text style={styles.sourceName}>{article.source}</Text>
           </View>
           <TouchableOpacity

@@ -46,12 +46,17 @@ Additional Info:
 Directory Structure
 ================================================================
 .gitignore
+adminpanelplan.md
 app.json
 App.tsx
+backend-plan.md
 components/CategorySelector.tsx
+components/EmptyState.tsx
 components/NewsCard.tsx
 data/mockData.ts
 index.ts
+learning.md
+memory.md
 newfile
 package.json
 screens/AdminDashboardScreen.tsx
@@ -63,6 +68,7 @@ screens/LoginScreen.tsx
 screens/NotificationsScreen.tsx
 screens/ProfileScreen.tsx
 tsconfig.json
+types/accessibility.ts
 
 ================================================================
 Files
@@ -109,6 +115,158 @@ yarn-error.*
 *.tsbuildinfo
 
 ================
+File: adminpanelplan.md
+================
+Phase 1: News Management System
+Objective: Connect existing admin UI to Supabase without altering current component structure
+
+1.1 Modify AdminDashboardScreen.tsx
+typescript
+Copy
+// Add to existing code
+const fetchArticles = async () => {
+  const { data, error } = await supabase
+    .from('articles')
+    .select(`*, categories(name)`)
+    .order('created_at', { ascending: false });
+  setArticles(data || []);
+};
+
+// Update deleteArticle function
+const deleteArticle = async (id: string) => {
+  const { error } = await supabase
+    .from('articles')
+    .delete()
+    .eq('id', id);
+  if (!error) toast.success('Article deleted');
+};
+1.2 Create News Editor Component
+New file: screens/ArticleEditorScreen.tsx
+
+typescript
+Copy
+// Reuse existing NewsCard props and styling
+const handleSubmit = async () => {
+  if (editMode) {
+    await supabase
+      .from('articles')
+      .update({ ...formData })
+      .eq('id', articleId);
+  } else {
+    await supabase
+      .from('articles')
+      .insert({ ...formData, created_by: user.id });
+  }
+  navigation.goBack();
+};
+Phase 2: User Management System
+Objective: Add real user management to existing placeholder
+
+2.1 Update AdminDashboardScreen.tsx
+typescript
+Copy
+// Add user tab content
+const renderUsersTab = () => {
+  const { data: users } = await supabase
+    .from('users')
+    .select('id, email, created_at, is_admin, is_active');
+
+  return (
+    <FlatList
+      data={users}
+      renderItem={({ item }) => (
+        <View style={existingStyles.articleItem}>
+          <Text>{item.email}</Text>
+          <Switch
+            value={item.is_active}
+            onValueChange={(val) => updateUserStatus(item.id, val)}
+          />
+        </View>
+      )}
+    />
+  );
+};
+
+const updateUserStatus = async (userId: string, isActive: boolean) => {
+  await supabase
+    .from('users')
+    .update({ is_active: isActive })
+    .eq('id', userId);
+};
+Phase 3: Notification Management
+Objective: Add notification system using existing UI patterns
+
+3.1 Create NotificationComposer.tsx
+New file: components/NotificationComposer.tsx
+
+typescript
+Copy
+// Match existing admin panel styling
+const sendNotification = async () => {
+  await supabase
+    .from('notifications')
+    .insert({
+      title,
+      body,
+      target_type: selectedTarget,
+      scheduled_at: scheduleDate
+    });
+};
+3.2 Add to AdminDashboardScreen.tsx
+typescript
+Copy
+// Add notification tab
+const renderNotificationsTab = () => (
+  <View style={styles.tabContent}>
+    <NotificationComposer />
+    <FlatList
+      data={notifications}
+      renderItem={({ item }) => (
+        <View style={existingStyles.articleItem}>
+          <Text>{item.title}</Text>
+          <Text>{item.scheduled_at}</Text>
+        </View>
+      )}
+    />
+  </View>
+);
+Integration Strategy
+Reuse Existing Patterns
+
+Keep using existing FlatList structures from articles UI
+
+Maintain current styling in styles object from AdminDashboardScreen
+
+Preserve tab navigation flow (analytics | articles | users | notifications)
+
+Supabase RLS Policies
+
+sql
+Copy
+-- For users table
+CREATE POLICY "Admins manage users" ON users 
+FOR ALL USING (auth.jwt() ->> 'is_admin' = 'true');
+
+-- For notifications
+CREATE POLICY "Admin-only notifications" ON notifications 
+FOR ALL USING (auth.jwt() ->> 'is_admin' = 'true');
+Backward Compatibility
+
+Keep mock data fallback during development
+
+Use conditional rendering for admin features:
+
+typescript
+Copy
+{user?.is_admin && <AdminTabNavigator />}
+File Impact Analysis
+File	Changes	Risk
+screens/AdminDashboardScreen.tsx	Add real data fetching	Low
+lib/supabaseClient.ts	None (existing config)	None
+navigation/App.tsx	No routing changes	None
+package.json	Already has Supabase dep	None
+
+================
 File: app.json
 ================
 {
@@ -153,6 +311,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { enableScreens } from 'react-native-screens';
+import { Toaster } from 'sonner-native';
 
 import HomeScreen, { RootStackParamList } from './screens/HomeScreen';
 import DiscoverScreen from './screens/DiscoverScreen';
@@ -239,8 +398,11 @@ const TabNavigator = () => (
 const App = () => (
   <GestureHandlerRootView style={styles.container}>
     <SafeAreaProvider>
+      <Toaster />
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={LoginScreen} />
           <Stack.Screen name="Main" component={TabNavigator} />
           <Stack.Screen name="ArticleDetail" component={ArticleDetailScreen} />
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
@@ -260,9 +422,211 @@ const styles = StyleSheet.create({
 export default App;
 
 ================
+File: backend-plan.md
+================
+Phase 1: Supabase Project Setup & Authentication
+Objective: Replace mock authentication with Supabase Auth while preserving existing UI/UX.
+
+1.1 Database Schema
+File to create: supabase/migrations/0001_initial_schema.sql
+
+sql
+Copy
+-- Users Table (Matches PRD)
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  full_name TEXT,
+  avatar_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  last_login TIMESTAMPTZ,
+  is_admin BOOLEAN DEFAULT FALSE,
+  is_active BOOLEAN DEFAULT TRUE
+);
+
+-- Add RLS Policy (Allow users to read their own data)
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage their own data" 
+ON users FOR ALL USING (auth.uid() = id);
+1.2 Supabase Client Configuration
+File to create: lib/supabaseClient.ts
+
+typescript
+Copy
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY!;
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+1.3 Auth Integration
+File to modify: screens/LoginScreen.tsx
+
+typescript
+Copy
+// Replace mock login with:
+const handleLogin = async () => {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (data.user?.id) {
+    navigation.navigate('Home');
+  }
+};
+RLS Policies:
+
+Enable RLS on users table with policies for admins (use Supabase Dashboard).
+
+Phase 2: News & Category Management
+Objective: Migrate mock news data to Supabase while retaining existing UI components.
+
+2.1 Database Schema
+Add to migration file:
+
+sql
+Copy
+-- Categories Table
+CREATE TABLE categories (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT UNIQUE NOT NULL
+);
+
+-- Articles Table
+CREATE TABLE articles (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title TEXT NOT NULL,
+  summary TEXT NOT NULL,
+  content TEXT NOT NULL,
+  source_url TEXT NOT NULL,
+  source_name TEXT NOT NULL,
+  image_url TEXT,
+  category_id UUID REFERENCES categories(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  created_by UUID REFERENCES users(id)
+);
+
+-- RLS Policies (Admins can edit, users can read)
+CREATE POLICY "Admins manage articles" ON articles 
+FOR ALL USING (auth.jwt() ->> 'is_admin' = 'true');
+
+CREATE POLICY "Public read access" ON articles 
+FOR SELECT USING (true);
+2.2 News Fetching
+File to modify: screens/HomeScreen.tsx
+
+typescript
+Copy
+// Replace mock data with:
+const fetchNews = async () => {
+  const { data, error } = await supabase
+    .from('articles')
+    .select('*')
+    .order('created_at', { ascending: false });
+  setNews(data || []);
+};
+2.3 Admin Panel Integration
+File to modify: screens/AdminDashboardScreen.tsx
+
+typescript
+Copy
+// For deleting articles:
+const deleteArticle = async (id: string) => {
+  const { error } = await supabase
+    .from('articles')
+    .delete()
+    .eq('id', id);
+};
+Phase 3: User Preferences & Saved Articles
+Objective: Implement saved articles and preferences using Supabase relationships.
+
+3.1 Database Schema
+Add to migration file:
+
+sql
+Copy
+-- Saved Articles Table
+CREATE TABLE saved_articles (
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  article_id UUID REFERENCES articles(id) ON DELETE CASCADE,
+  saved_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (user_id, article_id)
+);
+
+-- User Preferences Table
+CREATE TABLE user_preferences (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  notifications_enabled BOOLEAN DEFAULT TRUE,
+  dark_mode_enabled BOOLEAN DEFAULT FALSE
+);
+3.2 Saved Articles Logic
+File to modify: screens/BookmarksScreen.tsx
+
+typescript
+Copy
+// Fetch saved articles:
+const fetchSaved = async () => {
+  const { data } = await supabase
+    .from('saved_articles')
+    .select('article_id')
+    .eq('user_id', userId);
+};
+Phase 4: Notifications System
+Objective: Add push notifications with Supabase edge functions.
+
+4.1 Database Schema
+Add to migration file:
+
+sql
+Copy
+-- Notifications Table
+CREATE TABLE notifications (
+  id UUID PRIMARY KEY,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  target_audience JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+4.2 Notification Service
+File to create: supabase/functions/send-notification/index.ts
+
+typescript
+Copy
+// Use Supabase Edge Functions to trigger notifications
+// Integrate with Expo Notifications SDK
+Phase 5: Metrics & RLS Finalization
+Objective: Secure all tables and implement admin metrics.
+
+5.1 RLS Policies
+saved_articles: auth.uid() = user_id
+
+notifications: Admins-only access
+
+5.2 Admin Dashboard Metrics
+File to modify: screens/AdminDashboardScreen.tsx
+
+typescript
+Copy
+// Total users:
+const { count } = await supabase
+  .from('users')
+  .select('*', { count: 'exact' });
+Key Integration Notes
+Environment Variables: Add .env file with Supabase credentials.
+
+Dependencies: Ensure @supabase/supabase-js is installed (already in package.json).
+
+No Routing Changes: All existing routes (screens/HomeScreen, screens/AdminDashboardScreen, etc.) remain untouched.
+
+Backward Compatibility: Mock data in data/mockData.ts can be phased out gradually.
+
+================
 File: components/CategorySelector.tsx
 ================
-import React from 'react';
+import React, { memo } from 'react';
 import {
   View,
   Text,
@@ -270,6 +634,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import { AccessibilityProps } from '../types/accessibility';
 
 const categories = [
   { id: '1', name: 'All' },
@@ -301,6 +666,10 @@ const CategorySelector = ({ selectedCategory, onSelectCategory }: CategorySelect
             selectedCategory === category.name && styles.selectedCategory,
           ]}
           onPress={() => onSelectCategory(category.name)}
+          accessible={true}
+          accessibilityLabel={`Category: ${category.name}`}
+          accessibilityHint={`Click to filter articles in ${category.name} category`}
+          accessibilityState={{ selected: selectedCategory === category.name }}
         >
           <Text 
             style={[
@@ -340,19 +709,76 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CategorySelector;
+const areEqual = (prevProps: CategorySelectorProps, nextProps: CategorySelectorProps) => {
+  return (
+    prevProps.selectedCategory === nextProps.selectedCategory
+  );
+};
+
+export default memo(CategorySelector, areEqual);
+
+================
+File: components/EmptyState.tsx
+================
+import React, { memo } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+
+interface EmptyStateProps {
+  icon: keyof typeof Feather.glyphMap;
+  title: string;
+  subtitle: string;
+}
+
+const EmptyState: React.FC<EmptyStateProps> = memo(({ icon, title, subtitle }) => {
+  if (!icon || !title) {
+    return null;
+  }
+
+  return (
+    <View style={styles.container}>
+      <Feather name={icon} size={64} color="#666" />
+      <Text style={styles.title}>{title}</Text>
+      <Text style={styles.subtitle}>{subtitle}</Text>
+    </View>
+  );
+});
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 16,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+});
+
+export default EmptyState;
 
 ================
 File: components/NewsCard.tsx
 ================
-import React from 'react';
+import React, { memo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Image,
   TouchableOpacity,
+  Linking,
 } from 'react-native';
+import { AccessibilityProps } from '../types/accessibility';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 
@@ -367,6 +793,7 @@ interface Article {
   timeAgo: string;
   imageUrl: string;
   sourceIconUrl: string;
+  url: string;
 }
 
 interface NewsCardProps {
@@ -387,6 +814,9 @@ const NewsCard = ({ article }: NewsCardProps) => {
     <TouchableOpacity 
       style={styles.card}
       onPress={() => navigation.navigate('ArticleDetail', { articleId: article.id })}
+      accessible={true}
+      accessibilityLabel={`Article: ${article.title}`}
+      accessibilityHint="Click to read the full article"
     >
       <Image 
         source={{ uri: article.imageUrl }} 
@@ -401,9 +831,20 @@ const NewsCard = ({ article }: NewsCardProps) => {
         </View>
         <Text style={styles.title} numberOfLines={2}>{article.title}</Text>
         <Text style={styles.summary} numberOfLines={2}>{article.summary}</Text>
-        <View style={styles.sourceRow}>
-          <Image source={{ uri: article.sourceIconUrl }} style={styles.sourceIcon} />
-          <Text style={styles.sourceName}>{article.source}</Text>
+        <View>
+          <View style={styles.sourceRow}>
+            <Image source={{ uri: article.sourceIconUrl }} style={styles.sourceIcon} />
+            <Text style={styles.sourceName}>{article.source}</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.readMoreButton}
+            onPress={() => article.url && Linking.openURL(article.url)}
+            accessible={true}
+            accessibilityLabel="Read full article"
+            accessibilityHint="Opens article in your browser"
+          >
+            <Text style={styles.readMoreText}>Read More</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </TouchableOpacity>
@@ -479,9 +920,36 @@ const styles = StyleSheet.create({
     color: '#888',
     fontWeight: '500',
   },
+  readMoreButton: {
+    backgroundColor: '#0066cc',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  readMoreText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
 });
 
-export default NewsCard;
+const areEqual = (prevProps: NewsCardProps, nextProps: NewsCardProps) => {
+  return (
+    prevProps.article.id === nextProps.article.id &&
+    prevProps.article.title === nextProps.article.title &&
+    prevProps.article.summary === nextProps.article.summary &&
+    prevProps.article.category === nextProps.article.category &&
+    prevProps.article.source === nextProps.article.source &&
+    prevProps.article.timeAgo === nextProps.article.timeAgo &&
+    prevProps.article.imageUrl === nextProps.article.imageUrl &&
+    prevProps.article.sourceIconUrl === nextProps.article.sourceIconUrl &&
+    prevProps.article.url === nextProps.article.url
+  );
+};
+
+export default memo(NewsCard, areEqual);
 
 ================
 File: data/mockData.ts
@@ -591,6 +1059,325 @@ import App from './App';
 // It also ensures that whether you load the app in Expo Go or in a native build,
 // the environment is set up appropriately
 registerRootComponent(App);
+
+================
+File: learning.md
+================
+# Project Structure and Implementation Patterns
+
+## Project Overview
+- React Native TypeScript project
+- Uses React Navigation for routing
+- Mock data pattern for development
+- Component-based architecture with separation of concerns
+
+## Key Components
+- **NewsCard**: Reusable card component for displaying news articles
+- **CategorySelector**: Handles news category filtering
+- **ArticleDetailScreen**: Detailed view of articles
+- **ProfileScreen**: User profile and settings management
+
+## Data Flow
+1. Mock data is stored in `data/mockData.ts`
+2. Data is passed down through props with proper TypeScript interfaces
+3. Components are typed with proper interfaces for props and navigation
+
+## Implementation Patterns
+
+### Navigation
+- Uses React Navigation's stack navigator
+- Routes are defined in RootStackParamList types
+- Navigation prop typing ensures type-safe navigation calls
+```typescript
+type RootStackParamList = {
+  ArticleDetail: { articleId: string };
+  // other routes...
+};
+```
+
+### TypeScript Integration
+- Interfaces defined for all data structures
+- Navigation props properly typed
+- Component props defined with interfaces
+```typescript
+interface NewsCardProps {
+  article: Article;
+}
+```
+
+### External Link Handling
+- Uses React Native's Linking API
+- Always check if URL exists before attempting to open
+```typescript
+onPress={() => article.url && Linking.openURL(article.url)}
+```
+
+## Debugging Approaches
+
+### TypeScript Errors
+1. **Missing Properties**
+   - Check interface definitions
+   - Ensure mock data includes all required properties
+   - Verify prop passing in parent components
+
+2. **Navigation Type Errors**
+   - Ensure proper typing of navigation prop
+   - Check RootStackParamList includes all routes
+   - Verify navigation parameters match defined types
+
+3. **Component Prop Errors**
+   - Define proper interfaces for props
+   - Use optional properties when appropriate
+   - Implement null checks for optional data
+
+### Common Patterns for Fixes
+1. **Type Definition**
+```typescript
+interface Article {
+  id: string;
+  title: string;
+  // ... other required properties
+  url?: string; // Optional properties with ?
+}
+```
+
+2. **Null Checking**
+```typescript
+if (!article || !article.id) {
+  return null;
+}
+```
+
+3. **Type Assertion (when necessary)**
+```typescript
+const foundArticle = mockNewsData.find(item => item.id === articleId) as Article;
+```
+
+## Best Practices
+
+### Component Structure
+1. Define interfaces at the top
+2. Initialize hooks and state
+3. Define handler functions
+4. Return JSX with proper type checking
+
+### State Management
+- Use typed useState hooks
+- Initialize with proper types
+- Handle loading and error states
+
+### Style Organization
+- StyleSheet.create for type-safe styles
+- Group related styles together
+- Use consistent naming conventions
+
+### Error Handling
+1. Validate data before rendering
+2. Provide fallback UI for missing data
+3. Use proper type guards
+4. Handle async operations safely
+
+## Future Improvements
+1. Implement proper API integration
+2. Add error boundaries
+3. Implement proper state management (e.g., Redux)
+4. Add unit tests
+5. Implement proper loading states
+
+## Common Issues and Solutions
+
+### Issue: Component Not Rendering
+- Check if all required props are passed
+- Verify data structure matches interface
+- Ensure proper null checking
+
+### Issue: Navigation Errors
+- Verify route names match RootStackParamList
+- Check parameter types match route definitions
+- Ensure navigation prop is properly typed
+
+### Issue: TypeScript Errors
+- Check interface definitions
+- Verify data shapes match interfaces
+- Use optional properties when appropriate
+- Implement proper type guards
+
+## New Learnings (March 5, 2025)
+
+### React Native Performance Optimization
+1. **FlatList Optimization Techniques**
+   ```typescript
+   <FlatList
+     windowSize={5}
+     maxToRenderPerBatch={5}
+     updateCellsBatchingPeriod={50}
+     removeClippedSubviews={true}
+     initialNumToRender={10}
+   />
+   ```
+   - windowSize controls render window size
+   - maxToRenderPerBatch limits batch processing
+   - removeClippedSubviews helps with memory usage
+   - initialNumToRender optimizes initial load
+
+2. **React.memo Usage**
+   ```typescript
+   const areEqual = (prevProps: Props, nextProps: Props) => {
+     // Compare only necessary props
+     return prevProps.id === nextProps.id;
+   };
+   export default memo(Component, areEqual);
+   ```
+   - Prevents unnecessary re-renders
+   - Custom comparison function for fine control
+   - Important for list item components
+
+### Platform-Specific Development
+1. **RefreshControl Differences**
+   ```typescript
+   Platform.select({
+     ios: <RefreshControl tintColor="#0066cc" />,
+     android: <RefreshControl colors={['#0066cc']} />
+   })
+   ```
+   - Different props for iOS and Android
+   - Use Platform.select for clean conditionals
+   - Test both platforms for consistency
+
+### Navigation Best Practices
+1. **Type-Safe Navigation**
+   ```typescript
+   type RootStackParamList = {
+     Screen: undefined | { param: string };
+   };
+   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+   ```
+   - Define types for all routes and params
+   - Use proper navigation typing
+   - Handle undefined routes properly
+
+### Component Architecture
+1. **Toast Notifications**
+   ```typescript
+   import { Toaster, toast } from 'sonner-native';
+   // Provider at app root
+   <Toaster />
+   // Usage in components
+   toast.success('Operation successful');
+   ```
+   - Global toast provider setup
+   - Consistent error/success messaging
+   - Non-blocking user feedback
+
+2. **Key Management in Lists**
+   - Avoid using index as key
+   - Ensure unique key generation for dynamic lists
+   - Handle key collisions in load more scenarios
+
+### Error Prevention
+1. **TypeScript Guards**
+   ```typescript
+   if (!item || !item.id) {
+     return null;
+   }
+   ```
+   - Always check for undefined/null
+   - Use early returns for invalid data
+   - Implement proper error boundaries
+
+2. **Performance Monitoring**
+   - Watch for VirtualizedList warnings
+   - Monitor render performance
+   - Implement proper loading states
+
+### Development Workflow
+1. **Git Commit Organization**
+   - Use semantic commit messages
+   - Group related changes
+   - Document breaking changes
+
+2. **Code Documentation**
+   - Document complex logic
+   - Add TypeScript interfaces
+   - Comment performance optimizations
+
+================
+File: memory.md
+================
+# Project Task History
+
+## Authentication Flow and UI Optimization Implementation (March 5, 2025)
+
+### Tasks Completed
+
+1. **Authentication Flow**
+   - Created new LoginScreen component
+   - Added toast notifications using sonner-native
+   - Implemented navigation between Login and Main screens
+   - Added Register screen placeholder
+
+2. **Navigation Stack Updates**
+   - Modified App.tsx to include proper navigation stack
+   - Added types for new screens in RootStackParamList
+   - Fixed navigation flow from Profile to Login
+
+3. **Performance Optimizations**
+   - Implemented React.memo for NewsCard component
+   - Added FlatList optimizations:
+     - windowSize, maxToRenderPerBatch configurations
+     - removeClippedSubviews implementation
+     - Proper key extraction
+   - Fixed duplicate key warnings
+
+### Files Modified
+
+1. **App.tsx**
+   - Added Login and Register screens to stack
+   - Added Toaster provider
+   - Updated navigation configuration
+
+2. **screens/LoginScreen.tsx**
+   - New file for handling authentication
+   - Form validation and error handling
+   - Navigation to main app after login
+
+3. **components/NewsCard.tsx**
+   - Added React.memo optimization
+   - Implemented comparison function
+   - Fixed prop types
+
+4. **screens/HomeScreen.tsx**
+   - Added FlatList performance optimizations
+   - Fixed duplicate key issues
+   - Added proper typing for item rendering
+
+### Git Commits
+
+1. Initial authentication implementation:
+   ```
+   feat: Implement authentication flow and optimize UI components
+   - Add Login screen with form validation and error handling
+   - Add toast notifications with Toaster provider
+   - Set up proper navigation stack with type safety
+   - Implement proper navigation flow from Profile to Login
+   - Add platform-specific pull-to-refresh animations
+   - Fix various TypeScript issues
+   ```
+
+2. Performance optimizations:
+   ```
+   perf: optimize FlatList performance and fix key warnings
+   - Implement React.memo for NewsCard component
+   - Add performance optimizations to FlatList configuration
+   - Fix duplicate key warnings by ensuring unique IDs
+   - Remove unnecessary key props from components
+   - Add proper window sizing and batch rendering configs
+   - Implement proper key extraction for list items
+   ```
+
+### Repository
+- URL: https://github.com/unniman123/edushorts2copy.git
+- Branch: main
 
 ================
 File: newfile
@@ -1232,6 +2019,29 @@ const styles = StyleSheet.create({
 File: screens/ArticleDetailScreen.tsx
 ================
 import React, { useState, useEffect } from 'react';
+import { RouteProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+type RootStackParamList = {
+  ArticleDetail: { articleId: string };
+};
+
+type ArticleDetailScreenRouteProp = RouteProp<RootStackParamList, 'ArticleDetail'>;
+type ArticleDetailScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+interface Article {
+  id: string;
+  title: string;
+  summary: string;
+  content: string;
+  category: string;
+  source: string;
+  sourceIconUrl: string;
+  imageUrl: string;
+  timeAgo: string;
+  url: string;
+  timestamp: string;
+}
 import {
   View,
   Text,
@@ -1241,6 +2051,7 @@ import {
   TouchableOpacity,
   Share,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, Ionicons } from '@expo/vector-icons';
@@ -1248,22 +2059,23 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { mockNewsData } from '../data/mockData';
 
 export default function ArticleDetailScreen() {
-  const navigation = useNavigation();
-  const route = useRoute();
+  const navigation = useNavigation<ArticleDetailScreenNavigationProp>();
+  const route = useRoute<ArticleDetailScreenRouteProp>();
   const { articleId } = route.params;
-  const [article, setArticle] = useState(null);
+  const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
   const [bookmarked, setBookmarked] = useState(false);
 
   useEffect(() => {
     // In a real app, we would fetch the article from an API
-    const foundArticle = mockNewsData.find(item => item.id === articleId);
-    setArticle(foundArticle);
+    const foundArticle = mockNewsData.find(item => item.id === articleId) as Article;
+    setArticle(foundArticle || null);
     setLoading(false);
   }, [articleId]);
 
   const handleShare = async () => {
     try {
+      if (!article) return;
       await Share.share({
         message: `Check out this article: ${article.title} ${article.url}`,
       });
@@ -1349,7 +2161,7 @@ export default function ArticleDetailScreen() {
           
           <TouchableOpacity 
             style={styles.sourceLink}
-            onPress={() => {/* Open the source URL */}}
+            onPress={() => article.url && Linking.openURL(article.url)}
           >
             <Text style={styles.sourceLinkText}>Read full article on {article.source}</Text>
             <Feather name="external-link" size={16} color="#0066cc" />
@@ -1533,7 +2345,7 @@ const styles = StyleSheet.create({
 ================
 File: screens/BookmarksScreen.tsx
 ================
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import {
   View,
   Text,
@@ -1544,41 +2356,63 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { mockNewsData } from '../data/mockData';
+import { AccessibilityProps } from '../types/accessibility';
+import EmptyState from '../components/EmptyState';
 
-export default function BookmarksScreen() {
-  const navigation = useNavigation();
+type RootStackParamList = {
+  Home: undefined;
+  ArticleDetail: { articleId: string };
+};
+
+type NavigationProp = StackNavigationProp<RootStackParamList>;
+
+const BookmarksScreen = () => {
+  const navigation = useNavigation<NavigationProp>();
   const [bookmarkedArticles, setBookmarkedArticles] = useState(mockNewsData.slice(0, 3));
   const [loading, setLoading] = useState(false);
 
-  const removeBookmark = (articleId) => {
+  const removeBookmark = (articleId: string) => {
     setBookmarkedArticles(bookmarkedArticles.filter(article => article.id !== articleId));
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity 
+          onPress={() => navigation.goBack()}
+          accessible={true}
+          accessibilityLabel="Go back"
+          accessibilityHint="Returns to the previous screen"
+        >
           <Feather name="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Saved Articles</Text>
-        <TouchableOpacity>
+        <TouchableOpacity
+          accessible={true}
+          accessibilityLabel="More options"
+          accessibilityHint="Shows additional options for saved articles"
+        >
           <Feather name="more-horizontal" size={24} color="#333" />
         </TouchableOpacity>
       </View>
 
       {bookmarkedArticles.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="bookmark-outline" size={80} color="#ccc" />
-          <Text style={styles.emptyTitle}>No saved articles</Text>
-          <Text style={styles.emptySubtitle}>
-            Articles you save will appear here for easy access
-          </Text>
+          <EmptyState
+            icon="bookmark"
+            title="No Saved Articles"
+            subtitle="Articles you save will appear here for easy access"
+          />
           <TouchableOpacity 
             style={styles.browseButton}
             onPress={() => navigation.navigate('Home')}
+            accessible={true}
+            accessibilityLabel="Browse Articles"
+            accessibilityHint="Click to explore available articles"
           >
             <Text style={styles.browseButtonText}>Browse Articles</Text>
           </TouchableOpacity>
@@ -1592,6 +2426,9 @@ export default function BookmarksScreen() {
               <TouchableOpacity 
                 style={styles.articleContent}
                 onPress={() => navigation.navigate('ArticleDetail', { articleId: item.id })}
+                accessible={true}
+                accessibilityLabel={`Article: ${item.title}`}
+                accessibilityHint="Click to read the full article"
               >
                 <Image source={{ uri: item.imageUrl }} style={styles.articleImage} />
                 <View style={styles.articleDetails}>
@@ -1608,6 +2445,9 @@ export default function BookmarksScreen() {
               <TouchableOpacity 
                 style={styles.removeButton}
                 onPress={() => removeBookmark(item.id)}
+                accessible={true}
+                accessibilityLabel={`Remove ${item.title} from bookmarks`}
+                accessibilityHint="Click to remove this article from your saved articles"
               >
                 <Feather name="trash-2" size={18} color="#ff3b30" />
               </TouchableOpacity>
@@ -1618,11 +2458,15 @@ export default function BookmarksScreen() {
           ListFooterComponent={loading ? (
             <ActivityIndicator size="large" color="#0066cc" style={styles.loader} />
           ) : null}
+          windowSize={5}
+          maxToRenderPerBatch={5}
+          removeClippedSubviews={true}
+          initialNumToRender={10}
         />
       )}
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -1649,24 +2493,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
   },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
   browseButton: {
     backgroundColor: '#0066cc',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
+    marginTop: 24,
   },
   browseButtonText: {
     color: 'white',
@@ -1743,6 +2575,8 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
 });
+
+export default memo(BookmarksScreen);
 
 ================
 File: screens/DiscoverScreen.tsx
@@ -1978,7 +2812,8 @@ const styles = StyleSheet.create({
 ================
 File: screens/HomeScreen.tsx
 ================
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import type { ListRenderItem } from 'react-native';
 import {
   View,
   Text,
@@ -1988,6 +2823,8 @@ import {
   RefreshControl,
   Image,
   ActivityIndicator,
+  Platform,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -2006,6 +2843,8 @@ export type RootStackParamList = {
   Bookmarks: undefined;
   Profile: undefined;
   AdminDashboard: undefined;
+  Login: undefined;
+  Register: undefined;
 };
 
 export type NewsItem = {
@@ -2017,7 +2856,11 @@ export type NewsItem = {
   timeAgo: string;
   imageUrl: string;
   sourceIconUrl: string;
+  url: string;
 };
+
+// Pre-calculate item dimensions
+const ITEM_HEIGHT = 150; // Fixed height for each news card
 
 export default function HomeScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -2026,20 +2869,27 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  const onRefresh = React.useCallback(() => {
+  const onRefresh = useCallback(() => {
     setRefreshing(true);
+    
     // Simulate fetch delay
     setTimeout(() => {
       setRefreshing(false);
-    }, 1500);
+      // Simulate refreshed data by reversing the order
+      setNews([...mockNewsData].reverse());
+    }, 2000);
   }, []);
 
   const loadMoreData = () => {
     if (loading) return;
     setLoading(true);
-    // Simulate loading more data
+    // Simulate loading more data with unique IDs
     setTimeout(() => {
-      setNews([...news, ...mockNewsData.slice(0, 3)]);
+      const newData = mockNewsData.slice(0, 3).map(item => ({
+        ...item,
+        id: `${item.id}-${Date.now()}-${Math.random()}`
+      }));
+      setNews([...news, ...newData]);
       setLoading(false);
     }, 1000);
   };
@@ -2060,14 +2910,14 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.logo}>GlobalEdu News</Text>
-        <View style={styles.headerIcons} key="header-icons">
-          <TouchableOpacity key="search-icon" onPress={() => navigation.navigate('Discover')}>
+        <Text style={styles.logo}>Edushorts </Text>
+        <View style={styles.headerIcons}>
+          <TouchableOpacity onPress={() => navigation.navigate('Discover')}>
             <View>
               <Feather name="search" size={24} color="#333" style={styles.icon} />
             </View>
           </TouchableOpacity>
-          <TouchableOpacity key="notifications-icon" onPress={() => navigation.navigate('Notifications')}>
+          <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
             <View>
               <Feather name="bell" size={24} color="#333" style={styles.icon} />
             </View>
@@ -2088,13 +2938,13 @@ export default function HomeScreen() {
                 style={styles.featuredImage}
               />
               <View style={styles.featuredNewsOverlay}>
-                <View style={styles.categoryBadge} key="featured-category">
-                  <Text style={styles.categoryText} key="featured-category-text">Education</Text>
+                <View style={styles.categoryBadge}>
+                  <Text style={styles.categoryText}>Education</Text>
                 </View>
-                <Text style={styles.featuredNewsTitle} key="featured-title">{news[0].title}</Text>
-                <View style={styles.newsMetaData} key="featured-metadata">
-                  <Text style={styles.newsSource} key="featured-source">{news[0].source}</Text>
-                  <Text style={styles.newsTime} key="featured-time">{news[0].timeAgo}</Text>
+                <Text style={styles.featuredNewsTitle}>{news[0].title}</Text>
+                <View style={styles.newsMetaData}>
+                  <Text style={styles.newsSource}>{news[0].source}</Text>
+                  <Text style={styles.newsTime}>{news[0].timeAgo}</Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -2110,14 +2960,46 @@ export default function HomeScreen() {
 
         <FlatList
           data={news.slice(1)}
-          keyExtractor={(item, index) => item.id + index.toString()}
-          renderItem={({ item }) => (
+          keyExtractor={useCallback((item: NewsItem) => item.id.toString(), [])}
+          renderItem={useCallback<ListRenderItem<NewsItem>>(({ item }) => (
             item ? <NewsCard article={item} /> : null
-          )}
+          ), [])}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            Platform.select({
+              ios: (
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  tintColor="#0066cc"
+                />
+              ),
+              android: (
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={['#0066cc', '#00cc99']}
+                  progressBackgroundColor="#ffffff"
+                  progressViewOffset={20}
+                />
+              ),
+            })
           }
+          // Performance optimizations
+          windowSize={5}
+          maxToRenderPerBatch={5}
+          updateCellsBatchingPeriod={50}
+          removeClippedSubviews={true}
+          initialNumToRender={10}
+          getItemLayout={useCallback((_: ArrayLike<NewsItem> | null | undefined, index: number) => ({
+            length: ITEM_HEIGHT,
+            offset: ITEM_HEIGHT * index,
+            index,
+          }), [])}
+          maintainVisibleContentPosition={{
+            minIndexForVisible: 0,
+            autoscrollToTopThreshold: 10,
+          }}
           onEndReached={loadMoreData}
           onEndReachedThreshold={0.5}
           ListFooterComponent={renderFooter}
@@ -2173,6 +3055,7 @@ const styles = StyleSheet.create({
   featuredNews: {
     flex: 1,
     position: 'relative',
+    height: ITEM_HEIGHT, // Fixed height for consistent layout
   },
   featuredImage: {
     width: '100%',
@@ -2253,11 +3136,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { mockUsers } from '../data/mockData';
 import { toast } from 'sonner-native';
+import { RootStackParamList } from './HomeScreen';
 
 export default function LoginScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -2279,7 +3164,7 @@ export default function LoginScreen() {
       
       if (user) {
         toast.success('Login successful!');
-        navigation.navigate('Home');
+        navigation.navigate('Main');
       } else {
         toast.error('Invalid email or password');
       }
@@ -2303,7 +3188,7 @@ export default function LoginScreen() {
               source={{ uri: 'https://api.a0.dev/assets/image?text=GlobalEdu%20News%20Logo&aspect=1:1&seed=123' }}
               style={styles.logo}
             />
-            <Text style={styles.logoText}>GlobalEdu News</Text>
+            <Text style={styles.logoText}>Edushorts</Text>
           </View>
           
           <Text style={styles.welcomeText}>Welcome Back!</Text>
@@ -2385,7 +3270,7 @@ export default function LoginScreen() {
           
           <TouchableOpacity 
             style={styles.guestButton}
-            onPress={() => navigation.navigate('Home')}
+            onPress={() => navigation.navigate('Main')}
           >
             <Text style={styles.guestButtonText}>Continue as Guest</Text>
           </TouchableOpacity>
@@ -2599,11 +3484,24 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+type RootStackParamList = {
+  Login: undefined;
+  EditProfile: undefined;
+  Bookmarks: undefined;
+  ChangePassword: undefined;
+  HelpSupport: undefined;
+  AboutUs: undefined;
+  PrivacyPolicy: undefined;
+};
+
+type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 import { mockUsers } from '../data/mockData';
 import { toast } from 'sonner-native';
 
 export default function ProfileScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<ProfileScreenNavigationProp>();
   const [user, setUser] = useState(mockUsers[0]); // Using first user as example
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
@@ -2613,7 +3511,13 @@ export default function ProfileScreen() {
     navigation.navigate('Login');
   };
 
-  const renderSettingsItem = (icon, title, subtitle, rightElement, onPress) => (
+  const renderSettingsItem = (
+    icon: React.ReactNode,
+    title: string,
+    subtitle: string | undefined,
+    rightElement: React.ReactNode,
+    onPress: () => void
+  ) => (
     <TouchableOpacity style={styles.settingsItem} onPress={onPress}>
       <View style={styles.settingsItemLeft}>
         <View style={styles.settingsIconContainer}>
@@ -2692,21 +3596,6 @@ export default function ProfileScreen() {
             () => {}
           )}
           
-          {renderSettingsItem(
-            <Ionicons name="language-outline" size={22} color="#333" />,
-            'Language',
-            'English',
-            <Feather name="chevron-right" size={20} color="#888" />,
-            () => navigation.navigate('LanguageSettings')
-          )}
-          
-          {renderSettingsItem(
-            <Ionicons name="newspaper-outline" size={22} color="#333" />,
-            'News Categories',
-            'Manage your interests',
-            <Feather name="chevron-right" size={20} color="#888" />,
-            () => navigation.navigate('CategoryPreferences')
-          )}
         </View>
 
         <View style={styles.settingsSection}>
@@ -2717,14 +3606,6 @@ export default function ProfileScreen() {
             'View your bookmarks',
             <Feather name="chevron-right" size={20} color="#888" />,
             () => navigation.navigate('Bookmarks')
-          )}
-          
-          {renderSettingsItem(
-            <Ionicons name="time-outline" size={22} color="#333" />,
-            'Reading History',
-            'View your recently read articles',
-            <Feather name="chevron-right" size={20} color="#888" />,
-            () => navigation.navigate('ReadingHistory')
           )}
           
           {renderSettingsItem(
@@ -2749,7 +3630,7 @@ export default function ProfileScreen() {
           {renderSettingsItem(
             <Ionicons name="information-circle-outline" size={22} color="#333" />,
             'About Us',
-            'Learn more about GlobalEdu News',
+            'Learn more about Edushorts',
             <Feather name="chevron-right" size={20} color="#888" />,
             () => navigation.navigate('AboutUs')
           )}
@@ -2973,6 +3854,15 @@ File: tsconfig.json
     "jest.config.js"
   ],
   "extends": "expo/tsconfig.base"
+}
+
+================
+File: types/accessibility.ts
+================
+export interface AccessibilityProps {
+  accessible: boolean;
+  accessibilityLabel: string;
+  accessibilityHint: string;
 }
 
 

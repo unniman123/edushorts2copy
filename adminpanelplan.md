@@ -146,3 +146,66 @@ screens/AdminDashboardScreen.tsx	Add real data fetching	Low
 lib/supabaseClient.ts	None (existing config)	None
 navigation/App.tsx	No routing changes	None
 package.json	Already has Supabase dep	None
+
+
+
+
+
+
+
+for adding image support please follow 
+To make Plan 1 fully functional for image handling:
+
+1. Add Supabase Storage Integration
+New File: lib/storage.ts
+
+typescript
+Copy
+import { supabase } from './supabaseClient';
+
+export const uploadImage = async (file: File) => {
+  const { data, error } = await supabase.storage
+    .from('article-images')
+    .upload(`${Date.now()}-${file.name}`, file);
+  
+  return data?.path;
+};
+2. Update Article Editor UI
+Modify screens/ArticleEditorScreen.tsx:
+
+tsx
+Copy
+const [image, setImage] = useState<File | null>(null);
+
+const handleSubmit = async () => {
+  let imageUrl = '';
+  if (image) {
+    const path = await uploadImage(image);
+    imageUrl = `${SUPABASE_STORAGE_URL}/${path}`;
+  }
+
+  await supabase.from('articles').insert({
+    ...formData,
+    image_url: imageUrl,
+    created_by: user.id
+  });
+};
+
+return (
+  <>
+    <input 
+      type="file" 
+      onChange={(e) => setImage(e.target.files?.[0])}
+      accept="image/*"
+    />
+    {/* Rest of form */}
+  </>
+);
+3. Required Configuration
+Enable Supabase Storage bucket article-images
+
+Add env variable:
+
+env
+Copy
+EXPO_PUBLIC_SUPABASE_STORAGE_URL=YOUR_SUPABASE_STORAGE_URL

@@ -91,8 +91,11 @@ const TabNavigator = () => (
   </Tab.Navigator>
 );
 
+import { ErrorBoundary } from './components/ErrorBoundary';
+
 const App = () => (
-  <GestureHandlerRootView style={styles.container}>
+  <ErrorBoundary>
+    <GestureHandlerRootView style={styles.container}>
     <SafeAreaProvider>
       <Toaster />
       <NavigationContainer>
@@ -106,7 +109,8 @@ const App = () => (
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
-  </GestureHandlerRootView>
+    </GestureHandlerRootView>
+  </ErrorBoundary>
 );
 
 const styles = StyleSheet.create({

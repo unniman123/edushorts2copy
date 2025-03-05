@@ -166,8 +166,12 @@ export default function HomeScreen() {
   const renderSkeletons = () => (
     <View style={styles.content}>
       {renderHeader()}
-      {[1, 2, 3, 4].map((_, index) => (
-        <SkeletonLoader key={index} />
+      {Array(5).fill(null).map((_, index) => (
+        <SkeletonLoader 
+          key={index}
+          width="100%"
+          height={ITEM_HEIGHT}
+        />
       ))}
     </View>
   );
