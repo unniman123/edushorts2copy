@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import {
   View,
   Text,
@@ -157,4 +157,18 @@ const styles = StyleSheet.create({
   },
 });
 
-export default NewsCard;
+const areEqual = (prevProps: NewsCardProps, nextProps: NewsCardProps) => {
+  return (
+    prevProps.article.id === nextProps.article.id &&
+    prevProps.article.title === nextProps.article.title &&
+    prevProps.article.summary === nextProps.article.summary &&
+    prevProps.article.category === nextProps.article.category &&
+    prevProps.article.source === nextProps.article.source &&
+    prevProps.article.timeAgo === nextProps.article.timeAgo &&
+    prevProps.article.imageUrl === nextProps.article.imageUrl &&
+    prevProps.article.sourceIconUrl === nextProps.article.sourceIconUrl &&
+    prevProps.article.url === nextProps.article.url
+  );
+};
+
+export default memo(NewsCard, areEqual);

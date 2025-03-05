@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import type { ListRenderItem } from 'react-native';
 import {
   View,
   Text,
@@ -44,6 +45,9 @@ export type NewsItem = {
   url: string;
 };
 
+// Pre-calculate item dimensions
+const ITEM_HEIGHT = 150; // Fixed height for each news card
+
 export default function HomeScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [news, setNews] = useState<NewsItem[]>(mockNewsData);
@@ -65,9 +69,13 @@ export default function HomeScreen() {
   const loadMoreData = () => {
     if (loading) return;
     setLoading(true);
-    // Simulate loading more data
+    // Simulate loading more data with unique IDs
     setTimeout(() => {
-      setNews([...news, ...mockNewsData.slice(0, 3)]);
+      const newData = mockNewsData.slice(0, 3).map(item => ({
+        ...item,
+        id: `${item.id}-${Date.now()}-${Math.random()}`
+      }));
+      setNews([...news, ...newData]);
       setLoading(false);
     }, 1000);
   };
@@ -89,13 +97,13 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.logo}>Edushorts </Text>
-        <View style={styles.headerIcons} key="header-icons">
-          <TouchableOpacity key="search-icon" onPress={() => navigation.navigate('Discover')}>
+        <View style={styles.headerIcons}>
+          <TouchableOpacity onPress={() => navigation.navigate('Discover')}>
             <View>
               <Feather name="search" size={24} color="#333" style={styles.icon} />
             </View>
           </TouchableOpacity>
-          <TouchableOpacity key="notifications-icon" onPress={() => navigation.navigate('Notifications')}>
+          <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
             <View>
               <Feather name="bell" size={24} color="#333" style={styles.icon} />
             </View>
@@ -116,13 +124,13 @@ export default function HomeScreen() {
                 style={styles.featuredImage}
               />
               <View style={styles.featuredNewsOverlay}>
-                <View style={styles.categoryBadge} key="featured-category">
-                  <Text style={styles.categoryText} key="featured-category-text">Education</Text>
+                <View style={styles.categoryBadge}>
+                  <Text style={styles.categoryText}>Education</Text>
                 </View>
-                <Text style={styles.featuredNewsTitle} key="featured-title">{news[0].title}</Text>
-                <View style={styles.newsMetaData} key="featured-metadata">
-                  <Text style={styles.newsSource} key="featured-source">{news[0].source}</Text>
-                  <Text style={styles.newsTime} key="featured-time">{news[0].timeAgo}</Text>
+                <Text style={styles.featuredNewsTitle}>{news[0].title}</Text>
+                <View style={styles.newsMetaData}>
+                  <Text style={styles.newsSource}>{news[0].source}</Text>
+                  <Text style={styles.newsTime}>{news[0].timeAgo}</Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -138,10 +146,10 @@ export default function HomeScreen() {
 
         <FlatList
           data={news.slice(1)}
-          keyExtractor={(item, index) => item.id + index.toString()}
-          renderItem={({ item }) => (
+          keyExtractor={useCallback((item: NewsItem) => item.id.toString(), [])}
+          renderItem={useCallback<ListRenderItem<NewsItem>>(({ item }) => (
             item ? <NewsCard article={item} /> : null
-          )}
+          ), [])}
           showsVerticalScrollIndicator={false}
           refreshControl={
             Platform.select({
@@ -163,6 +171,21 @@ export default function HomeScreen() {
               ),
             })
           }
+          // Performance optimizations
+          windowSize={5}
+          maxToRenderPerBatch={5}
+          updateCellsBatchingPeriod={50}
+          removeClippedSubviews={true}
+          initialNumToRender={10}
+          getItemLayout={useCallback((_: ArrayLike<NewsItem> | null | undefined, index: number) => ({
+            length: ITEM_HEIGHT,
+            offset: ITEM_HEIGHT * index,
+            index,
+          }), [])}
+          maintainVisibleContentPosition={{
+            minIndexForVisible: 0,
+            autoscrollToTopThreshold: 10,
+          }}
           onEndReached={loadMoreData}
           onEndReachedThreshold={0.5}
           ListFooterComponent={renderFooter}
@@ -218,6 +241,7 @@ const styles = StyleSheet.create({
   featuredNews: {
     flex: 1,
     position: 'relative',
+    height: ITEM_HEIGHT, // Fixed height for consistent layout
   },
   featuredImage: {
     width: '100%',
