@@ -91,6 +91,12 @@ export default function HomeScreen() {
 
   const filterNewsByCategory = useCallback((category: string) => {
     setSelectedCategory(category);
+    if (category === 'All') {
+      setNews(mockNewsData);
+      return;
+    }
+    const filtered = mockNewsData.filter(item => item.category === category);
+    setNews(filtered);
   }, []);
 
   const renderFooter = useCallback(() => {

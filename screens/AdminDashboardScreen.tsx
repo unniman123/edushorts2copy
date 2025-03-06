@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,36 +10,112 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { Article } from '../lib/dataAdapter';
 import { mockNewsData } from '../data/mockData';
+import { supabase } from '../lib/supabaseClient';
+import { adaptArticles, isMockMode } from '../lib/dataAdapter';
 import { toast } from 'sonner-native';
+import EmptyState from '../components/EmptyState';
+import SkeletonLoader from '../components/SkeletonLoader';
+
+interface User {
+  id: string;
+  email: string;
+  full_name: string;
+  is_admin: boolean;
+  is_active: boolean;
+  last_login: string;
+}
+
+type RootStackParamList = {
+  Profile: undefined;
+  CreateArticle: undefined;
+  EditArticle: { articleId: string };
+};
 
 export default function AdminDashboardScreen() {
-  const navigation = useNavigation();
-  const [articles, setArticles] = useState(mockNewsData);
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const [articles, setArticles] = useState<Article[]>(isMockMode() ? mockNewsData : []);
+  const [loading, setLoading] = useState(!isMockMode());
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('analytics');
 
-  const totalUsers = 230;
-  const totalArticles = articles.length;
-  const totalViews = 12543;
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalArticles: 0,
+    totalViews: 0
+  });
+
+  useEffect(() => {
+    if (!isMockMode()) {
+      fetchArticles();
+      fetchStats();
+    } else {
+      setStats({
+        totalUsers: 230,
+        totalArticles: mockNewsData.length,
+        totalViews: 12543
+      });
+    }
+  }, []);
+
+  const fetchArticles = async () => {
+    try {
+      const { data: articles, error } = await supabase
+        .from('articles')
+        .select(`
+          *,
+          categories (
+            name
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      setArticles(adaptArticles(articles || []));
+    } catch (error) {
+      toast.error('Error fetching articles');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const [usersCount, articlesCount] = await Promise.all([
+        supabase.from('profiles').select('*', { count: 'exact' }),
+        supabase.from('articles').select('*', { count: 'exact' })
+      ]);
+
+      setStats({
+        totalUsers: usersCount.count || 0,
+        totalArticles: articlesCount.count || 0,
+        totalViews: 12543 // This would come from analytics in a real app
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
   
   const statCards = [
     {
       title: 'Total Users',
-      value: totalUsers,
+      value: stats.totalUsers,
       icon: <MaterialIcons name="people" size={24} color="#0066cc" />,
       color: '#e3f2fd',
     },
     {
       title: 'Articles',
-      value: totalArticles,
+      value: stats.totalArticles,
       icon: <MaterialIcons name="article" size={24} color="#4caf50" />,
       color: '#e8f5e9',
     },
     {
       title: 'Total Views',
-      value: totalViews,
+      value: stats.totalViews,
       icon: <MaterialIcons name="visibility" size={24} color="#ff9800" />,
       color: '#fff3e0',
     },
@@ -56,9 +132,27 @@ export default function AdminDashboardScreen() {
     );
   };
 
-  const deleteArticle = (id) => {
-    setArticles(articles.filter(article => article.id !== id));
-    toast.success('Article deleted successfully');
+  const deleteArticle = async (id: string) => {
+    try {
+      if (isMockMode()) {
+        setArticles(articles.filter(article => article.id !== id));
+        toast.success('Article deleted successfully');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('articles')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success('Article deleted successfully');
+      fetchArticles(); // Refresh the list
+    } catch (error) {
+      toast.error('Error deleting article');
+      console.error(error);
+    }
   };
 
   const renderAnalyticsTab = () => (
@@ -218,11 +312,205 @@ export default function AdminDashboardScreen() {
     </View>
   );
 
-  const renderUsersTab = () => (
+const renderUsersTab = () => {
+  const [userFilter, setUserFilter] = useState('all'); // 'all', 'active', 'inactive', 'admin'
+  const [searchQuery, setSearchQuery] = useState('');
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(!isMockMode());
+
+  useEffect(() => {
+    if (!isMockMode()) {
+      fetchUsers();
+    } else {
+      setUsers([
+        {
+          id: '1',
+          email: 'admin@example.com',
+          full_name: 'Admin User',
+          is_admin: true,
+          is_active: true,
+          last_login: '2024-03-06T12:00:00Z'
+        },
+        {
+          id: '2',
+          email: 'user@example.com',
+          full_name: 'Regular User',
+          is_admin: false,
+          is_active: true,
+          last_login: '2024-03-05T15:30:00Z'
+        }
+      ]);
+    }
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setUsers(data || []);
+    } catch (error) {
+      toast.error('Error fetching users');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleUserStatus = async (userId: string, isActive: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_active: !isActive })
+        .eq('id', userId);
+
+      if (error) throw error;
+      
+      toast.success('User status updated');
+      fetchUsers();
+    } catch (error) {
+      toast.error('Error updating user status');
+      console.error(error);
+    }
+  };
+
+  const toggleAdminStatus = async (userId: string, isAdmin: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_admin: !isAdmin })
+        .eq('id', userId);
+
+      if (error) throw error;
+      
+      toast.success('Admin status updated');
+      fetchUsers();
+    } catch (error) {
+      toast.error('Error updating admin status');
+      console.error(error);
+    }
+  };
+
+  const filterUsers = () => {
+    return users.filter(user => {
+      const matchesSearch = user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          user.full_name.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      switch (userFilter) {
+        case 'active':
+          return matchesSearch && user.is_active;
+        case 'inactive':
+          return matchesSearch && !user.is_active;
+        case 'admin':
+          return matchesSearch && user.is_admin;
+        default:
+          return matchesSearch;
+      }
+    });
+  };
+
+  return (
     <View style={styles.tabContent}>
-      <Text style={styles.tabContentText}>User management functionality</Text>
+      <View style={styles.searchContainer}>
+        <Feather name="search" size={20} color="#888" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search users..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+
+      <View style={styles.filterContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {['all', 'active', 'inactive', 'admin'].map((filter) => (
+            <TouchableOpacity
+              key={filter}
+              style={[
+                styles.filterButton,
+                userFilter === filter && styles.activeFilterButton
+              ]}
+              onPress={() => setUserFilter(filter)}
+            >
+              <Text style={[
+                styles.filterButtonText,
+                userFilter === filter && styles.activeFilterButtonText
+              ]}>
+                {filter.charAt(0).toUpperCase() + filter.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      <FlatList
+        data={filterUsers()}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.userItem}>
+            <View style={styles.userInfo}>
+              <Text style={styles.userName}>{item.full_name}</Text>
+              <Text style={styles.userEmail}>{item.email}</Text>
+              <View style={styles.userMeta}>
+                {item.is_admin && (
+                  <View style={[styles.badge, styles.adminBadge]}>
+                    <Text style={styles.badgeText}>Admin</Text>
+                  </View>
+                )}
+                <View style={[
+                  styles.badge,
+                  item.is_active ? styles.activeBadge : styles.inactiveBadge
+                ]}>
+                  <Text style={styles.badgeText}>
+                    {item.is_active ? 'Active' : 'Inactive'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+            <View style={styles.userActions}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.toggleButton]}
+                onPress={() => toggleUserStatus(item.id, item.is_active)}
+              >
+                <Feather
+                  name={item.is_active ? 'user-x' : 'user-check'}
+                  size={16}
+                  color={item.is_active ? '#ff3b30' : '#4caf50'}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.adminButton]}
+                onPress={() => toggleAdminStatus(item.id, item.is_admin)}
+              >
+                <Feather
+                  name={item.is_admin ? 'shield-off' : 'shield'}
+                  size={16}
+                  color={item.is_admin ? '#ff3b30' : '#0066cc'}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.usersList}
+        ListEmptyComponent={
+          loading ? (
+            <SkeletonLoader />
+          ) : (
+            <EmptyState
+              icon="users"
+              title="No users found"
+              subtitle="Try adjusting your search or filters"
+            />
+          )
+        }
+      />
     </View>
   );
+};
 
   const renderSettingsTab = () => (
     <View style={styles.tabContent}>
@@ -262,6 +550,92 @@ export default function AdminDashboardScreen() {
 }
 
 const styles = StyleSheet.create({
+  filterContainer: {
+    marginBottom: 16,
+  },
+  filterButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
+    marginRight: 8,
+  },
+  activeFilterButton: {
+    backgroundColor: '#0066cc',
+  },
+  filterButtonText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  activeFilterButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  userItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  userInfo: {
+    flex: 1,
+    marginRight: 16,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  userEmail: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  userMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  adminBadge: {
+    backgroundColor: '#ff9800',
+  },
+  activeBadge: {
+    backgroundColor: '#4caf50',
+  },
+  inactiveBadge: {
+    backgroundColor: '#ff3b30',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  userActions: {
+    flexDirection: 'row',
+  },
+  toggleButton: {
+    backgroundColor: '#f5f5f5',
+  },
+  adminButton: {
+    backgroundColor: '#f5f5f5',
+  },
+  usersList: {
+    paddingBottom: 16,
+  },
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',

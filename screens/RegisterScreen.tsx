@@ -16,6 +16,8 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from './HomeScreen';
 import { toast } from 'sonner-native';
+import { EXPO_PUBLIC_USE_MOCK } from '../lib/dataAdapter';
+import { supabase } from '../lib/supabaseClient';
 
 export default function RegisterScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -26,7 +28,7 @@ export default function RegisterScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!email || !password || !confirmPassword) {
       toast.error('Please fill in all fields');
       return;
@@ -39,12 +41,49 @@ export default function RegisterScreen() {
 
     setIsLoading(true);
     
-    // Simulate API call delay
-    setTimeout(() => {
+    try {
+      if (EXPO_PUBLIC_USE_MOCK) {
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        toast.success('Registration successful!');
+        navigation.navigate('Login');
+        return;
+      }
+
+      // Create auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (authError) {
+        throw new Error(authError.message);
+      }
+
+      if (!authData.user) {
+        throw new Error('Registration failed');
+      }
+
+      // Create profile record
+      const { error: profileError } = await supabase.from('profiles').insert({
+        id: authData.user.id,
+        email,
+        password_hash: password, // Store for mock compatibility
+        is_admin: false,
+        is_active: true
+      });
+
+      if (profileError) {
+        throw new Error('Failed to create profile');
+      }
+
       toast.success('Registration successful!');
       navigation.navigate('Login');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Registration failed');
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (

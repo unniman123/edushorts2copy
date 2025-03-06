@@ -14,18 +14,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { mockUsers } from '../data/mockData';
 import { toast } from 'sonner-native';
 import { RootStackParamList } from './HomeScreen';
+import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../context/AuthContext';
 
 export default function LoginScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password) {
       toast.error('Please enter both email and password');
       return;
@@ -33,21 +35,30 @@ export default function LoginScreen() {
 
     setIsLoading(true);
     
-    // Simulate API call delay
-    setTimeout(() => {
-      const user = mockUsers.find(
-        user => user.email === email && user.password === password
-      );
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
       
-      if (user) {
+      if (data?.session) {
+        await signIn(data.session);
         toast.success('Login successful!');
         navigation.navigate('Main');
-      } else {
-        toast.error('Invalid email or password');
       }
-      
+    } catch (error: any) {
+      let message = 'An unexpected error occurred';
+      if (error.message === 'Invalid login credentials') {
+        message = 'Invalid email or password';
+      } else if (error.message === 'Email not confirmed') {
+        message = 'Please verify your email first';
+      }
+      toast.error(message);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -142,13 +153,6 @@ export default function LoginScreen() {
               <Text style={styles.registerLink}>Sign Up</Text>
             </TouchableOpacity>
           </View>
-          
-          <TouchableOpacity 
-            style={styles.guestButton}
-            onPress={() => navigation.navigate('Main')}
-          >
-            <Text style={styles.guestButtonText}>Continue as Guest</Text>
-          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -288,17 +292,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#0066cc',
     marginLeft: 4,
-  },
-  guestButton: {
-    borderWidth: 1,
-    borderColor: '#eeeeee',
-    borderRadius: 12,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  guestButtonText: {
-    fontSize: 14,
-    color: '#666',
   },
 });
