@@ -16,7 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from './HomeScreen';
 import { toast } from 'sonner-native';
-import { EXPO_PUBLIC_USE_MOCK } from '../lib/dataAdapter';
+import { isMockMode } from '../lib/dataAdapter';
 import { supabase } from '../lib/supabaseClient';
 
 export default function RegisterScreen() {
@@ -40,44 +40,49 @@ export default function RegisterScreen() {
     }
 
     setIsLoading(true);
+    const timeoutId = setTimeout(() => {
+      setIsLoading(false);
+      toast.error('Registration timed out. Please try again.');
+    }, 10000);
     
     try {
-      if (EXPO_PUBLIC_USE_MOCK) {
-        // Simulate API call delay
+      if (isMockMode()) {
         await new Promise(resolve => setTimeout(resolve, 1500));
         toast.success('Registration successful!');
         navigation.navigate('Login');
         return;
       }
 
-      // Create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // Create auth user with timeout
+      const signUpPromise = supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            full_name: email.split('@')[0], // Use email username as initial name
+            is_admin: false
+          }
+        }
       });
+
+      const { data: authData, error: authError } = await Promise.race([
+        signUpPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Registration timed out')), 8000)
+        )
+      ]) as { data: any; error: any };
 
       if (authError) {
         throw new Error(authError.message);
       }
 
       if (!authData.user) {
-        throw new Error('Registration failed');
+        throw new Error('Registration failed - no user data received');
       }
 
-      // Create profile record
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: authData.user.id,
-        email,
-        password_hash: password, // Store for mock compatibility
-        is_admin: false,
-        is_active: true
-      });
-
-      if (profileError) {
-        throw new Error('Failed to create profile');
-      }
-
-      toast.success('Registration successful!');
+      // The profile will be created automatically by the trigger in 0007_auto_profile_creation.sql
+      clearTimeout(timeoutId);
+      toast.success('Registration successful! Please check your email to verify your account.');
       navigation.navigate('Login');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Registration failed');

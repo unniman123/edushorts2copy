@@ -1,56 +1,127 @@
 import React from 'react';
+import { StyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../context/AuthContext';
-import { View } from 'react-native';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
-import SkeletonLoader from './SkeletonLoader';
+import LoadingScreen from './LoadingScreen';
 
 type RootStackParamList = {
   Login: undefined;
-  Home: undefined;
-  AdminDashboard: undefined;
 };
+
+type NavigationProp = StackNavigationProp<RootStackParamList>;
 
 interface AuthGuardProps {
   children: React.ReactNode;
-  requiredRole?: 'admin';
+  loadingMessage?: string;
+  requireAdmin?: boolean;
+  requiredRole?: string;
 }
 
-export const AuthGuard: React.FC<AuthGuardProps> = ({ 
-  children, 
-  requiredRole 
+export const AuthGuard: React.FC<AuthGuardProps> = ({
+  children,
+  loadingMessage = 'Loading...',
+  requireAdmin = false,
+  requiredRole,
 }) => {
-  const { user, isAdmin, isLoading } = useAuth();
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const { user, isLoading, isAuthReady, error, isAdmin } = useAuth();
+  const navigation = useNavigation<NavigationProp>();
+  const [timeoutError, setTimeoutError] = React.useState<string | null>(null);
 
+  // Handle timeout for initial loading
   React.useEffect(() => {
-    if (!isLoading && !user) {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Login' }],
-      });
-      return;
+    let timeoutId: NodeJS.Timeout;
+
+    if (!isAuthReady || isLoading) {
+      timeoutId = setTimeout(() => {
+        setTimeoutError('Loading timed out. Please try again.');
+      }, 10000);
     }
 
-    if (!isLoading && requiredRole === 'admin' && !isAdmin) {
-      navigation.goBack();
-    }
-  }, [user, isAdmin, isLoading, navigation, requiredRole]);
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [isAuthReady, isLoading]);
 
-  if (isLoading) {
+  // Show custom loading screen while auth is initializing
+  if (!isAuthReady || isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <SkeletonLoader />
-      </View>
+      <LoadingScreen 
+        message={loadingMessage} 
+        error={timeoutError}
+        onRetry={() => {
+          setTimeoutError(null);
+          navigation.replace('Login');
+        }}
+      />
     );
   }
 
+  // Show error state with retry option
+  if (error || timeoutError) {
+    return (
+      <LoadingScreen 
+        error={error || timeoutError}
+        onRetry={() => {
+          setTimeoutError(null);
+          navigation.replace('Login');
+        }}
+      />
+    );
+  }
+
+  // Handle unauthenticated state with clear message
   if (!user) {
-    return null;
+    return (
+      <LoadingScreen 
+        error="Please log in to access this content"
+        onRetry={() => navigation.navigate('Login')}
+      />
+    );
   }
 
-  if (requiredRole === 'admin' && !isAdmin) {
-    return null;
+  // Handle admin access requirement
+  if (requireAdmin && !isAdmin) {
+    return (
+      <LoadingScreen 
+        error="Admin access required"
+      />
+    );
   }
 
+  // Handle role requirement
+  if (requiredRole && user.user_metadata?.role !== requiredRole) {
+    return (
+      <LoadingScreen 
+        error={`Access restricted: ${requiredRole} role required`}
+      />
+    );
+  }
+
+  // Render children if all checks pass
   return <>{children}</>;
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 12,
+    color: '#666',
+    fontSize: 16,
+  },
+  errorText: {
+    color: '#ff3b30',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+});
+
+export default AuthGuard;

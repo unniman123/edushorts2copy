@@ -1,45 +1,71 @@
-import React, { memo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, RefreshControlProps } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 
 interface EmptyStateProps {
-  icon: keyof typeof Feather.glyphMap;
+  icon?: keyof typeof MaterialIcons.glyphMap;
   title: string;
-  subtitle: string;
+  message: string;
+  refreshControl?: React.ReactElement<RefreshControlProps>;
 }
 
-const EmptyState: React.FC<EmptyStateProps> = memo(({ icon, title, subtitle }) => {
-  if (!icon || !title) {
-    return null;
+export const EmptyState: React.FC<EmptyStateProps> = ({
+  icon = 'notifications-off',
+  title,
+  message,
+  refreshControl
+}) => {
+  const Content = () => (
+    <>
+      <MaterialIcons name={icon} size={48} color="#999" />
+      <Text style={styles.title}>{title}</Text>
+      <Text style={styles.message}>{message}</Text>
+    </>
+  );
+
+  if (refreshControl) {
+    return (
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        refreshControl={refreshControl}
+      >
+        <Content />
+      </ScrollView>
+    );
   }
 
   return (
-    <View style={styles.container}>
-      <Feather name={icon} size={64} color="#666" />
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.subtitle}>{subtitle}</Text>
+    <View style={[styles.container, styles.contentContainer]}>
+      <Content />
     </View>
   );
-});
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    backgroundColor: '#f5f5f5'
+  },
+  contentContainer: {
+    flex: 1,
     alignItems: 'center',
-    padding: 20,
+    justifyContent: 'center',
+    padding: 20
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    color: '#333',
     marginTop: 16,
+    marginBottom: 8
   },
-  subtitle: {
+  message: {
     fontSize: 14,
     color: '#666',
-    marginTop: 8,
     textAlign: 'center',
-  },
+    maxWidth: '80%'
+  }
 });
 
 export default EmptyState;

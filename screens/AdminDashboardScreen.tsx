@@ -18,7 +18,6 @@ import { adaptArticles, isMockMode } from '../lib/dataAdapter';
 import { toast } from 'sonner-native';
 import EmptyState from '../components/EmptyState';
 import SkeletonLoader from '../components/SkeletonLoader';
-
 interface User {
   id: string;
   email: string;
@@ -33,6 +32,8 @@ type RootStackParamList = {
   CreateArticle: undefined;
   EditArticle: { articleId: string };
 };
+
+import NotificationComposer from '../components/NotificationComposer';
 
 export default function AdminDashboardScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -155,6 +156,64 @@ export default function AdminDashboardScreen() {
     }
   };
 
+  const renderArticlesTab = () => (
+    <View style={styles.tabContent}>
+      <View style={styles.searchContainer}>
+        <Feather name="search" size={20} color="#888" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search articles..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+      
+      <View style={styles.listHeader}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => navigation.navigate('CreateArticle')}
+        >
+          <Feather name="plus" size={16} color="white" />
+          <Text style={styles.addButtonText}>New Article</Text>
+        </TouchableOpacity>
+      </View>
+      
+      <FlatList
+        data={filterArticles()}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.articleItem}>
+            <View style={styles.articleInfo}>
+              <Text style={styles.articleTitle} numberOfLines={1}>{item.title}</Text>
+              <View style={styles.articleMeta}>
+                <View style={styles.categoryBadge}>
+                  <Text style={styles.categoryText}>{item.category}</Text>
+                </View>
+                <Text style={styles.articleDate}>{item.timeAgo}</Text>
+              </View>
+            </View>
+            <View style={styles.articleActions}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.editButton]}
+                onPress={() => navigation.navigate('EditArticle', { articleId: item.id })}
+              >
+                <Feather name="edit-2" size={16} color="#0066cc" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.deleteButton]}
+                onPress={() => deleteArticle(item.id)}
+              >
+                <Feather name="trash-2" size={16} color="#ff3b30" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.articlesList}
+      />
+    </View>
+  );
+
   const renderAnalyticsTab = () => (
     <ScrollView showsVerticalScrollIndicator={false}>
       <View style={styles.statsContainer}>
@@ -254,267 +313,48 @@ export default function AdminDashboardScreen() {
     </ScrollView>
   );
 
-  const renderArticlesTab = () => (
-    <View style={styles.tabContent}>
-      <View style={styles.searchContainer}>
-        <Feather name="search" size={20} color="#888" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search articles..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </View>
-      
-      <View style={styles.listHeader}>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => navigation.navigate('CreateArticle')}
-        >
-          <Feather name="plus" size={16} color="white" />
-          <Text style={styles.addButtonText}>New Article</Text>
-        </TouchableOpacity>
-      </View>
-      
-      <FlatList
-        data={filterArticles()}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.articleItem}>
-            <View style={styles.articleInfo}>
-              <Text style={styles.articleTitle} numberOfLines={1}>{item.title}</Text>
-              <View style={styles.articleMeta}>
-                <View style={styles.categoryBadge}>
-                  <Text style={styles.categoryText}>{item.category}</Text>
-                </View>
-                <Text style={styles.articleDate}>{item.timeAgo}</Text>
-              </View>
-            </View>
-            <View style={styles.articleActions}>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.editButton]}
-                onPress={() => navigation.navigate('EditArticle', { articleId: item.id })}
-              >
-                <Feather name="edit-2" size={16} color="#0066cc" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.deleteButton]}
-                onPress={() => deleteArticle(item.id)}
-              >
-                <Feather name="trash-2" size={16} color="#ff3b30" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.articlesList}
-      />
-    </View>
-  );
-
-const renderUsersTab = () => {
-  const [userFilter, setUserFilter] = useState('all'); // 'all', 'active', 'inactive', 'admin'
-  const [searchQuery, setSearchQuery] = useState('');
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(!isMockMode());
-
-  useEffect(() => {
-    if (!isMockMode()) {
-      fetchUsers();
-    } else {
-      setUsers([
-        {
-          id: '1',
-          email: 'admin@example.com',
-          full_name: 'Admin User',
-          is_admin: true,
-          is_active: true,
-          last_login: '2024-03-06T12:00:00Z'
-        },
-        {
-          id: '2',
-          email: 'user@example.com',
-          full_name: 'Regular User',
-          is_admin: false,
-          is_active: true,
-          last_login: '2024-03-05T15:30:00Z'
-        }
-      ]);
-    }
-  }, []);
-
-  const fetchUsers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setUsers(data || []);
-    } catch (error) {
-      toast.error('Error fetching users');
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const toggleUserStatus = async (userId: string, isActive: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_active: !isActive })
-        .eq('id', userId);
-
-      if (error) throw error;
-      
-      toast.success('User status updated');
-      fetchUsers();
-    } catch (error) {
-      toast.error('Error updating user status');
-      console.error(error);
-    }
-  };
-
-  const toggleAdminStatus = async (userId: string, isAdmin: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_admin: !isAdmin })
-        .eq('id', userId);
-
-      if (error) throw error;
-      
-      toast.success('Admin status updated');
-      fetchUsers();
-    } catch (error) {
-      toast.error('Error updating admin status');
-      console.error(error);
-    }
-  };
-
-  const filterUsers = () => {
-    return users.filter(user => {
-      const matchesSearch = user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          user.full_name.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      switch (userFilter) {
-        case 'active':
-          return matchesSearch && user.is_active;
-        case 'inactive':
-          return matchesSearch && !user.is_active;
-        case 'admin':
-          return matchesSearch && user.is_admin;
-        default:
-          return matchesSearch;
-      }
-    });
-  };
-
-  return (
-    <View style={styles.tabContent}>
-      <View style={styles.searchContainer}>
-        <Feather name="search" size={20} color="#888" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search users..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </View>
-
-      <View style={styles.filterContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {['all', 'active', 'inactive', 'admin'].map((filter) => (
-            <TouchableOpacity
-              key={filter}
-              style={[
-                styles.filterButton,
-                userFilter === filter && styles.activeFilterButton
-              ]}
-              onPress={() => setUserFilter(filter)}
-            >
-              <Text style={[
-                styles.filterButtonText,
-                userFilter === filter && styles.activeFilterButtonText
-              ]}>
-                {filter.charAt(0).toUpperCase() + filter.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      <FlatList
-        data={filterUsers()}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.userItem}>
-            <View style={styles.userInfo}>
-              <Text style={styles.userName}>{item.full_name}</Text>
-              <Text style={styles.userEmail}>{item.email}</Text>
-              <View style={styles.userMeta}>
-                {item.is_admin && (
-                  <View style={[styles.badge, styles.adminBadge]}>
-                    <Text style={styles.badgeText}>Admin</Text>
-                  </View>
-                )}
-                <View style={[
-                  styles.badge,
-                  item.is_active ? styles.activeBadge : styles.inactiveBadge
-                ]}>
-                  <Text style={styles.badgeText}>
-                    {item.is_active ? 'Active' : 'Inactive'}
-                  </Text>
-                </View>
-              </View>
-            </View>
-            <View style={styles.userActions}>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.toggleButton]}
-                onPress={() => toggleUserStatus(item.id, item.is_active)}
-              >
-                <Feather
-                  name={item.is_active ? 'user-x' : 'user-check'}
-                  size={16}
-                  color={item.is_active ? '#ff3b30' : '#4caf50'}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.adminButton]}
-                onPress={() => toggleAdminStatus(item.id, item.is_admin)}
-              >
-                <Feather
-                  name={item.is_admin ? 'shield-off' : 'shield'}
-                  size={16}
-                  color={item.is_admin ? '#ff3b30' : '#0066cc'}
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.usersList}
-        ListEmptyComponent={
-          loading ? (
-            <SkeletonLoader />
-          ) : (
-            <EmptyState
-              icon="users"
-              title="No users found"
-              subtitle="Try adjusting your search or filters"
-            />
-          )
-        }
-      />
-    </View>
-  );
-};
-
   const renderSettingsTab = () => (
     <View style={styles.tabContent}>
-      <Text style={styles.tabContentText}>Admin settings functionality</Text>
+      <Text style={styles.tabContentText}>Settings functionality coming soon</Text>
+    </View>
+  );
+
+  const renderNotificationsTab = () => (
+    <View style={styles.tabContent}>
+      <NotificationComposer />
+    </View>
+  );
+
+  const renderUsersTab = () => (
+    <View style={styles.tabContent}>
+      {loading ? (
+        <SkeletonLoader />
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <View style={styles.searchContainer}>
+            <Feather name="search" size={20} color="#888" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search users..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+          
+          <View style={styles.statCard}>
+            <Text style={styles.statTitle}>Active Users</Text>
+            <Text style={styles.statValue}>{stats.totalUsers}</Text>
+            <Text style={styles.subtitle}>Total registered users in the system</Text>
+          </View>
+          
+          {/* User list will be implemented in a future update */}
+          <EmptyState
+            icon="users"
+            title="User Management"
+            subtitle="This feature will be available in the next update"
+          />
+        </ScrollView>
+      )}
     </View>
   );
 
@@ -526,6 +366,8 @@ const renderUsersTab = () => {
         return renderArticlesTab();
       case 'users':
         return renderUsersTab();
+      case 'notifications':
+        return renderNotificationsTab();
       case 'settings':
         return renderSettingsTab();
       default:
@@ -543,6 +385,48 @@ const renderUsersTab = () => {
       </View>
 
       <View style={styles.content}>
+        <View style={styles.tabBar}>
+          <TouchableOpacity
+            style={[styles.tabItem, activeTab === 'analytics' && styles.activeTabItem]}
+            onPress={() => setActiveTab('analytics')}
+          >
+            <MaterialIcons name="analytics" size={24} color={activeTab === 'analytics' ? '#0066cc' : '#888'} />
+            <Text style={[styles.tabLabel, activeTab === 'analytics' && styles.activeTabLabel]}>Analytics</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tabItem, activeTab === 'articles' && styles.activeTabItem]}
+            onPress={() => setActiveTab('articles')}
+          >
+            <MaterialIcons name="article" size={24} color={activeTab === 'articles' ? '#0066cc' : '#888'} />
+            <Text style={[styles.tabLabel, activeTab === 'articles' && styles.activeTabLabel]}>Articles</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tabItem, activeTab === 'users' && styles.activeTabItem]}
+            onPress={() => setActiveTab('users')}
+          >
+            <MaterialIcons name="people" size={24} color={activeTab === 'users' ? '#0066cc' : '#888'} />
+            <Text style={[styles.tabLabel, activeTab === 'users' && styles.activeTabLabel]}>Users</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tabItem, activeTab === 'notifications' && styles.activeTabItem]}
+            onPress={() => setActiveTab('notifications')}
+          >
+            <MaterialIcons name="notifications" size={24} color={activeTab === 'notifications' ? '#0066cc' : '#888'} />
+            <Text style={[styles.tabLabel, activeTab === 'notifications' && styles.activeTabLabel]}>Notifications</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tabItem, activeTab === 'settings' && styles.activeTabItem]}
+            onPress={() => setActiveTab('settings')}
+          >
+            <MaterialIcons name="settings" size={24} color={activeTab === 'settings' ? '#0066cc' : '#888'} />
+            <Text style={[styles.tabLabel, activeTab === 'settings' && styles.activeTabLabel]}>Settings</Text>
+          </TouchableOpacity>
+        </View>
+
         {renderActiveTab()}
       </View>
     </SafeAreaView>
@@ -550,92 +434,6 @@ const renderUsersTab = () => {
 }
 
 const styles = StyleSheet.create({
-  filterContainer: {
-    marginBottom: 16,
-  },
-  filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: '#f0f0f0',
-    marginRight: 8,
-  },
-  activeFilterButton: {
-    backgroundColor: '#0066cc',
-  },
-  filterButtonText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  activeFilterButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  userItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  userInfo: {
-    flex: 1,
-    marginRight: 16,
-  },
-  userName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
-  },
-  userEmail: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-  },
-  userMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  adminBadge: {
-    backgroundColor: '#ff9800',
-  },
-  activeBadge: {
-    backgroundColor: '#4caf50',
-  },
-  inactiveBadge: {
-    backgroundColor: '#ff3b30',
-  },
-  badgeText: {
-    color: 'white',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  userActions: {
-    flexDirection: 'row',
-  },
-  toggleButton: {
-    backgroundColor: '#f5f5f5',
-  },
-  adminButton: {
-    backgroundColor: '#f5f5f5',
-  },
-  usersList: {
-    paddingBottom: 16,
-  },
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
@@ -891,8 +689,13 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     backgroundColor: 'white',
-    borderTopWidth: 1,
-    borderTopColor: '#eeeeee',
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
     paddingVertical: 8,
   },
   tabItem: {
@@ -912,5 +715,11 @@ const styles = StyleSheet.create({
   activeTabLabel: {
     color: '#0066cc',
     fontWeight: 'bold',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 4,
   },
 });

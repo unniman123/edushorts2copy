@@ -1,170 +1,196 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState, useEffect, memo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
-  Switch,
+  Image,
   ScrollView,
+  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { Feather } from '@expo/vector-icons';
+import { usePreferences } from '../context/PreferencesContext';
+import { useAuth } from '../context/AuthContext';
+import { toast } from 'sonner-native';
+import AuthGuard from '../components/AuthGuard';
 
 type RootStackParamList = {
   Login: undefined;
-  Bookmarks: undefined;
-  ChangePassword: undefined;
-  HelpSupport: undefined;
-  AboutUs: undefined;
-  PrivacyPolicy: undefined;
+  Settings: undefined;
 };
 
-type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
-import { mockUsers } from '../data/mockData';
-import { toast } from 'sonner-native';
+type NavigationProp = StackNavigationProp<RootStackParamList>;
 
-export default function ProfileScreen() {
-  const navigation = useNavigation<ProfileScreenNavigationProp>();
-  const [user, setUser] = useState(mockUsers[0]); // Using first user as example
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
-  
-  const handleLogout = () => {
-    toast.success('Logged out successfully');
-    navigation.navigate('Login');
-  };
+const ProfileContent = memo(() => {
+  const navigation = useNavigation<NavigationProp>();
+  const { preferences, error: prefsError, updatePreferences, loading } = usePreferences();
+  const { user, signOut } = useAuth();
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const renderSettingsItem = (
-    icon: React.ReactNode,
-    title: string,
-    subtitle: string | undefined,
-    rightElement: React.ReactNode,
-    onPress: () => void
-  ) => (
-    <TouchableOpacity style={styles.settingsItem} onPress={onPress}>
-      <View style={styles.settingsItemLeft}>
-        <View style={styles.settingsIconContainer}>
-          {icon}
-        </View>
-        <View style={styles.settingsTextContainer}>
-          <Text style={styles.settingsItemTitle}>{title}</Text>
-          {subtitle && <Text style={styles.settingsItemSubtitle}>{subtitle}</Text>}
-        </View>
+  // Handle errors with toast
+  useEffect(() => {
+    if (prefsError) {
+      toast.error(prefsError);
+    }
+  }, [prefsError]);
+
+  const handleTogglePreference = useCallback(async (key: 'notifications_enabled' | 'dark_mode_enabled') => {
+    if (!preferences || isProcessing) return;
+    
+    setIsProcessing(true);
+    const timeoutId = setTimeout(() => {
+      setIsProcessing(false);
+      toast.error('Request timed out. Please try again.');
+    }, 5000);
+
+    try {
+      const result = await Promise.race([
+        updatePreferences({
+          [key]: !preferences[key],
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Operation timed out')), 4000)
+        )
+      ]);
+      
+      const actionType = key.split('_')[0];
+      const newState = !preferences[key];
+      toast.success(`${actionType} ${newState ? 'enabled' : 'disabled'}`);
+      clearTimeout(timeoutId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : `Failed to update ${key.split('_')[0]} preference`;
+      toast.error(message);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [preferences, updatePreferences, isProcessing]);
+
+  const handleLogout = useCallback(async () => {
+    if (isProcessing) return;
+
+    setIsProcessing(true);
+    const timeoutId = setTimeout(() => {
+      setIsProcessing(false);
+      toast.error('Logout timed out. Please try again.');
+    }, 5000);
+
+    try {
+      await Promise.race([
+        signOut(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Logout timed out')), 4000)
+        )
+      ]);
+
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+      toast.success('Successfully logged out');
+      clearTimeout(timeoutId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to log out';
+      toast.error(message);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [navigation, signOut, isProcessing]);
+
+  if (prefsError) {
+    return (
+      <View style={styles.errorContainer}>
+        <Feather name="alert-circle" size={48} color="#ff3b30" />
+        <Text style={styles.errorText}>{prefsError}</Text>
+        <TouchableOpacity 
+          style={styles.retryButton}
+          onPress={() => navigation.navigate('Login')}
+        >
+          <Text style={styles.retryButtonText}>Return to Login</Text>
+        </TouchableOpacity>
       </View>
-      <View style={styles.settingsItemRight}>
-        {rightElement}
-      </View>
-    </TouchableOpacity>
-  );
+    );
+  }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
+    <ScrollView showsVerticalScrollIndicator={false}>
+      <View style={styles.profileSection}>
+        <Image
+          source={{ 
+            uri: user?.user_metadata?.avatar_url || 
+                 `https://api.a0.dev/assets/image?text=${encodeURIComponent(user?.email?.charAt(0) || 'U')}&aspect=1:1&seed=${user?.id}` 
+          }}
+          style={styles.profileImage}
+        />
+        <Text style={styles.userName}>
+          {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
+        </Text>
+        <Text style={styles.userEmail}>{user?.email}</Text>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.profileSection}>
-          <Image
-            source={{ uri: 'https://api.a0.dev/assets/image?text=profile%20picture&aspect=1:1&seed=42' }}
-            style={styles.profileImage}
-          />
-          <Text style={styles.userName}>{user.name}</Text>
-          <Text style={styles.userEmail}>{user.email}</Text>
-          <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{user.savedArticles.length}</Text>
-              <Text style={styles.statLabel}>Saved</Text>
+      <View style={styles.settingsSection}>
+        <Text style={styles.sectionTitle}>Preferences</Text>
+        <View style={styles.settingsItem}>
+          <View style={styles.settingsItemLeft}>
+            <View style={styles.settingsIconContainer}>
+              <Feather name="bell" size={22} color="#333" />
             </View>
-            <View style={styles.statSeparator} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{user.readingHistory.length}</Text>
-              <Text style={styles.statLabel}>Read</Text>
+            <View>
+              <Text style={styles.settingsItemTitle}>Push Notifications</Text>
+              <Text style={styles.settingsItemSubtitle}>Get notified about important updates</Text>
             </View>
           </View>
+          <Switch
+            value={preferences?.notifications_enabled ?? false}
+            onValueChange={() => handleTogglePreference('notifications_enabled')}
+            trackColor={{ false: '#d1d1d1', true: '#0066cc' }}
+            thumbColor="#ffffff"
+            disabled={isProcessing || loading}
+          />
         </View>
-
-        <View style={styles.settingsSection}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
-          {renderSettingsItem(
-            <Ionicons name="notifications-outline" size={22} color="#333" />,
-            'Push Notifications',
-            'Get notified about important news',
-            <Switch
-              value={notificationsEnabled}
-              onValueChange={setNotificationsEnabled}
-              trackColor={{ false: '#d1d1d1', true: '#0066cc' }}
-              thumbColor="#ffffff"
-            />,
-            () => {}
-          )}
-          
-          {renderSettingsItem(
-            <Ionicons name="moon-outline" size={22} color="#333" />,
-            'Dark Mode',
-            'Change app appearance',
-            <Switch
-              value={darkModeEnabled}
-              onValueChange={setDarkModeEnabled}
-              trackColor={{ false: '#d1d1d1', true: '#0066cc' }}
-              thumbColor="#ffffff"
-            />,
-            () => {}
-          )}
-          
+        
+        <View style={styles.settingsItem}>
+          <View style={styles.settingsItemLeft}>
+            <View style={styles.settingsIconContainer}>
+              <Feather name="moon" size={22} color="#333" />
+            </View>
+            <View>
+              <Text style={styles.settingsItemTitle}>Dark Mode</Text>
+              <Text style={styles.settingsItemSubtitle}>Switch app appearance</Text>
+            </View>
+          </View>
+          <Switch
+            value={preferences?.dark_mode_enabled ?? false}
+            onValueChange={() => handleTogglePreference('dark_mode_enabled')}
+            trackColor={{ false: '#d1d1d1', true: '#0066cc' }}
+            thumbColor="#ffffff"
+            disabled={isProcessing || loading}
+          />
         </View>
+      </View>
 
-        <View style={styles.settingsSection}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          {renderSettingsItem(
-            <Ionicons name="bookmark-outline" size={22} color="#333" />,
-            'Saved Articles',
-            'View your bookmarks',
-            <Feather name="chevron-right" size={20} color="#888" />,
-            () => navigation.navigate('Bookmarks')
-          )}
-        </View>
+      <TouchableOpacity 
+        style={[styles.logoutButton, isProcessing && styles.disabledButton]}
+        onPress={handleLogout}
+        disabled={isProcessing}
+      >
+        <Feather name="log-out" size={22} color="#ff3b30" />
+        <Text style={styles.logoutText}>Logout</Text>
+      </TouchableOpacity>
 
-        <View style={styles.settingsSection}>
-          <Text style={styles.sectionTitle}>Support</Text>
-          {renderSettingsItem(
-            <Ionicons name="help-circle-outline" size={22} color="#333" />,
-            'Help & Support',
-            'Get assistance and find answers',
-            <Feather name="chevron-right" size={20} color="#888" />,
-            () => navigation.navigate('HelpSupport')
-          )}
-          
-          {renderSettingsItem(
-            <Ionicons name="information-circle-outline" size={22} color="#333" />,
-            'About Us',
-            'Learn more about Edushorts',
-            <Feather name="chevron-right" size={20} color="#888" />,
-            () => navigation.navigate('AboutUs')
-          )}
-          
-          {renderSettingsItem(
-            <Ionicons name="shield-checkmark-outline" size={22} color="#333" />,
-            'Privacy Policy',
-            'Review our privacy terms',
-            <Feather name="chevron-right" size={20} color="#888" />,
-            () => navigation.navigate('PrivacyPolicy')
-          )}
-        </View>
+      <Text style={styles.versionText}>Version 1.0.0</Text>
+    </ScrollView>
+  );
+});
 
-        <TouchableOpacity 
-          style={styles.logoutButton}
-          onPress={handleLogout}
-        >
-          <Ionicons name="log-out-outline" size={22} color="#ff3b30" />
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.versionText}>Version 1.0.0</Text>
-      </ScrollView>
+export default function ProfileScreen() {
+  return (
+    <SafeAreaView style={styles.container}>
+      <AuthGuard loadingMessage="Loading profile...">
+        <ProfileContent />
+      </AuthGuard>
     </SafeAreaView>
   );
 }
@@ -174,19 +200,28 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
-  header: {
-    flexDirection: 'row',
+  errorContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eeeeee',
+    padding: 24,
   },
-  headerTitle: {
-    fontSize: 20,
+  errorText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: '#0066cc',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: 'white',
     fontWeight: 'bold',
-    color: '#333',
+    fontSize: 16,
   },
   profileSection: {
     backgroundColor: '#ffffff',
@@ -211,28 +246,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginBottom: 16,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    width: '60%',
-    justifyContent: 'space-between',
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
-  },
-  statSeparator: {
-    width: 1,
-    height: '80%',
-    backgroundColor: '#eeeeee',
   },
   settingsSection: {
     marginTop: 24,
@@ -277,9 +290,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  settingsTextContainer: {
-    flex: 1,
-  },
   settingsItemTitle: {
     fontSize: 16,
     color: '#333',
@@ -288,10 +298,6 @@ const styles = StyleSheet.create({
   settingsItemSubtitle: {
     fontSize: 12,
     color: '#888',
-  },
-  settingsItemRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   logoutButton: {
     flexDirection: 'row',
@@ -320,5 +326,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#888',
     marginBottom: 24,
-  }
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
 });

@@ -34,19 +34,38 @@ export default function LoginScreen() {
     }
 
     setIsLoading(true);
+    const timeoutId = setTimeout(() => {
+      setIsLoading(false);
+      toast.error('Login timed out. Please try again.');
+    }, 10000);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const loginPromise = supabase.auth.signInWithPassword({
         email,
         password,
       });
+
+      const { data, error } = await Promise.race([
+        loginPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Login timed out')), 8000)
+        )
+      ]) as { data: any; error: any };
 
       if (error) throw error;
       
       if (data?.session) {
         await signIn(data.session);
+        clearTimeout(timeoutId);
         toast.success('Login successful!');
-        navigation.navigate('Main');
+        
+        // Use reset instead of navigate to clear navigation stack
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
+      } else {
+        throw new Error('No session data received');
       }
     } catch (error: any) {
       let message = 'An unexpected error occurred';
@@ -54,10 +73,13 @@ export default function LoginScreen() {
         message = 'Invalid email or password';
       } else if (error.message === 'Email not confirmed') {
         message = 'Please verify your email first';
+      } else if (error.message.includes('timed out')) {
+        message = 'Login timed out. Please try again.';
       }
       toast.error(message);
     } finally {
       setIsLoading(false);
+      clearTimeout(timeoutId);
     }
   };
 

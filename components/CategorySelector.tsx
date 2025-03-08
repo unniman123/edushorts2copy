@@ -18,12 +18,47 @@ const categories = [
   { id: '7', name: 'Research' },
 ];
 
-interface CategorySelectorProps {
-  selectedCategory: string;
-  onSelectCategory: (category: string) => void;
+export interface CategorySelectorProps {
+  // For single select mode
+  selectedCategory?: string;
+  onSelectCategory?: (category: string) => void;
+  // For multi select mode
+  selectedCategories?: string[];
+  onSelectCategories?: (categories: string[]) => void;
+  // Mode configuration
+  multiSelect?: boolean;
 }
 
-const CategorySelector = ({ selectedCategory, onSelectCategory }: CategorySelectorProps) => {
+const CategorySelector = ({
+  selectedCategory,
+  onSelectCategory,
+  selectedCategories = [],
+  onSelectCategories,
+  multiSelect = false,
+}: CategorySelectorProps) => {
+  const handleSelect = (categoryName: string) => {
+    if (multiSelect && onSelectCategories) {
+      if (categoryName === 'All') {
+        // Clear selection when "All" is clicked
+        onSelectCategories([]);
+      } else {
+        const updatedCategories = selectedCategories.includes(categoryName)
+          ? selectedCategories.filter(c => c !== categoryName)
+          : [...selectedCategories, categoryName];
+        onSelectCategories(updatedCategories);
+      }
+    } else if (onSelectCategory) {
+      onSelectCategory(categoryName);
+    }
+  };
+
+  const isSelected = (categoryName: string) => {
+    if (multiSelect) {
+      return selectedCategories.includes(categoryName);
+    }
+    return selectedCategory === categoryName;
+  };
+
   return (
     <ScrollView 
       horizontal 
@@ -35,18 +70,18 @@ const CategorySelector = ({ selectedCategory, onSelectCategory }: CategorySelect
           key={category.id}
           style={[
             styles.categoryItem,
-            selectedCategory === category.name && styles.selectedCategory,
+            isSelected(category.name) && styles.selectedCategory,
           ]}
-          onPress={() => onSelectCategory(category.name)}
+          onPress={() => handleSelect(category.name)}
           accessible={true}
           accessibilityLabel={`Category: ${category.name}`}
-          accessibilityHint={`Click to filter articles in ${category.name} category`}
-          accessibilityState={{ selected: selectedCategory === category.name }}
+          accessibilityHint={`Click to ${multiSelect ? 'toggle' : 'select'} ${category.name} category`}
+          accessibilityState={{ selected: isSelected(category.name) }}
         >
           <Text 
             style={[
               styles.categoryText,
-              selectedCategory === category.name && styles.selectedCategoryText,
+              isSelected(category.name) && styles.selectedCategoryText,
             ]}
           >
             {category.name}
@@ -82,9 +117,10 @@ const styles = StyleSheet.create({
 });
 
 const areEqual = (prevProps: CategorySelectorProps, nextProps: CategorySelectorProps) => {
-  return (
-    prevProps.selectedCategory === nextProps.selectedCategory
-  );
+  if (prevProps.multiSelect) {
+    return JSON.stringify(prevProps.selectedCategories) === JSON.stringify(nextProps.selectedCategories);
+  }
+  return prevProps.selectedCategory === nextProps.selectedCategory;
 };
 
 export default memo(CategorySelector, areEqual);
