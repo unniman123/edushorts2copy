@@ -1,0 +1,194 @@
+import React, { useEffect, useState } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { StyleSheet } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Toaster } from 'sonner-native';
+import { Ionicons } from '@expo/vector-icons';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { SavedArticlesProvider } from './context/SavedArticlesContext';
+import { NewsProvider } from './context/NewsContext';
+import { initializeAuth } from './utils/authHelpers';
+import * as Linking from 'expo-linking';
+
+import LoadingScreen from './screens/LoadingScreen';
+import HomeScreen from './screens/HomeScreen';
+import DiscoverScreen from './screens/DiscoverScreen';
+import ArticleDetailScreen from './screens/ArticleDetailScreen';
+import BookmarksScreen from './screens/BookmarksScreen';
+import ProfileScreen from './screens/ProfileScreen';
+import LoginScreen from './screens/LoginScreen';
+import RegisterScreen from './screens/RegisterScreen';
+import SettingsScreen from './screens/SettingsScreen';
+import EmailConfirmationScreen from './screens/EmailConfirmationScreen';
+
+const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
+
+function MainTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName: typeof Ionicons.defaultProps.name;
+
+          switch (route.name) {
+            case 'HomeTab':
+              iconName = focused ? 'home' : 'home-outline';
+              break;
+            case 'DiscoverTab':
+              iconName = focused ? 'compass' : 'compass-outline';
+              break;
+            case 'BookmarksTab':
+              iconName = focused ? 'bookmark' : 'bookmark-outline';
+              break;
+            case 'ProfileTab':
+              iconName = focused ? 'person' : 'person-outline';
+              break;
+            default:
+              iconName = 'help-outline';
+          }
+
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: '#ff0000',
+        tabBarInactiveTintColor: '#888',
+        headerShown: false,
+        tabBarStyle: {
+          borderTopWidth: 1,
+          borderTopColor: '#eeeeee',
+          elevation: 0,
+        },
+      })}
+    >
+      <Tab.Screen
+        name="HomeTab"
+        component={HomeScreen}
+        options={{ tabBarLabel: 'Home' }}
+      />
+      <Tab.Screen
+        name="DiscoverTab"
+        component={DiscoverScreen}
+        options={{ tabBarLabel: 'Discover' }}
+      />
+      <Tab.Screen
+        name="BookmarksTab"
+        component={BookmarksScreen}
+        options={{ tabBarLabel: 'Saved' }}
+      />
+      <Tab.Screen
+        name="ProfileTab"
+        component={ProfileScreen}
+        options={{ tabBarLabel: 'Profile' }}
+      />
+    </Tab.Navigator>
+  );
+}
+
+function RootStackNavigator() {
+  const { isLoading, session } = useAuth();
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  useEffect(() => {
+    // Mark as initialized after first auth check
+    if (!isLoading) {
+      setHasInitialized(true);
+    }
+  }, [isLoading]);
+
+  // Only show loading screen on initial load or if explicitly loading after init
+  if (!hasInitialized || (hasInitialized && isLoading)) {
+    return <LoadingScreen />;
+  }
+
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      {session ? (
+        // Authenticated stack
+        <>
+          <Stack.Screen name="Main" component={MainTabs} />
+          <Stack.Screen name="ArticleDetail" component={ArticleDetailScreen} />
+          <Stack.Screen name="Discover" component={DiscoverScreen} />
+          <Stack.Screen name="Bookmarks" component={BookmarksScreen} />
+          <Stack.Screen name="Profile" component={ProfileScreen} />
+          <Stack.Screen name="Settings" component={SettingsScreen} />
+        </>
+      ) : (
+        // Auth stack
+        <>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="EmailConfirmation" component={EmailConfirmationScreen} />
+        </>
+      )}
+    </Stack.Navigator>
+  );
+}
+
+function AppContent() {
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    // Initialize auth and mark as ready
+    const cleanup = initializeAuth();
+    setIsReady(true);
+    return cleanup;
+  }, []);
+
+  if (!isReady) {
+    return <LoadingScreen />;
+  }
+
+  const linking = {
+    prefixes: ['edushorts://', 'https://edushorts.app.link'],
+    config: {
+      screens: {
+        Login: 'login',
+        Register: 'register',
+        EmailConfirmation: 'email-confirmation',
+        Main: 'main',
+        ArticleDetail: {
+          path: 'article/:articleId',
+          parse: {
+            articleId: (articleId: string) => articleId
+          }
+        }
+      }
+    }
+  };
+
+  return (
+    <NavigationContainer linking={linking}>
+      <RootStackNavigator />
+    </NavigationContainer>
+  );
+}
+
+export default function App() {
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider style={styles.container}>
+        <AuthProvider>
+          <SavedArticlesProvider>
+            <NewsProvider>
+              <Toaster />
+              <AppContent />
+            </NewsProvider>
+          </SavedArticlesProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});

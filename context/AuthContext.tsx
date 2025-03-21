@@ -3,14 +3,17 @@ import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../utils/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-interface Profile {
+// Profile related types
+export type NotificationPreferences = {
+  push: boolean;
+  email: boolean;
+};
+
+export interface IProfile {
   id: string;
   username: string;
   avatar_url?: string;
-  notification_preferences: {
-    push: boolean;
-    email: boolean;
-  };
+  notification_preferences: NotificationPreferences;
   updated_at?: string;
 }
 
@@ -19,7 +22,25 @@ interface AuthState {
   session: Session | null;
   isLoading: boolean;
   userRole: string | null;
-  profile: Profile | null;
+  profile: IProfile | null;
+}
+
+// We'll use this for the raw database response
+type DatabaseProfileData = {
+  id: string;
+  username: string;
+  avatar_url?: string;
+  notification_preferences?: NotificationPreferences;
+  updated_at?: string;
+}
+
+type UserRole = {
+  role: string;
+}
+
+type DBError = {
+  code: string;
+  message: string;
 }
 
 interface AuthContextType extends AuthState {
@@ -39,107 +60,218 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     profile: null,
   });
 
-  useEffect(() => {
-    console.log('AuthContext: Initializing...');
+  const handleSession = async (session: Session, skipLoading = false): Promise<void> => {
+    console.log('AuthContext: Handling session for user:', session.user.id);
     
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('AuthContext: Session check result:', session ? 'Found session' : 'No session');
-      if (session) {
-        handleSession(session);
-      } else {
-        console.log('AuthContext: No session found, setting isLoading to false');
-        setState(prev => ({ ...prev, isLoading: false }));
+    // Set initial state immediately
+    setState(prev => ({
+      ...prev,
+      user: session.user,
+      session,
+      isLoading: !skipLoading // Only set loading if not skipping
+    }));
+
+    const FETCH_TIMEOUT = 5000; // 5 seconds timeout
+
+    try {
+      // Create promises with timeouts
+      const getRolePromise = new Promise<{ data: UserRole | null, error: DBError | null }>(async (resolve) => {
+        let timeoutId: NodeJS.Timeout | null = null;
+        
+        try {
+          const timeoutPromise = new Promise<{ data: UserRole | null, error: DBError | null }>((resolveTimeout) => {
+            timeoutId = setTimeout(() => {
+              resolveTimeout({ data: null, error: { code: 'TIMEOUT', message: 'Request timed out' } });
+            }, FETCH_TIMEOUT);
+          });
+
+          const result = await Promise.race([
+            supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', session.user.id)
+              .single(),
+            timeoutPromise
+          ]);
+
+          if (timeoutId) clearTimeout(timeoutId);
+          resolve(result);
+        } catch (error) {
+          if (timeoutId) clearTimeout(timeoutId);
+          resolve({ data: null, error: error as DBError });
+        }
+      });
+
+      const getProfilePromise = new Promise<{ data: DatabaseProfileData | null, error: DBError | null }>(async (resolve) => {
+        let timeoutId: NodeJS.Timeout | null = null;
+
+        try {
+          const timeoutPromise = new Promise<{ data: DatabaseProfileData | null, error: DBError | null }>((resolveTimeout) => {
+            timeoutId = setTimeout(() => {
+              resolveTimeout({ data: null, error: { code: 'TIMEOUT', message: 'Request timed out' } });
+            }, FETCH_TIMEOUT);
+          });
+
+          const result = await Promise.race([
+            supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single(),
+            timeoutPromise
+          ]);
+
+          if (timeoutId) clearTimeout(timeoutId);
+          resolve(result);
+        } catch (error) {
+          if (timeoutId) clearTimeout(timeoutId);
+          resolve({ data: null, error: error as DBError });
+        }
+      });
+
+      const [roleResult, profileResult] = await Promise.all([getRolePromise, getProfilePromise]);
+
+      // Process results
+      const userRole = roleResult.data?.role || null;
+      let profile: IProfile | null = null;
+
+      if (profileResult.data) {
+        const dbProfile = profileResult.data;
+        profile = {
+          id: session.user.id,
+          username: dbProfile.username || '',
+          avatar_url: dbProfile.avatar_url,
+          notification_preferences: dbProfile.notification_preferences || {
+            push: false,
+            email: false,
+          },
+          updated_at: dbProfile.updated_at || new Date().toISOString(),
+        };
       }
-    }).catch(error => {
-      console.error('AuthContext: Error getting session:', error);
-      setState(prev => ({ ...prev, isLoading: false }));
-    });
+
+      // Update state with fetched data
+      console.log('AuthContext: Session handled successfully');
+      setState(prev => ({
+        ...prev,
+        userRole,
+        profile,
+        isLoading: false
+      }));
+
+    } catch (error) {
+      console.error('AuthContext: Error in handleSession:', error);
+      // Keep user and session but mark as not loading
+      setState(prev => ({
+        ...prev,
+        isLoading: false,
+        userRole: null,
+        profile: null
+      }));
+    }
+  };
+
+  useEffect(() => {
+    let isSubscribed = true;
+    let hasInitializedSession = false;
+    console.log('AuthContext: Initializing...');
+
+    const initializeAuth = async () => {
+      try {
+        // Always start with stored session
+        const storedSession = await AsyncStorage.getItem('userSession');
+        if (storedSession && isSubscribed) {
+          const parsedSession = JSON.parse(storedSession);
+          const { data: { session }, error } = await supabase.auth.setSession(parsedSession);
+          if (error) {
+            console.error('AuthContext: Error setting stored session:', error);
+            await AsyncStorage.removeItem('userSession');
+          } else if (session) {
+            await handleSession(session);
+            hasInitializedSession = true;
+          }
+        }
+
+        // If no stored session or it failed, get current state
+        if (!hasInitializedSession && isSubscribed) {
+          const { data: { session } } = await supabase.auth.getSession();
+          console.log('AuthContext: Session check result:', session ? 'Found session' : 'No session');
+          
+          if (session) {
+            await handleSession(session);
+            await AsyncStorage.setItem('userSession', JSON.stringify(session));
+          } else {
+            console.log('AuthContext: No session found, setting isLoading to false');
+            setState(prev => ({ ...prev, isLoading: false }));
+          }
+        }
+      } catch (error) {
+        console.error('AuthContext: Error initializing:', error);
+        if (isSubscribed) {
+          setState(prev => ({ ...prev, isLoading: false }));
+        }
+      }
+    };
+
+    initializeAuth();
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('AuthContext: Auth state changed:', event);
-      if (session) {
-        await handleSession(session);
-      } else {
-        setState({
-          user: null,
-          session: null,
-          isLoading: false,
-          userRole: null,
-          profile: null,
-        });
+      
+      if (!isSubscribed) return;
+
+      try {
+        switch (event) {
+          case 'TOKEN_REFRESHED':
+            if (session && session.user.id === state.session?.user?.id) {
+              // Only update session data without full reload
+              await handleSession(session, true);
+              await AsyncStorage.setItem('userSession', JSON.stringify(session));
+            }
+            break;
+            
+          case 'SIGNED_IN':
+            if (session) {
+              await handleSession(session);
+              await AsyncStorage.setItem('userSession', JSON.stringify(session));
+            }
+            break;
+
+          case 'SIGNED_OUT':
+            setState({
+              user: null,
+              session: null,
+              isLoading: false,
+              userRole: null,
+              profile: null,
+            });
+            await AsyncStorage.removeItem('userSession');
+            break;
+            
+          case 'USER_UPDATED':
+            if (!session) {
+              setState({
+                user: null,
+                session: null,
+                isLoading: false,
+                userRole: null,
+                profile: null,
+              });
+              await AsyncStorage.removeItem('userSession');
+            }
+            break;
+        }
+      } catch (error) {
+        console.error('AuthContext: Error handling auth state change:', error);
+        setState(prev => ({ ...prev, isLoading: false }));
       }
     });
 
     return () => {
+      isSubscribed = false;
       subscription.unsubscribe();
     };
   }, []);
-
-  const handleSession = async (session: Session) => {
-    console.log('AuthContext: Handling session for user:', session.user.id);
-    try {
-      // Set initial state to show we're processing
-      setState(prev => ({
-        ...prev,
-        user: session.user,
-        session,
-        isLoading: true
-      }));
-
-      // Get user role
-      console.log('AuthContext: Fetching user role...');
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', session.user.id)
-        .single();
-
-      if (roleError) {
-        console.warn('AuthContext: Role fetch error:', roleError);
-        if (roleError.code !== 'PGRST116') {
-          throw roleError;
-        }
-      }
-
-      // Get user profile
-      console.log('AuthContext: Fetching user profile...');
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-
-      if (profileError) {
-        console.warn('AuthContext: Profile fetch error:', profileError);
-        if (profileError.code !== 'PGRST116') {
-          throw profileError;
-        }
-      }
-
-      // Successfully processed session
-      console.log('AuthContext: Session handled successfully');
-      setState({
-        user: session.user,
-        session,
-        isLoading: false,
-        userRole: roleData?.role || null,
-        profile: profile as Profile || null,
-      });
-
-    } catch (error) {
-      console.error('AuthContext: Error in handleSession:', error);
-      // Set error state but maintain session
-      setState({
-        user: session.user,
-        session,
-        isLoading: false,
-        userRole: null,
-        profile: null,
-      });
-    }
-  };
 
   const signOut = async () => {
     try {
@@ -161,10 +293,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshSession = async () => {
     try {
-      setState(prev => ({ ...prev, isLoading: true }));
       const { data: { session } } = await supabase.auth.refreshSession();
       if (session) {
         await handleSession(session);
+      } else {
+        setState(prev => ({ ...prev, isLoading: false }));
       }
     } catch (error) {
       console.error('Error refreshing session:', error);
@@ -176,19 +309,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       if (!state.user?.id) throw new Error('No user logged in');
 
+      const timestamp = new Date().toISOString();
+      const updateData = {
+        ...updates,
+        updated_at: timestamp,
+      };
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', state.user.id);
 
       if (error) throw error;
 
       setState(prev => ({
         ...prev,
-        profile: prev.profile ? { ...prev.profile, ...updates } : null,
+        profile: prev.profile 
+          ? { 
+              ...prev.profile, 
+              ...updates, 
+              updated_at: timestamp 
+            }
+          : null,
       }));
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -218,4 +360,5 @@ export function useAuth() {
   return context;
 }
 
-export type { Profile };
+// Export Profile type alias
+export type Profile = IProfile;
