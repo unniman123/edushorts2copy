@@ -53,10 +53,12 @@ export const createChannel = (channelName: string) => {
   }
 
   let retryCount = 0;
+  console.log(`Creating new channel: ${channelName}`);
   const channel = supabase.channel(channelName);
   
   const setupChannel = () => {
     channel.subscribe(async (status: 'SUBSCRIBED' | 'TIMED_OUT' | 'CLOSED' | 'CHANNEL_ERROR') => {
+      console.log(`Channel ${channelName} status: ${status}`);
       if (status === 'SUBSCRIBED') {
         console.log(`Successfully subscribed to ${channelName}`);
         activeChannels[channelName] = channel;
@@ -108,15 +110,17 @@ const cleanupChannel = (channelName: string) => {
 
 // Initialize realtime connection with auth state check
 const initializeRealtime = async () => {
+  console.log('Initializing realtime connection...');
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      console.log('No active session, delaying realtime connection');
+      console.log('No active session found, delaying realtime connection');
       return;
     }
     
+    console.log('Connecting to realtime...');
     await supabase.realtime.connect();
-    console.log('Realtime connection established');
+    console.log('Realtime connection established successfully');
   } catch (error) {
     console.error('Error connecting to realtime:', error);
   }
@@ -124,16 +128,20 @@ const initializeRealtime = async () => {
 
 // Handle app state changes
 AppState.addEventListener('change', (state) => {
+  console.log('App state changed:', state);
   if (state === 'active') {
+    console.log('App became active, starting auto refresh...');
     supabase.auth.startAutoRefresh();
     // Add delay to ensure auth is ready
     setTimeout(() => {
+      console.log('Initializing realtime after app became active...');
       initializeRealtime().then(() => {
         // Longer delay for channel resubscription
         setTimeout(() => {
+          console.log('Resubscribing to active channels...');
           Object.entries(activeChannels).forEach(([name, channel]) => {
             try {
-              console.log(`Resubscribing to channel: ${name}`);
+              console.log(`Attempting to resubscribe to channel: ${name}`);
               channel.subscribe();
             } catch (error) {
               console.error(`Error resubscribing to ${name}:`, error);

@@ -216,8 +216,10 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const MAX_RETRIES = 3;
 
     const initializeNews = async () => {
+      console.log('NewsContext: Initializing news feed...');
       try {
         await fetchNews();
+        console.log('NewsContext: Initial fetch completed');
       } catch (err) {
         console.error('Error fetching news:', err);
         if (retryCount < MAX_RETRIES && isMounted) {
@@ -254,13 +256,14 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     if (existingChannel) {
-      console.log('Reusing existing news channel');
+      console.log('NewsContext: Reusing existing news channel');
       return () => {
+        console.log('NewsContext: Cleaning up subscription (existing channel)');
         isSubscribed = false;
       };
     }
 
-    console.log('Creating new news channel subscription');
+    console.log('NewsContext: Setting up real-time subscription...');
     let channelInstance;
     try {
       channelInstance = createChannel(STABLE_CHANNEL_ID);
@@ -282,7 +285,12 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
           table: 'news',
           filter: 'status=eq.published',
         },
-        async (payload: { [key: string]: any }) => isSubscribed && handleRealtimeEvent(payload as NewsRealtimePayload, 'INSERT')
+        async (payload: { [key: string]: any }) => {
+          console.log('NewsContext: Received INSERT event');
+          if (isSubscribed) {
+            handleRealtimeEvent(payload as NewsRealtimePayload, 'INSERT');
+          }
+        }
       )
       .on('postgres_changes',
         {
@@ -290,7 +298,12 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
           schema: 'public',
           table: 'news',
         },
-        async (payload: { [key: string]: any }) => isSubscribed && handleRealtimeEvent(payload as NewsRealtimePayload, 'UPDATE')
+        async (payload: { [key: string]: any }) => {
+          console.log('NewsContext: Received UPDATE event');
+          if (isSubscribed) {
+            handleRealtimeEvent(payload as NewsRealtimePayload, 'UPDATE');
+          }
+        }
       )
       .on('postgres_changes',
         {
@@ -298,7 +311,12 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
           schema: 'public',
           table: 'news',
         },
-        async (payload: { [key: string]: any }) => isSubscribed && handleRealtimeEvent(payload as NewsRealtimePayload, 'DELETE')
+        async (payload: { [key: string]: any }) => {
+          console.log('NewsContext: Received DELETE event');
+          if (isSubscribed) {
+            handleRealtimeEvent(payload as NewsRealtimePayload, 'DELETE');
+          }
+        }
       );
 
     return () => {

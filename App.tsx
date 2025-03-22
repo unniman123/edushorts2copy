@@ -175,12 +175,12 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider style={styles.container}>
         <AuthProvider>
-          <SavedArticlesProvider>
-            <NewsProvider>
+          <NewsProvider>
+            <SavedArticlesProvider>
               <Toaster />
               <AppContent />
-            </NewsProvider>
-          </SavedArticlesProvider>
+            </SavedArticlesProvider>
+          </NewsProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

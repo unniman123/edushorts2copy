@@ -12,19 +12,17 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { mockNewsData } from '../data/mockData';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../types/navigation';
 
 export default function BookmarksScreen() {
-  const navigation = useNavigation();  // Instead of using local state, derive bookmarked articles from the context
-  const { savedArticleIds } = useSavedArticles();
-  const bookmarkedArticles = mockNewsData.filter(article =>
-    savedArticleIds.includes(article.id)
-  );
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { savedArticles } = useSavedArticles();
   const [loading, setLoading] = useState(false);
 
   const { removeBookmark } = useSavedArticles();
 
-  const handleRemoveBookmark = (articleId) => {
+  const handleRemoveBookmark = (articleId: string) => {
     removeBookmark(articleId);
   };
 
@@ -40,7 +38,7 @@ export default function BookmarksScreen() {
         </TouchableOpacity>
       </View>
 
-      {bookmarkedArticles.length === 0 ? (
+      {savedArticles.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Ionicons name="bookmark-outline" size={80} color="#ccc" />
           <Text style={styles.emptyTitle}>No saved articles</Text>
@@ -49,14 +47,14 @@ export default function BookmarksScreen() {
           </Text>
           <TouchableOpacity
             style={styles.browseButton}
-            onPress={() => navigation.navigate('Home')}
+            onPress={() => navigation.navigate('Main')}
           >
             <Text style={styles.browseButtonText}>Browse Articles</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <FlatList
-          data={bookmarkedArticles}
+          data={savedArticles}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <View style={styles.articleCard}>
@@ -64,15 +62,12 @@ export default function BookmarksScreen() {
                 style={styles.articleContent}
                 onPress={() => navigation.navigate('ArticleDetail', { articleId: item.id })}
               >
-                <Image source={{ uri: item.imageUrl }} style={styles.articleImage} />
+                <Image source={{ uri: item.image_path || undefined }} style={styles.articleImage} />
                 <View style={styles.articleDetails}>
-                  <View style={styles.categoryBadge}>
-                    <Text style={styles.categoryText}>{item.category}</Text>
-                  </View>
                   <Text style={styles.articleTitle} numberOfLines={2}>{item.title}</Text>
                   <View style={styles.articleMeta}>
-                    <Text style={styles.sourceText}>{item.source}</Text>
-                    <Text style={styles.timeText}>{item.timeAgo}</Text>
+                    <Text style={styles.sourceText}>{item.source_name || 'Unknown Source'}</Text>
+                    <Text style={styles.timeText}>{new Date(item.saved_at).toLocaleDateString()}</Text>
                   </View>
                 </View>
               </TouchableOpacity>

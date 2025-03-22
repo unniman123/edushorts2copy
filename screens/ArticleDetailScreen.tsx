@@ -35,8 +35,13 @@ export default function ArticleDetailScreen() {
   const { articleId } = route.params;
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
-  const { savedArticleIds, addBookmark, removeBookmark } = useSavedArticles();
-  const [bookmarked, setBookmarked] = useState(savedArticleIds.includes(articleId));
+  const { savedArticles, addBookmark, removeBookmark, isLoading } = useSavedArticles();
+  const [bookmarked, setBookmarked] = useState(false);
+  
+  // Update bookmarked state whenever savedArticles changes
+  useEffect(() => {
+    setBookmarked(savedArticles.some(article => article.id === articleId));
+  }, [savedArticles, articleId]);
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -78,13 +83,17 @@ export default function ArticleDetailScreen() {
     }
   };
 
-  const toggleBookmark = () => {
-    if (bookmarked) {
-      removeBookmark(articleId);
-    } else {
-      addBookmark(articleId);
+  const toggleBookmark = async () => {
+    try {
+      if (bookmarked) {
+        await removeBookmark(articleId);
+      } else {
+        await addBookmark(articleId);
+      }
+    } catch (error) {
+      // Error will be handled by context with toast
+      console.log('Error toggling bookmark:', error);
     }
-    setBookmarked(!bookmarked);
   };
 
   if (loading) {
@@ -116,10 +125,20 @@ export default function ArticleDetailScreen() {
           <Feather name="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.actionButton} onPress={toggleBookmark}>
-            <Ionicons 
-              name={bookmarked ? "bookmark" : "bookmark-outline"} 
-              size={24}              color={bookmarked ? "#ff0000" : "#333"} />
+          <TouchableOpacity 
+            style={styles.actionButton} 
+            onPress={toggleBookmark}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#ff0000" />
+            ) : (
+              <Ionicons 
+                name={bookmarked ? "bookmark" : "bookmark-outline"} 
+                size={24}              
+                color={bookmarked ? "#ff0000" : "#333"} 
+              />
+            )}
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
             <Feather name="share" size={22} color="#333" />
