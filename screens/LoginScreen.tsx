@@ -292,16 +292,6 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity
-            style={styles.guestButton}
-            onPress={() => navigation.reset({
-              index: 0,
-              routes: [{ name: 'Main' }],
-            })}
-            disabled={isLoading}
-          >
-            <Text style={styles.guestButtonText}>Continue as Guest</Text>
-          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -454,17 +444,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#ff0000',
     marginLeft: 4,
-  },
-  guestButton: {
-    borderWidth: 1,
-    borderColor: '#eeeeee',
-    borderRadius: 12,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  guestButtonText: {
-    fontSize: 14,
-    color: '#666',
   },
 });
