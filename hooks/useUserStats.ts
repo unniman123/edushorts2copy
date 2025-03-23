@@ -19,7 +19,6 @@ type CountQueryResponse = PostgrestResponse<any[]> & Partial<SupabaseCountResult
 
 interface UserStats {
   savedArticlesCount: number;
-  articlesReadCount: number;
   isLoading: boolean;
   error: Error | null;
   refresh: () => Promise<void>;
@@ -28,7 +27,6 @@ interface UserStats {
 export function useUserStats(): UserStats {
   const { user } = useAuth();
   const [savedArticlesCount, setSavedArticlesCount] = useState(0);
-  const [articlesReadCount, setArticlesReadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -42,49 +40,31 @@ export function useUserStats(): UserStats {
       setIsLoading(true);
       setError(null);
 
-      // Create abort controllers for timeouts
+      // Create abort controller for timeout
       const savedController = new AbortController();
-      const readController = new AbortController();
 
-      // Set timeouts
+      // Set timeout
       const savedTimeout = setTimeout(() => savedController.abort(), 5000);
-      const readTimeout = setTimeout(() => readController.abort(), 5000);
 
       try {
-        // Execute queries with abort signals
-        const [savedResult, readResult] = await Promise.all([
-          // Fetch saved articles count
-          supabase
-            .from('saved_articles')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', user.id)
-            .abortSignal(savedController.signal)
-            .throwOnError(),
+        // Execute query with abort signal
+        const savedResult = await supabase
+          .from('saved_articles')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .abortSignal(savedController.signal)
+          .throwOnError();
 
-          // Fetch read articles count
-          supabase
-            .from('article_analytics')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', user.id)
-            .eq('action', 'read')
-            .abortSignal(readController.signal)
-            .throwOnError()
-        ]);
-
-        // Clear timeouts
+        // Clear timeout
         clearTimeout(savedTimeout);
-        clearTimeout(readTimeout);
 
-        // Handle the counts with type assertion
+        // Handle the count with type assertion
         const savedCount = (savedResult as CountQueryResponse).count ?? 0;
-        const readCount = (readResult as CountQueryResponse).count ?? 0;
         
         setSavedArticlesCount(savedCount);
-        setArticlesReadCount(readCount);
       } finally {
-        // Clean up controllers
+        // Clean up controller
         savedController.abort();
-        readController.abort();
       }
 
     } catch (err) {
@@ -131,60 +111,8 @@ export function useUserStats(): UserStats {
 
   return {
     savedArticlesCount,
-    articlesReadCount,
     isLoading,
     error,
     refresh: fetchStats,
-  };
-}
-
-// Types for analytics tracking
-export type AnalyticsAction = 'read' | 'save' | 'share';
-
-export async function trackAnalytics(
-  userId: string,
-  articleId: string,
-  action: AnalyticsAction
-): Promise<void> {
-  try {
-    const { error } = await supabase
-      .from('article_analytics')
-      .insert([
-        {
-          user_id: userId,
-          article_id: articleId,
-          action,
-          timestamp: new Date().toISOString(),
-        },
-      ]);
-
-    if (error) throw error;
-  } catch (error) {
-    console.error(`Error tracking ${action} analytics:`, error);
-    throw error;
-  }
-}
-
-// Hook to track article views
-export function useArticleAnalytics(articleId: string) {
-  const { user } = useAuth();
-
-  const trackView = async () => {
-    if (!user || !articleId) return;
-
-    try {
-      await trackAnalytics(user.id, articleId, 'read');
-    } catch (error) {
-      console.error('Error tracking article view:', error);
-    }
-  };
-
-  // Track view on mount
-  useEffect(() => {
-    trackView();
-  }, [articleId, user?.id]);
-
-  return {
-    trackView,
   };
 }

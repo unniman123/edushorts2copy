@@ -21,7 +21,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 export default function ProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { profile, user } = useAuth();
-  const { savedArticlesCount, articlesReadCount, isLoading: statsLoading, error } = useUserStats();
+  const { savedArticlesCount, isLoading: statsLoading, error } = useUserStats();
 
   if (!profile || !user) {
     return (
@@ -66,11 +66,6 @@ export default function ProfileScreen() {
                 <Feather name="bookmark" size={20} color="#666" />
                 <Text style={styles.statText}>Saved Articles</Text>
                 <Text style={styles.statCount}>{savedArticlesCount}</Text>
-              </View>
-              <View style={styles.stat}>
-                <Feather name="eye" size={20} color="#666" />
-                <Text style={styles.statText}>Articles Read</Text>
-                <Text style={styles.statCount}>{articlesReadCount}</Text>
               </View>
               <TouchableOpacity 
                 style={styles.viewAllButton}
