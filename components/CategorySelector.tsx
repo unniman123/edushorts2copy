@@ -15,13 +15,12 @@ interface Category {
 }
 
 const categories: Category[] = [
-  { id: 'all', name: 'All' },
-  { id: 'education', name: 'Education' },
-  { id: 'scholarships', name: 'Scholarships' },
-  { id: 'visas', name: 'Visas' },
-  { id: 'immigration', name: 'Immigration' },
-  { id: 'study-abroad', name: 'Study Abroad' },
-  { id: 'research', name: 'Research' },
+  { id: 'all', name: 'All' }, // Special case for showing all news
+  { id: 'f9abf635-267d-43a0-8bc1-05f8c3ed14aa', name: 'Foreign Education' },
+  { id: '3ee1584a-d113-4c2c-a0e1-bd2807f13a7d', name: 'Scholarships' },
+  { id: 'e15f365c-e438-4635-a42d-8b1556e760e5', name: 'Visas' },
+  { id: '1203777a-c24b-47da-a958-136d06cd2555', name: 'Immigration' },
+  { id: '8c7d6c6c-2031-40fd-9840-5c2ab0226cfe', name: 'Courses' }
 ];
 
 interface CategorySelectorProps {
@@ -36,16 +35,16 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
   useGlobalContext = false
 }) => {
   const { filterByCategory } = useNews();
-  const [localSelectedCategory, setLocalSelectedCategory] = React.useState('All');
+  const [localSelectedCategory, setLocalSelectedCategory] = React.useState<string>('all');
   
   const selectedCategory = propSelectedCategory || localSelectedCategory;
 
-  const handleCategorySelect = (category: string) => {
+  const handleCategorySelect = async (categoryId: string) => {
     if (useGlobalContext) {
-      filterByCategory(category === 'All' ? null : category);
+      await filterByCategory(categoryId === 'all' ? null : categoryId);
     }
-    setLocalSelectedCategory(category);
-    onSelectCategory?.(category);
+    setLocalSelectedCategory(categoryId);
+    onSelectCategory?.(categoryId);
   };
 
   return (
@@ -59,14 +58,14 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
           key={category.id}
           style={[
             styles.categoryItem,
-            selectedCategory === category.name && styles.selectedCategory,
+            selectedCategory === category.id && styles.selectedCategory,
           ]}
-          onPress={() => handleCategorySelect(category.name)}
+          onPress={() => handleCategorySelect(category.id)}
         >
           <Text 
             style={[
               styles.categoryText,
-              selectedCategory === category.name && styles.selectedCategoryText,
+              selectedCategory === category.id && styles.selectedCategoryText,
             ]}
           >
             {category.name}
@@ -87,7 +86,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
     borderRadius: 20,
     backgroundColor: '#f0f0f0',
-  },  selectedCategory: {
+  },  
+  selectedCategory: {
     backgroundColor: '#ff0000',
   },
   categoryText: {

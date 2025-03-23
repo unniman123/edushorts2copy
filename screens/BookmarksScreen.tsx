@@ -12,11 +12,18 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { CompositeNavigationProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../types/navigation';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { RootStackParamList, MainTabParamList } from '../types/navigation';
+
+type NavigationProp = CompositeNavigationProp<
+  NativeStackNavigationProp<RootStackParamList>,
+  BottomTabNavigationProp<MainTabParamList>
+>;
 
 export default function BookmarksScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NavigationProp>();
   const { savedArticles } = useSavedArticles();
   const [loading, setLoading] = useState(false);
 
@@ -33,9 +40,7 @@ export default function BookmarksScreen() {
           <Feather name="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Saved Articles</Text>
-        <TouchableOpacity>
-          <Feather name="more-horizontal" size={24} color="#333" />
-        </TouchableOpacity>
+        <View style={{width: 24}} />
       </View>
 
       {savedArticles.length === 0 ? (
@@ -47,7 +52,9 @@ export default function BookmarksScreen() {
           </Text>
           <TouchableOpacity
             style={styles.browseButton}
-            onPress={() => navigation.navigate('Main')}
+            onPress={() => navigation.navigate('Main', {
+              screen: 'HomeTab'
+            })}
           >
             <Text style={styles.browseButtonText}>Browse Articles</Text>
           </TouchableOpacity>

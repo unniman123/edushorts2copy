@@ -9,7 +9,7 @@ interface NewsContextType {
   error: string | null;
   refreshNews: () => Promise<void>;
   loadMoreNews: () => Promise<void>;
-  filterByCategory: (categoryId: string | null) => void;
+  filterByCategory: (categoryId: string | null) => Promise<void>;
 }
 
 interface NewsRealtimePayload {
@@ -36,75 +36,59 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentCategoryId, setCurrentCategoryId] = useState<string | null>(null);
 
   // Helper function to convert NewsRow to Article
-  const newsRowToArticle = async (newsRow: NewsRow): Promise<Article> => {
-    let category: CategoryRow | undefined;
-    if (newsRow.category_id) {
-      const { data: categoryData } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('id', newsRow.category_id)
-        .single();
-      category = categoryData;
-    }
-
+  const newsRowToArticle = (newsRow: any): Article => {
     const timeAgo = getTimeAgo(new Date(newsRow.created_at));
-
     return {
       ...newsRow,
-      category,
+      category: newsRow.categories,
       timeAgo,
     };
+  };
+
+  // Build base query with common filters
+  const getBaseQuery = () => {
+    let query = supabase
+      .from('news')
+      .select('*, categories(*)')
+      .eq('status', 'published');
+
+    if (currentCategoryId) {
+      query = query.eq('category_id', currentCategoryId);
+    }
+
+    return query.order('created_at', { ascending: false });
   };
 
   // Fetch initial news data with timeout and retry
   const fetchNews = async () => {
     try {
       setLoading(true);
-      setError(null); // Clear any previous errors
+      setError(null);
 
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Request timeout')), 10000);
       });
 
-      let query = supabase
-        .from('news')
-        .select('*')
-        .eq('status', 'published')
-        .order('created_at', { ascending: false });
+      const query = getBaseQuery().limit(10);
 
-      if (currentCategoryId) {
-        query = query.eq('category_id', currentCategoryId);
-      }
-
-      // Race between fetch and timeout
       const { data, error: fetchError } = await Promise.race([
-        query.limit(10),
+        query,
         timeoutPromise
-      ]) as { data: NewsRow[] | null; error: Error | null };
+      ]) as { data: any[] | null; error: Error | null };
 
       if (fetchError) throw fetchError;
 
       if (data && data.length > 0) {
-        const articlesPromises = data.map(newsRowToArticle);
-        const articles = await Promise.allSettled(articlesPromises);
-
-        // Filter out rejected promises and extract values from fulfilled ones
-        const successfulArticles = articles
-          .filter((result): result is PromiseFulfilledResult<Article> =>
-            result.status === 'fulfilled'
-          )
-          .map(result => result.value);
-
-        if (successfulArticles.length > 0) {
-          setNews(successfulArticles);
-          setError(null);
-        }
+        const articles = data.map(newsRowToArticle);
+        setNews(articles);
+        setError(null);
+      } else {
+        setNews([]);
       }
     } catch (err) {
       console.error('Error fetching news:', err);
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
       setError(errorMessage);
-      // Don't clear existing news on error
     } finally {
       setLoading(false);
     }
@@ -122,45 +106,25 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setTimeout(() => reject(new Error('Request timeout')), 10000);
       });
 
-      let query = supabase
-        .from('news')
-        .select('*')
-        .eq('status', 'published')
+      const query = getBaseQuery()
         .lt('created_at', lastArticle.created_at)
-        .order('created_at', { ascending: false });
+        .limit(10);
 
-      if (currentCategoryId) {
-        query = query.eq('category_id', currentCategoryId);
-      }
-
-      // Race between fetch and timeout
       const { data, error: fetchError } = await Promise.race([
-        query.limit(10),
+        query,
         timeoutPromise
-      ]) as { data: NewsRow[] | null; error: Error | null };
+      ]) as { data: any[] | null; error: Error | null };
 
       if (fetchError) throw fetchError;
 
       if (data && data.length > 0) {
-        const articlesPromises = data.map(newsRowToArticle);
-        const articles = await Promise.allSettled(articlesPromises);
-
-        // Filter out rejected promises and extract values from fulfilled ones
-        const successfulArticles = articles
-          .filter((result): result is PromiseFulfilledResult<Article> =>
-            result.status === 'fulfilled'
-          )
-          .map(result => result.value);
-
-        if (successfulArticles.length > 0) {
-          setNews(prev => [...prev, ...successfulArticles]);
-          setError(null);
-        }
+        const articles = data.map(newsRowToArticle);
+        setNews(prev => [...prev, ...articles]);
+        setError(null);
       }
     } catch (err) {
       console.error('Error loading more news:', err);
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-      // Only show error briefly and don't disrupt existing content
       setError(errorMessage);
       setTimeout(() => setError(null), 3000);
     } finally {
@@ -169,32 +133,59 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Filter news by category
-  const filterByCategory = (categoryId: string | null) => {
+  const filterByCategory = async (categoryId: string | null) => {
     setCurrentCategoryId(categoryId);
+    setNews([]); // Clear existing news
+    await fetchNews();
   };
 
   // Handle realtime events
   const handleRealtimeEvent = async (rawPayload: NewsRealtimePayload, eventType: string) => {
-    if (!news.length) return; // Don't update if no initial data
+    if (!news.length) return;
 
     try {
       switch (eventType) {
         case 'INSERT': {
           if (!rawPayload.new || typeof rawPayload.new !== 'object') return;
           const newsRow = rawPayload.new as NewsRow;
-          const newArticle = await newsRowToArticle(newsRow);
-          if (!currentCategoryId || newArticle.category_id === currentCategoryId) {
-            setNews(prev => [newArticle, ...prev]);
+          
+          // Only fetch if status is published
+          if (newsRow.status !== 'published') return;
+
+          const { data: completeRow } = await getBaseQuery()
+            .eq('id', newsRow.id)
+            .single();
+
+          if (completeRow) {
+            const newArticle = newsRowToArticle(completeRow);
+            // Only add if it matches current category filter
+            if (!currentCategoryId || newArticle.category_id === currentCategoryId) {
+              setNews(prev => [newArticle, ...prev]);
+            }
           }
           break;
         }
         case 'UPDATE': {
           if (!rawPayload.new || typeof rawPayload.new !== 'object') return;
           const newsRow = rawPayload.new as NewsRow;
-          const updatedArticle = await newsRowToArticle(newsRow);
-          setNews(prev => prev.map(article =>
-            article.id === updatedArticle.id ? updatedArticle : article
-          ));
+
+          // Only fetch if status is published
+          if (newsRow.status !== 'published') {
+            // Remove if it was unpublished
+            setNews(prev => prev.filter(article => article.id !== newsRow.id));
+            return;
+          }
+
+          const { data: completeRow } = await getBaseQuery()
+            .eq('id', newsRow.id)
+            .single();
+
+          if (completeRow) {
+            const updatedArticle = newsRowToArticle(completeRow);
+            setNews(prev => prev.map(article =>
+              article.id === updatedArticle.id ? updatedArticle : article
+            ));
+          }
           break;
         }
         case 'DELETE': {
@@ -282,8 +273,7 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'news',
-          filter: 'status=eq.published',
+          table: 'news'
         },
         async (payload: { [key: string]: any }) => {
           console.log('NewsContext: Received INSERT event');
@@ -296,7 +286,7 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'news',
+          table: 'news'
         },
         async (payload: { [key: string]: any }) => {
           console.log('NewsContext: Received UPDATE event');
@@ -309,7 +299,7 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
         {
           event: 'DELETE',
           schema: 'public',
-          table: 'news',
+          table: 'news'
         },
         async (payload: { [key: string]: any }) => {
           console.log('NewsContext: Received DELETE event');
@@ -321,7 +311,6 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       isSubscribed = false;
-      // Don't cleanup the channel here - let the global channel management handle it
     };
   }, []);
 
@@ -353,3 +342,5 @@ const getTimeAgo = (date: Date): string => {
   if (minutes > 0) return `${minutes}m ago`;
   return 'Just now';
 };
+
+export default NewsContext;

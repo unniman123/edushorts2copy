@@ -25,13 +25,15 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Discover'>;
 export default function DiscoverScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchResults, setSearchResults] = useState<Article[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSearch = useCallback(async (text: string) => {
     setSearchQuery(text);
     setLoading(true);
+    setError(null);
 
     try {
       let query = supabase
@@ -50,7 +52,12 @@ export default function DiscoverScreen() {
         query = query.or(`title.ilike.%${text}%,summary.ilike.%${text}%,content.ilike.%${text}%`);
       }
 
-      if (selectedCategory !== 'All') {
+      if (selectedCategory !== 'all') {
+        // Validate UUID format before using in query
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(selectedCategory)) {
+          throw new Error('Invalid category ID format');
+        }
         query = query.eq('category_id', selectedCategory);
       }
 
@@ -59,14 +66,15 @@ export default function DiscoverScreen() {
       setSearchResults(data as Article[] || []);
     } catch (error) {
       console.error('Error searching news:', error);
+      setError(error instanceof Error ? error.message : 'An error occurred while searching');
       setSearchResults([]);
     } finally {
       setLoading(false);
     }
   }, [selectedCategory]);
 
-  const filterByCategory = useCallback(async (category: string) => {
-    setSelectedCategory(category);
+  const filterByCategory = useCallback(async (categoryId: string) => {
+    setSelectedCategory(categoryId);
     handleSearch(searchQuery);
   }, [searchQuery, handleSearch]);
 

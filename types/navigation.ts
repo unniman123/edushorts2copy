@@ -1,5 +1,5 @@
 export type RootStackParamList = {
-  Main: undefined;
+  Main: { screen: keyof MainTabParamList } | undefined;
   ArticleDetail: { articleId: string };
   Discover: undefined;
   Bookmarks: undefined;
