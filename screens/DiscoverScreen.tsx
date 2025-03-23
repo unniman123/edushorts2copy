@@ -98,9 +98,6 @@ export default function DiscoverScreen() {
           value={searchQuery}
           onChangeText={handleSearch}
         />
-        <TouchableOpacity style={styles.filterButton}>
-          <Feather name="sliders" size={20} color="#ff0000" />
-        </TouchableOpacity>
       </View>
 
       <View style={styles.categoryContainer}>
@@ -178,9 +175,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     paddingVertical: 8,
-  },
-  filterButton: {
-    padding: 4,
   },
   categoryContainer: {
     marginBottom: 16,
