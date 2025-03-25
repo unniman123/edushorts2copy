@@ -204,7 +204,7 @@ export default function LoginScreen() {
         >
           <View style={styles.logoContainer}>
             <Image
-              source={{ uri: 'https://api.a0.dev/assets/image?text=GlobalEdu%20News%20Logo&aspect=1:1&seed=123' }}
+              source={require('../assets/app-logo.png')}
               style={styles.logo}
             />
             <Text style={styles.logoText}>Edushorts</Text>

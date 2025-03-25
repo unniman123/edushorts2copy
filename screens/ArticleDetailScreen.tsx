@@ -75,8 +75,12 @@ export default function ArticleDetailScreen() {
   const handleShare = async () => {
     if (!article) return;
     try {
+      const deepLinkUrl = `edushorts://articleDetail?articleId=${articleId}`;
+      // Add https fallback URL (replace with your actual web URL if available)
+      const webUrl = `https://edushorts.app/article/${articleId}`;
       await Share.share({
-        message: `Check out this article: ${article.title}\n${article.source_url || ''}`,
+        message: `Check out this article: ${article.title}\n${deepLinkUrl}\n${webUrl}`,
+        url: webUrl // Some platforms may use this for rich previews
       });
     } catch (error) {
       console.error('Error sharing:', error);
