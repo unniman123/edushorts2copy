@@ -64,9 +64,6 @@ export default function HomeScreen() {
           <TouchableOpacity onPress={() => navigation.navigate('Discover')}>
             <Feather name="search" size={24} color="#333" style={styles.icon} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
-            <Feather name="bell" size={24} color="#333" style={styles.icon} />
-          </TouchableOpacity>
         </View>
       </View>
 
