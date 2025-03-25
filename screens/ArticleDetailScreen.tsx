@@ -143,9 +143,6 @@ export default function ArticleDetailScreen() {
           <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
             <Feather name="share" size={22} color="#333" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <Feather name="more-horizontal" size={24} color="#333" />
-          </TouchableOpacity>
         </View>
       </View>
 
