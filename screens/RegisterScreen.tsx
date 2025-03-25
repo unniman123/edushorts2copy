@@ -47,16 +47,20 @@ export default function RegisterScreen() {
 
     try {
       // 1. Create user with Supabase auth
+      const redirectUrl = Linking.createURL('auth/confirm');
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            full_name: fullName
+            full_name: fullName,
+            source: 'mobile'  // Add source to indicate where user signed up from
           },
-          emailRedirectTo: Linking.createURL('email-confirmation')
+          emailRedirectTo: redirectUrl
         }
       });
+
+      console.log('Redirect URL:', redirectUrl); // For debugging
 
       if (signUpError) throw signUpError;
       if (!data.user) throw new Error('No user returned from sign up');

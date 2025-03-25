@@ -1,36 +1,56 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../types/navigation';
+
+type EmailConfirmationRouteProp = RouteProp<RootStackParamList, 'EmailConfirmation'>;
+type EmailConfirmationNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 import { supabase } from '../utils/supabase';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { toast } from 'sonner-native';
 
 export default function EmailConfirmationScreen() {
   const [isConfirming, setIsConfirming] = useState(true);
-  const route = useRoute();
-  const navigation = useNavigation();
+  const route = useRoute<EmailConfirmationRouteProp>();
+  const navigation = useNavigation<EmailConfirmationNavigationProp>();
 
   useEffect(() => {
     const handleEmailConfirmation = async () => {
       try {
-        // Get the token from the URL params
-        const params = route.params as { token?: string };
-        if (!params?.token) {
+        // Get the token from URL params or deep link
+        const token = route.params.token;
+
+        if (!token) {
           throw new Error('No confirmation token found');
         }
 
+        console.log('Confirming email with token:', token); // For debugging
+
         // Confirm the email
         const { error } = await supabase.auth.verifyOtp({
-          token_hash: params.token,
-          type: 'email'
+          token_hash: token,
+          type: 'email',
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Verification error:', error); // For debugging
+          throw error;
+        }
 
         toast.success('Email confirmed successfully!');
-        
-        // Get the current user
-        const { data: { user } } = await supabase.auth.getUser();
+
+        // Get the current user and ensure data exists
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+        if (userError) {
+          console.error('Get user error:', userError); // For debugging
+          throw userError;
+        }
+
+        if (!user) {
+          throw new Error('No user found after confirmation');
+        }
         
         if (user) {
           // Create profile

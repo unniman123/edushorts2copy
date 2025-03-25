@@ -64,7 +64,7 @@ export default function LoginScreen() {
         type: 'signup',
         email: email,
         options: {
-          emailRedirectTo: Linking.createURL('email-confirmation')
+          emailRedirectTo: Linking.createURL('auth/confirm')
         }
       });
 
@@ -95,7 +95,7 @@ export default function LoginScreen() {
         if (signInError.message.includes('Email not confirmed')) {
           Alert.alert(
             'Email Not Verified',
-            'Please confirm your email address first',
+            'Please confirm your email address. Check your inbox for the verification link.',
             [
               {
                 text: 'Resend Email',
@@ -108,6 +108,9 @@ export default function LoginScreen() {
           );
           return;
         }
+        
+        // For other errors
+        console.error('Sign in error:', signInError); // For debugging
         throw signInError;
       }
       if (!user) throw new Error('No user returned from sign in');
@@ -178,7 +181,9 @@ export default function LoginScreen() {
     }
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: Linking.createURL('auth/reset-password')
+      });
       if (error) throw error;
       Alert.alert('Success', 'Password reset email sent! Please check your inbox.');
     } catch (error) {

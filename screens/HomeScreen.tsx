@@ -23,8 +23,6 @@ export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { news, loading, error, refreshNews, loadMoreNews } = useNews();
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-
   const handleRefresh = async () => {
     if (isRefreshing) return;
     setIsRefreshing(true);
@@ -37,30 +35,12 @@ export default function HomeScreen() {
 
   const handleLoadMore = async () => {
     // Don't load more if we're already loading, refreshing, or have no news
-    if (isLoadingMore || loading || isRefreshing || news.length === 0) return;
-
-    setIsLoadingMore(true);
+    if (loading || isRefreshing || news.length === 0) return;
     try {
       await loadMoreNews();
     } catch (error) {
       console.error('Error loading more news:', error);
-    } finally {
-      setIsLoadingMore(false);
     }
-  };
-
-  const renderFooter = () => {
-    // Don't show footer loader if refreshing or if there are no news items
-    if (isRefreshing || news.length === 0) return null;
-
-    // Only show loading indicator when actively loading more
-    if (!isLoadingMore) return null;
-
-    return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="small" color="#0066cc" />
-      </View>
-    );
   };
 
   if (error) {
@@ -109,7 +89,6 @@ export default function HomeScreen() {
           }
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.8}
-          ListFooterComponent={renderFooter}
           contentContainerStyle={[
             styles.newsList,
             news.length === 0 && styles.emptyList
@@ -163,10 +142,6 @@ const styles = StyleSheet.create({
   },
   newsList: {
     paddingBottom: 16,
-  },
-  loaderContainer: {
-    marginVertical: 16,
-    alignItems: 'center',
   },
   errorContainer: {
     flex: 1,

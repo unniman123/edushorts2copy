@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { RootStackParamList } from './types/navigation';
 import { StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Toaster } from 'sonner-native';
@@ -23,6 +24,7 @@ import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import EmailConfirmationScreen from './screens/EmailConfirmationScreen';
+import ResetPasswordScreen from './screens/ResetPasswordScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -125,6 +127,7 @@ function RootStackNavigator() {
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="EmailConfirmation" component={EmailConfirmationScreen} />
+          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
         </>
       )}
     </Stack.Navigator>
@@ -145,13 +148,30 @@ function AppContent() {
     return <LoadingScreen />;
   }
 
-  const linking = {
-    prefixes: ['edushorts://', 'https://edushorts.app.link'],
+  const linking: LinkingOptions<RootStackParamList> = {
+    prefixes: ['edushorts://', 'https://edushorts.app.link', 'exp://localhost:19000'],
     config: {
       screens: {
-        Login: 'login',
+        Login: {
+          path: 'login',
+          parse: {
+            emailConfirmed: (emailConfirmed: string) => emailConfirmed === 'true',
+            pendingConfirmation: (pendingConfirmation: string) => pendingConfirmation === 'true'
+          }
+        },
         Register: 'register',
-        EmailConfirmation: 'email-confirmation',
+        EmailConfirmation: {
+          path: 'auth/confirm',
+          parse: {
+            token: (token: string) => token
+          }
+        },
+        ResetPassword: {
+          path: 'auth/reset-password',
+          parse: {
+            token: (token: string) => token
+          }
+        },
         Main: 'main',
         ArticleDetail: {
           path: 'article/:articleId',
@@ -159,7 +179,8 @@ function AppContent() {
             articleId: (articleId: string) => articleId
           }
         }
-      }
+      },
+      initialRouteName: 'Login' as keyof RootStackParamList
     }
   };
 

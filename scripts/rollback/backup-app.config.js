@@ -3,7 +3,6 @@ module.exports = {
   slug: 'edushorts',
   version: '1.0.0',
   orientation: 'portrait',
-  scheme: 'edushorts',
   icon: './assets/icon.png',
   userInterfaceStyle: 'light',
   splash: {
@@ -19,28 +18,14 @@ module.exports = {
   ],
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.yourdomain.edushorts',
-    associatedDomains: ['applinks:edushorts.app']
+    bundleIdentifier: 'com.yourdomain.edushorts'
   },
   android: {
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#FFFFFF'
     },
-    package: 'com.yourdomain.edushorts',
-    intentFilters: [
-      {
-        action: "VIEW",
-        data: [
-          {
-            scheme: "edushorts",
-            host: "*",
-            pathPrefix: "/auth"
-          }
-        ],
-        category: ["BROWSABLE", "DEFAULT"]
-      }
-    ]
+    package: 'com.yourdomain.edushorts'
   },
   web: {
     favicon: './assets/favicon.png'

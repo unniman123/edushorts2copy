@@ -5,9 +5,17 @@ export type RootStackParamList = {
   Bookmarks: undefined;
   Profile: undefined;
   Settings: undefined;
-  Login: { emailConfirmed?: boolean; pendingConfirmation?: boolean };
+  Login: { 
+    emailConfirmed?: boolean; 
+    pendingConfirmation?: boolean;
+  };
   Register: undefined;
-  EmailConfirmation: { token?: string };
+  EmailConfirmation: { 
+    token: string;  // Make token required
+  };
+  ResetPassword: {
+    token: string;
+  };
   Notifications: undefined;
 };
 
