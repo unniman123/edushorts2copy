@@ -163,10 +163,14 @@ export default function LoginScreen() {
   };
 
   const handleSocialLogin = async (provider: 'google') => {
+    console.log('[LoginScreen] handleSocialLogin started. isLoading:', isLoading); // <-- ADD LOG
     setIsLoading(true);
     try {
+      console.log('[LoginScreen] Calling handleOAuthSignIn...'); // <-- ADD LOG
       await handleOAuthSignIn(provider);
+      console.log('[LoginScreen] handleOAuthSignIn finished.'); // <-- ADD LOG
     } catch (error) {
+      console.error('[LoginScreen] Error in handleSocialLogin:', error); // <-- ADD LOG
       const message = error instanceof Error ? error.message : 'Failed to sign in';
       Alert.alert('Error', message);
     } finally {
@@ -281,7 +285,10 @@ export default function LoginScreen() {
             <View style={styles.socialButtonsContainer}>
               <TouchableOpacity
                 style={[styles.socialButton, { flex: 1 }]}
-                onPress={() => handleSocialLogin('google')}
+                onPress={() => {
+                  console.log('[LoginScreen] Google Button Pressed. Current isLoading:', isLoading); // <-- ADD LOG
+                  handleSocialLogin('google');
+                }}
                 disabled={isLoading}
               >
                 <Feather name="chrome" size={20} color="#DB4437" />

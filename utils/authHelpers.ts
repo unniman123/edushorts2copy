@@ -65,25 +65,35 @@ export const handleOAuthCallbackUrl = async (url: string) => {
 };
 
 export const handleOAuthSignIn = async (provider: Provider) => {
+  console.log('[authHelpers] handleOAuthSignIn started for provider:', provider); // <-- ADD LOG
   try {
+    console.log('[authHelpers] Creating redirect URL...'); // <-- ADD LOG
     const redirectUrl = makeRedirectUri({
       native: Linking.createURL('/auth/callback'),
     });
+    console.log('[authHelpers] Redirect URL created:', redirectUrl); // <-- ADD LOG
 
+    console.log('[authHelpers] Calling supabase.auth.signInWithOAuth...'); // <-- ADD LOG
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: redirectUrl,
+        redirectTo: redirectUrl, // <-- Reverted: Use dynamic redirectUrl
         skipBrowserRedirect: false,
       },
     });
 
     if (error) throw error;
     if (!data) throw new Error('No data returned from OAuth sign in');
+    console.log('[authHelpers] signInWithOAuth successful, data:', data); // <-- ADD LOG
+
+    // Removed explicit WebBrowser call
 
     return true;
   } catch (error) {
+    console.error('[authHelpers] Error in handleOAuthSignIn:', error); // <-- ADD LOG
     const message = error instanceof Error ? error.message : 'Failed to initiate sign in';
+    // Attempt toast, but also log in case toast fails silently
+    console.error('[authHelpers] Error message for toast:', message); // <-- ADD LOG
     toast.error(message);
     return false;
   }
