@@ -67,8 +67,9 @@ const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
         <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
           {/* Source Tag */}
           <View style={styles.sourceTagContainer}>
-            <Text style={styles.sourceTagText}>
-              {article.source_name || 'News Source'}
+            <Text style={styles.sourceTagText} numberOfLines={1}>
+              {/* Display Category Name here */}
+              {article.category?.name || 'General'} 
             </Text>
           </View>
 
@@ -81,7 +82,7 @@ const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
           {/* Timestamp and Source Link */}
           <TouchableOpacity onPress={handleSourceLinkPress} disabled={!article.source_url}>
             <Text style={styles.sourceLinkText}>
-              Read more at {article.source_name || 'Source'} / {formatTimeAgo(article.created_at)}
+              {article.source_url ? `Read more at ${article.source_name || 'Source'}` : (article.source_name || 'Source')} / {formatTimeAgo(article.created_at)}
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -140,15 +141,15 @@ const styles = StyleSheet.create({
     paddingTop: 20,       // Padding above the source tag
   },
   sourceTagContainer: {
-    backgroundColor: '#eeeeee', // Light grey background like image
+    backgroundColor: '#ff0000', // Changed to red background
     paddingHorizontal: 12,
     paddingVertical: 5,
-    borderRadius: 15, // More rounded corners
+    borderRadius: 6, // Slightly less rounded corners
     alignSelf: 'flex-start', // Align tag to the left
     marginBottom: 15,      // Space below the tag
   },
   sourceTagText: {
-    color: '#555555', // Darker grey text
+    color: '#ffffff', // Changed to white text
     fontSize: 14,
     fontWeight: '500',
   },
@@ -162,12 +163,12 @@ const styles = StyleSheet.create({
   summary: {
     fontSize: 16, // Larger summary font size
     color: '#666666', // Medium grey text color
-    lineHeight: 24, // Adjust line height
+    lineHeight: 25, // Slightly increased line height
     marginBottom: 20, // Increased space below summary
   },
   sourceLinkText: {
     fontSize: 12,
-    color: '#a0a0a0', // Lighter grey color like image
+    color: '#888888', // Made slightly darker for better readability
     fontWeight: '400',
     marginTop: 10, // Space above the link text
     marginBottom: 20, // Add space below the link text before potential icon overlap
