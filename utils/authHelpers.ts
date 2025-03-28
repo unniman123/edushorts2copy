@@ -1,5 +1,6 @@
 import { makeRedirectUri } from 'expo-auth-session';
 import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser'; // <-- Import WebBrowser
 import { toast } from 'sonner-native';
 import { supabase } from './supabase';
 import { Provider } from '@supabase/supabase-js';
@@ -65,25 +66,57 @@ export const handleOAuthCallbackUrl = async (url: string) => {
 };
 
 export const handleOAuthSignIn = async (provider: Provider) => {
+  console.log('[authHelpers] handleOAuthSignIn started for provider:', provider); // <-- ADD LOG
   try {
+    console.log('[authHelpers] Creating redirect URL...'); // <-- ADD LOG
     const redirectUrl = makeRedirectUri({
       native: Linking.createURL('/auth/callback'),
     });
+    console.log('[authHelpers] Redirect URL created:', redirectUrl); // <-- ADD LOG
 
+    console.log('[authHelpers] Calling supabase.auth.signInWithOAuth...'); // <-- ADD LOG
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
         redirectTo: redirectUrl,
-        skipBrowserRedirect: false,
+        skipBrowserRedirect: true, // <-- Set to true
       },
     });
 
     if (error) throw error;
     if (!data) throw new Error('No data returned from OAuth sign in');
+    console.log('[authHelpers] signInWithOAuth successful, data:', data); // <-- ADD LOG
 
-    return true;
+    // Explicitly open the browser
+    const authResponse = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+    console.log('[authHelpers] WebBrowser response:', authResponse); // <-- ADD LOG
+
+    if (authResponse.type !== 'success') {
+      // Handle cancellation or dismissal
+      if (authResponse.type === 'cancel' || authResponse.type === 'dismiss') {
+        console.log('[authHelpers] OAuth flow cancelled by user.');
+        // Optionally show a toast message
+        // toast.info('Sign in cancelled.');
+        return false; // Indicate cancellation
+      }
+      // Handle other potential non-success types if necessary
+      throw new Error(`WebBrowser failed: ${authResponse.type}`);
+    }
+
+    // If successful, the deep link listener (handleOAuthCallbackUrl) will be triggered
+    // We don't need to return anything specific here as the listener handles the final steps
+    // Returning true might be misleading if the callback processing fails later
+    // Let's return void or handle the success state based on the listener's outcome if needed elsewhere
+    // For now, just log success at this stage
+    console.log('[authHelpers] WebBrowser session opened successfully. Waiting for callback...');
+    // The function implicitly returns undefined here, which is fine.
+    // The LoginScreen's finally block will still run.
+
   } catch (error) {
+    console.error('[authHelpers] Error in handleOAuthSignIn:', error); // <-- ADD LOG
     const message = error instanceof Error ? error.message : 'Failed to initiate sign in';
+    // Attempt toast, but also log in case toast fails silently
+    console.error('[authHelpers] Error message for toast:', message); // <-- ADD LOG
     toast.error(message);
     return false;
   }
