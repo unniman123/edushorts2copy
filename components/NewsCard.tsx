@@ -180,13 +180,15 @@ const styles = StyleSheet.create({
   cardContentContainer: {
     flex: 1, // Take remaining vertical space
     // Position absolutely to overlay image slightly if needed, or use negative margin
-    // For simplicity, let's keep it below the image for now.
+    marginTop: -20, // Pull the container up to overlap the image
     backgroundColor: 'white', // Ensure background is white
+    borderTopLeftRadius: 20, // Added curve to top-left corner
+    borderTopRightRadius: 20, // Added curve to top-right corner
     paddingBottom: 20, // Add padding at the very bottom
   },
   scrollView: {
     paddingHorizontal: 20, // Horizontal padding for content
-    paddingTop: 20,       // Padding above the source tag
+    paddingTop: 40,       // Increased padding to compensate for negative margin (20 + 20)
   },
   sourceTagContainer: {
     backgroundColor: '#ff0000', // Changed to red background
