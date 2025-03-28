@@ -8,6 +8,8 @@ import {
   Dimensions, // Import Dimensions
   ScrollView, // Import ScrollView
   Linking, // Import Linking for source URL
+  Share, // Import Share API
+  Platform, // To potentially customize share message
 } from 'react-native';
 // Removed useNavigation as it's not used in Phase 1 card directly
 // import { useNavigation } from '@react-navigation/native';
@@ -15,6 +17,8 @@ import {
 import { Article } from '../types/supabase';
 // import { RootStackParamList } from '../types/navigation'; // Not needed for Phase 1 card
 import { Feather } from '@expo/vector-icons'; // Import icons
+import { useSavedArticles } from '../context/SavedArticlesContext'; // Import saved articles context
+import { showToast } from '../utils/toast'; // Import showToast directly
 
 interface NewsCardProps {
   article: Article;
@@ -23,6 +27,11 @@ interface NewsCardProps {
 const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
   // const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(); // Not needed for Phase 1
   const [showIcons, setShowIcons] = useState(false); // State for icon visibility
+  // Get correct functions and state from context
+  const { savedArticles, addBookmark, removeBookmark } = useSavedArticles(); 
+
+  // Derive saved state by checking if the article id exists in the savedArticles array
+  const isSaved = savedArticles.some(saved => saved.id === article.id); 
 
   // Function to format timestamp (basic example)
   const formatTimeAgo = (timestamp: string | undefined): string => {
@@ -39,6 +48,43 @@ const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
   const handleSourceLinkPress = () => {
     if (article.source_url) {
       Linking.openURL(article.source_url).catch(err => console.error("Couldn't load page", err));
+    }
+  };
+
+  // Handle Share action
+  const handleShare = async () => {
+    try {
+      const urlToShare = article.source_url || ''; // Fallback if no URL
+      const message = `${article.title}\n\n${urlToShare}`; // Basic message
+      
+      await Share.share({
+        message: message,
+        url: Platform.OS === 'ios' ? urlToShare : undefined, // URL primarily for iOS
+        title: article.title, // Optional title
+      });
+    } catch (error: any) {
+      console.error('Error sharing article:', error.message);
+      showToast('error', 'Error sharing article'); // Swapped arguments
+    }
+  };
+
+  // Handle Save/Unsave action
+  const handleSaveToggle = () => {
+    try {
+      if (isSaved) {
+        // Use removeBookmark function from context
+        removeBookmark(article.id);
+        showToast('success', 'Article removed from bookmarks'); // Swapped arguments
+      } else {
+        // Use addBookmark function from context (takes articleId)
+        addBookmark(article.id); 
+        showToast('success', 'Article saved to bookmarks'); // Swapped arguments
+      }
+      // Optionally hide icons after action
+      // setShowIcons(false); 
+    } catch (error: any) {
+       console.error('Error saving/unsaving article:', error.message);
+       showToast('error', 'Error updating bookmarks'); // Swapped arguments
     }
   };
 
@@ -92,11 +138,13 @@ const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
       {showIcons && (
         <View style={styles.interactionContainer}>
           {/* Save Icon */}
-          <TouchableOpacity onPress={() => console.log('Save Pressed (Phase 1)')} style={styles.iconButton}>
-            <Feather name="bookmark" size={28} color="#333" />
+          <TouchableOpacity onPress={handleSaveToggle} style={styles.iconButton}>
+            {/* Change icon based on saved state */}
+            <Feather name={isSaved ? "bookmark" : "bookmark"} size={28} color={isSaved ? "#ff0000" : "#333"} /> 
+            {/* Using same icon but changing color. Could use different icons if available */}
           </TouchableOpacity>
           {/* Share Icon */}
-          <TouchableOpacity onPress={() => console.log('Share Pressed (Phase 1)')} style={styles.iconButton}>
+          <TouchableOpacity onPress={handleShare} style={styles.iconButton}>
             <Feather name="share-2" size={28} color="#333" />
           </TouchableOpacity>
         </View>

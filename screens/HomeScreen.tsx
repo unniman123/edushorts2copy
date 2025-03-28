@@ -3,9 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
-  RefreshControl,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,30 +13,29 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import { useNews } from '../context/NewsContext';
 import NewsCard from '../components/NewsCard';
+import PagerView from 'react-native-pager-view'; // Import PagerView
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { news, loading, error, refreshNews, loadMoreNews } = useNews();
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const handleRefresh = async () => {
-    if (isRefreshing) return;
-    setIsRefreshing(true);
-    try {
-      await refreshNews();
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
+  // Removed isRefreshing state and handleRefresh function as RefreshControl is not used with PagerView directly
+  const [isLoadingMore, setIsLoadingMore] = useState(false); // State to prevent multiple loadMore calls
 
   const handleLoadMore = async () => {
     // Don't load more if we're already loading, refreshing, or have no news
-    if (loading || isRefreshing || news.length === 0) return;
+    // Also check isLoadingMore state
+    if (loading || isLoadingMore || news.length === 0) return;
+ 
+    
+    setIsLoadingMore(true); // Set loading more state
     try {
       await loadMoreNews();
     } catch (error) {
       console.error('Error loading more news:', error);
+    } finally {
+      setIsLoadingMore(false); // Reset loading more state
     }
   };
 
@@ -72,10 +69,6 @@ export default function HomeScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.emptyList}>
           <Text>No news available.</Text>
-          {/* Consider adding a manual refresh button here if needed */}
-          {/* <TouchableOpacity onPress={handleRefresh} style={styles.retryButton}>
-            <Text style={styles.retryText}>Refresh</Text>
-          </TouchableOpacity> */}
         </View>
       </SafeAreaView>
    );
@@ -83,9 +76,33 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Render only the first news card for design purposes in Phase 1 */}
-      {/* Ensure news array is not empty before accessing news[0] */}
-     { news.length > 0 && <NewsCard article={news[0]} />}
+      <PagerView
+        style={styles.pagerView}
+        orientation="vertical"
+        initialPage={0}
+        onPageScroll={(e) => {
+          // Basic load more trigger: if scrolling near the end and not already loading
+          const { position, offset } = e.nativeEvent;
+          // Trigger when user is scrolling *towards* the last page (offset > 0) 
+          // and is close to it (position >= news.length - 2)
+          if (offset > 0 && position >= news.length - 2 && !isLoadingMore) {
+             handleLoadMore();
+          }
+        }}
+      >
+        {news.map((article) => (
+          // Each child of PagerView must be a View with a key
+          <View key={article.id}> 
+            <NewsCard article={article} />
+          </View>
+        ))}
+      </PagerView>
+      {/* Optional: Add a loading indicator for loadMore */}
+      {isLoadingMore && (
+        <View style={styles.loadingMoreIndicator}>
+          <ActivityIndicator size="small" color="#ff0000" />
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -97,7 +114,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingContainer: {
- // Added style for loading indicator
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -106,6 +122,16 @@ const styles = StyleSheet.create({
  container: {
     flex: 1,
     backgroundColor: '#ffffff', // Changed background to white for full screen card
+  },
+  pagerView: { // Style for the PagerView component
+    flex: 1,
+  },
+  loadingMoreIndicator: { // Style for the load more indicator overlay
+    position: 'absolute',
+    bottom: 10,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
   errorContainer: {
     flex: 1,
