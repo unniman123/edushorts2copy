@@ -15,7 +15,6 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import { useNews } from '../context/NewsContext';
 import NewsCard from '../components/NewsCard';
-import CategorySelector from '../components/CategorySelector';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
 
@@ -56,45 +55,37 @@ export default function HomeScreen() {
     );
   }
 
+  // Render loading indicator while news is loading initially
+  if (loading && news.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#ff0000" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Render message if there are no news articles
+  if (!loading && news.length === 0 && !error) { // Added !error check
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.emptyList}>
+          <Text>No news available.</Text>
+          {/* Consider adding a manual refresh button here if needed */}
+          {/* <TouchableOpacity onPress={handleRefresh} style={styles.retryButton}>
+            <Text style={styles.retryText}>Refresh</Text>
+          </TouchableOpacity> */}
+        </View>
+      </SafeAreaView>
+   );
+   }
+
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.logo}>Edushorts News</Text>
-        <View style={styles.headerIcons}>
-          <TouchableOpacity onPress={() => navigation.navigate('Discover')}>
-            <Feather name="search" size={24} color="#333" style={styles.icon} />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.content}>
-        <View style={styles.categoryContainer}>
-          <CategorySelector useGlobalContext={true} />
-        </View>
-
-        <FlatList
-          data={news}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <NewsCard article={item} />}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={handleRefresh}
-              colors={['#ff0000']}
-            />
-          }
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.8}
-          contentContainerStyle={[
-            styles.newsList,
-            news.length === 0 && styles.emptyList
-          ]}
-          initialNumToRender={5}
-          maxToRenderPerBatch={5}
-          windowSize={5}
-        />
-      </View>
+      {/* Render only the first news card for design purposes in Phase 1 */}
+      {/* Ensure news array is not empty before accessing news[0] */}
+     { news.length > 0 && <NewsCard article={news[0]} />}
     </SafeAreaView>
   );
 }
@@ -105,40 +96,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  container: {
+  loadingContainer: {
+ // Added style for loading indicator
     flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eeeeee',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#ffffff', // Match container background
   },
-  logo: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#ff0000',
-  },
-  headerIcons: {
-    flexDirection: 'row',
-  },
-  icon: {
-    marginLeft: 20,
-  },
-  content: {
+ container: {
     flex: 1,
-    padding: 16,
-  },
-  categoryContainer: {
-    marginBottom: 15,
-  },
-  newsList: {
-    paddingBottom: 16,
+    backgroundColor: '#ffffff', // Changed background to white for full screen card
   },
   errorContainer: {
     flex: 1,
