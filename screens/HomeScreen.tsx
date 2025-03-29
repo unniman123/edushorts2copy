@@ -13,29 +13,36 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import { useNews } from '../context/NewsContext';
 import NewsCard from '../components/NewsCard';
-import PagerView from 'react-native-pager-view'; // Import PagerView
+import PagerView from 'react-native-pager-view';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
 
-export default function HomeScreen() {
+interface HomeScreenRef {
+  scrollToTop: () => void;
+}
+
+const HomeScreen = React.forwardRef<HomeScreenRef>((props, ref) => {
+  const pagerRef = React.useRef<PagerView>(null);
   const navigation = useNavigation<NavigationProp>();
   const { news, loading, error, refreshNews, loadMoreNews } = useNews();
-  // Removed isRefreshing state and handleRefresh function as RefreshControl is not used with PagerView directly
-  const [isLoadingMore, setIsLoadingMore] = useState(false); // State to prevent multiple loadMore calls
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  React.useImperativeHandle(ref, () => ({
+    scrollToTop: () => {
+      pagerRef.current?.setPage(0);
+    }
+  }));
 
   const handleLoadMore = async () => {
-    // Don't load more if we're already loading, refreshing, or have no news
-    // Also check isLoadingMore state
     if (loading || isLoadingMore || news.length === 0) return;
- 
     
-    setIsLoadingMore(true); // Set loading more state
+    setIsLoadingMore(true);
     try {
       await loadMoreNews();
     } catch (error) {
       console.error('Error loading more news:', error);
     } finally {
-      setIsLoadingMore(false); // Reset loading more state
+      setIsLoadingMore(false);
     }
   };
 
@@ -52,7 +59,6 @@ export default function HomeScreen() {
     );
   }
 
-  // Render loading indicator while news is loading initially
   if (loading && news.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
@@ -63,41 +69,36 @@ export default function HomeScreen() {
     );
   }
 
-  // Render message if there are no news articles
-  if (!loading && news.length === 0 && !error) { // Added !error check
+  if (!loading && news.length === 0 && !error) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.emptyList}>
           <Text>No news available.</Text>
         </View>
       </SafeAreaView>
-   );
-   }
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <PagerView
+        ref={pagerRef}
         style={styles.pagerView}
         orientation="vertical"
         initialPage={0}
         onPageScroll={(e) => {
-          // Basic load more trigger: if scrolling near the end and not already loading
           const { position, offset } = e.nativeEvent;
-          // Trigger when user is scrolling *towards* the last page (offset > 0) 
-          // and is close to it (position >= news.length - 2)
           if (offset > 0 && position >= news.length - 2 && !isLoadingMore) {
-             handleLoadMore();
+            handleLoadMore();
           }
         }}
       >
         {news.map((article) => (
-          // Each child of PagerView must be a View with a key
-          <View key={article.id}> 
+          <View key={article.id}>
             <NewsCard article={article} />
           </View>
         ))}
       </PagerView>
-      {/* Optional: Add a loading indicator for loadMore */}
       {isLoadingMore && (
         <View style={styles.loadingMoreIndicator}>
           <ActivityIndicator size="small" color="#ff0000" />
@@ -105,7 +106,7 @@ export default function HomeScreen() {
       )}
     </SafeAreaView>
   );
-}
+});
 
 const styles = StyleSheet.create({
   emptyList: {
@@ -117,16 +118,16 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff', // Match container background
+    backgroundColor: '#ffffff',
   },
- container: {
+  container: {
     flex: 1,
-    backgroundColor: '#ffffff', // Changed background to white for full screen card
+    backgroundColor: '#ffffff',
   },
-  pagerView: { // Style for the PagerView component
+  pagerView: {
     flex: 1,
   },
-  loadingMoreIndicator: { // Style for the load more indicator overlay
+  loadingMoreIndicator: {
     position: 'absolute',
     bottom: 10,
     left: 0,
@@ -155,3 +156,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+
+export default HomeScreen;

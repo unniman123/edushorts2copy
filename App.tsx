@@ -3,12 +3,13 @@ import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { RootStackParamList } from './types/navigation';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Toaster } from 'sonner-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { useNews } from './context/NewsContext';
 import { SavedArticlesProvider } from './context/SavedArticlesContext';
 import { NewsProvider } from './context/NewsContext';
 import { initializeAuth } from './utils/authHelpers';
@@ -30,6 +31,32 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function MainTabs() {
+  const homeScreenRef = React.useRef<{scrollToTop: () => void}>(null);
+  const [activeTab, setActiveTab] = React.useState('HomeTab');
+  const { refreshNews } = useNews();
+
+  const handleTabPress = (tabName: string) => {
+    console.log('(NOBRIDGE) LOG  Tab pressed:', tabName, 'Current active tab:', activeTab);
+    
+    if (tabName === 'HomeTab' && activeTab === 'HomeTab') {
+      console.log('(NOBRIDGE) LOG  HomeTab pressed while active - initiating refresh');
+      
+      refreshNews()
+        .then(() => {
+          console.log('(NOBRIDGE) LOG  Refresh completed, waiting for render');
+          // Small delay to ensure UI updates before scrolling
+          return new Promise(resolve => setTimeout(resolve, 100));
+        })
+        .then(() => {
+          console.log('(NOBRIDGE) LOG  Scrolling to top after render');
+          homeScreenRef.current?.scrollToTop();
+        })
+        .catch((error) => {
+          console.error('(NOBRIDGE) ERROR  Refresh failed:', error);
+        });
+    }
+    setActiveTab(tabName);
+  };
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -67,8 +94,16 @@ function MainTabs() {
     >
       <Tab.Screen
         name="HomeTab"
-        component={HomeScreen}
-        options={{ tabBarLabel: 'Home' }}
+        children={() => <HomeScreen ref={homeScreenRef} />}
+        options={{ 
+          tabBarLabel: 'Home',
+          tabBarButton: (props) => (
+            <TouchableOpacity
+              {...props}
+              onPress={() => handleTabPress('HomeTab')}
+            />
+          )
+        }}
       />
       <Tab.Screen
         name="DiscoverTab"
