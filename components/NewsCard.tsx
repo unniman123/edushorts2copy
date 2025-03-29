@@ -54,12 +54,15 @@ const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
   // Handle Share action
   const handleShare = async () => {
     try {
-      const urlToShare = article.source_url || ''; // Fallback if no URL
-      const message = `${article.title}\n\n${urlToShare}`; // Basic message
+      // Construct the deep link URL
+      const deepLinkUrl = `edushorts://article/${article.id}`; 
+      // Updated message to reflect sharing the article within the app
+      const message = `Check out this article in Edushorts: ${article.title}\n\n${deepLinkUrl}`; 
       
       await Share.share({
         message: message,
-        url: Platform.OS === 'ios' ? urlToShare : undefined, // URL primarily for iOS
+        // Use the deep link URL for sharing. On Android, the URL might be included in the message.
+        url: deepLinkUrl, 
         title: article.title, // Optional title
       });
     } catch (error: any) {
