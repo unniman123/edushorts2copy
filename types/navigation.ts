@@ -10,8 +10,9 @@ export type RootStackParamList = {
     pendingConfirmation?: boolean;
   };
   Register: undefined;
-  EmailConfirmation: { 
-    token: string;  // Make token required
+  EmailConfirmation: {
+    token?: string; // Token from deep link (optional now)
+    email?: string; // Email passed from registration/login (optional)
   };
   ResetPassword: {
     token: string;

@@ -80,7 +80,7 @@ export default function LoadingScreen() {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../assets/icon.png')}
+        source={require('../assets/app-logo.png')}
         style={styles.logo}
         onError={(error) => console.error('LoadingScreen: Error loading logo:', error)}
       />
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   logo: {
     width: 100,
     height: 100,
-    borderRadius: 50,
+    // borderRadius: 50, // Removed as requested
     marginBottom: 16,
   },
   brandText: {

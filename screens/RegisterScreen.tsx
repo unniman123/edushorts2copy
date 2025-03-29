@@ -85,15 +85,14 @@ export default function RegisterScreen() {
           [
             {
               text: 'OK',
-              onPress: () => navigation.navigate('Login', { emailConfirmed: false, pendingConfirmation: true })
+              // Navigate directly to EmailConfirmationScreen, passing the email
+              onPress: () => navigation.navigate('EmailConfirmation', { email: email })
             }
           ]
         );
-        
-        // Navigate to login screen with a flag indicating email confirmation is pending
-        navigation.navigate('Login', { emailConfirmed: false, pendingConfirmation: true });
       } else {
         // Email confirmation is not required or already confirmed
+        // This case might need review - should it still go to Login or Main? Assuming Login for now.
         Alert.alert(
           'Success',
           'Registration successful!',

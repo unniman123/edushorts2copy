@@ -33,51 +33,12 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    if (emailConfirmed === true) {
-      Alert.alert('Success', 'Email confirmed successfully! You can now log in.');
-    } else if (emailConfirmed === false && pendingConfirmation) {
-      Alert.alert(
-        'Email Verification Required',
-        'Please check your email for verification link',
-        [
-          {
-            text: 'Resend Email',
-            onPress: handleResendVerification,
-          },
-          {
-            text: 'OK',
-          },
-        ]
-      );
-    }
-  }, [emailConfirmed, pendingConfirmation]);
+  // Removed useEffect for confirmation alerts
 
-  const handleResendVerification = async () => {
-    if (!email) {
-      Alert.alert('Error', 'Please enter your email address first');
-      return;
-    }
-
-    try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: email,
-        options: {
-          emailRedirectTo: Linking.createURL('auth/confirm')
-        }
-      });
-
-      if (error) throw error;
-
-      Alert.alert('Success', 'Verification email resent! Please check your inbox.');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to resend verification email';
-      Alert.alert('Error', errorMessage);
-    }
-  };
+  // Removed handleResendVerification function
 
   const handleLogin = async () => {
+    // Correct start of handleLogin
     if (!email || !password) {
       Alert.alert('Error', 'Please enter both email and password');
       return;
@@ -93,22 +54,15 @@ export default function LoginScreen() {
 
       if (signInError) {
         if (signInError.message.includes('Email not confirmed')) {
-          Alert.alert(
+          // Navigate to EmailConfirmationScreen instead of showing alert
+          Alert.alert( // Keep a simple alert for user feedback before navigating
             'Email Not Verified',
-            'Please confirm your email address. Check your inbox for the verification link.',
-            [
-              {
-                text: 'Resend Email',
-                onPress: handleResendVerification,
-              },
-              {
-                text: 'OK',
-              },
-            ]
+            'Please confirm your email address. Redirecting you to the confirmation screen.'
           );
+          navigation.navigate('EmailConfirmation', { email: email });
           return;
         }
-        
+
         // For other errors
         console.error('Sign in error:', signInError); // For debugging
         throw signInError;
@@ -252,12 +206,7 @@ export default function LoginScreen() {
               >
                 <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.resendButton}
-                onPress={handleResendVerification}
-              >
-                <Text style={styles.resendButtonText}>Resend confirmation</Text>
-              </TouchableOpacity>
+              {/* Removed Resend confirmation button */}
             </View>
 
             <TouchableOpacity
