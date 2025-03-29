@@ -32,30 +32,32 @@ const Tab = createBottomTabNavigator();
 
 function MainTabs() {
   const homeScreenRef = React.useRef<{scrollToTop: () => void}>(null);
-  const [activeTab, setActiveTab] = React.useState('HomeTab');
   const { refreshNews } = useNews();
 
-  const handleTabPress = (tabName: string) => {
-    console.log('(NOBRIDGE) LOG  Tab pressed:', tabName, 'Current active tab:', activeTab);
+  const handleTabPress = (tabName: string, navigation: any) => {
+    console.log('(NOBRIDGE) LOG  Tab pressed:', tabName);
     
-    if (tabName === 'HomeTab' && activeTab === 'HomeTab') {
-      console.log('(NOBRIDGE) LOG  HomeTab pressed while active - initiating refresh');
+    if (tabName === 'HomeTab') {
+      // Always navigate to HomeTab first
+      console.log('(NOBRIDGE) LOG  Navigating to HomeTab');
+      navigation.navigate('Main', { screen: 'HomeTab' });
       
-      refreshNews()
-        .then(() => {
-          console.log('(NOBRIDGE) LOG  Refresh completed, waiting for render');
-          // Small delay to ensure UI updates before scrolling
-          return new Promise(resolve => setTimeout(resolve, 100));
-        })
-        .then(() => {
-          console.log('(NOBRIDGE) LOG  Scrolling to top after render');
-          homeScreenRef.current?.scrollToTop();
-        })
-        .catch((error) => {
-          console.error('(NOBRIDGE) ERROR  Refresh failed:', error);
-        });
+      // If already on HomeTab, also refresh and scroll
+      if (navigation.isFocused()) {
+        console.log('(NOBRIDGE) LOG  Already on HomeTab - refreshing');
+        refreshNews()
+          .then(() => {
+            console.log('(NOBRIDGE) LOG  Refresh completed successfully');
+            homeScreenRef.current?.scrollToTop();
+          })
+          .catch((error) => {
+            console.error('(NOBRIDGE) ERROR  Refresh failed:', error);
+          });
+      }
+    } else {
+      // Handle other tab presses normally
+      navigation.navigate('Main', { screen: tabName });
     }
-    setActiveTab(tabName);
   };
   return (
     <Tab.Navigator
@@ -92,18 +94,18 @@ function MainTabs() {
         },
       })}
     >
-      <Tab.Screen
+        <Tab.Screen
         name="HomeTab"
         children={() => <HomeScreen ref={homeScreenRef} />}
-        options={{ 
+        options={({ navigation }) => ({ 
           tabBarLabel: 'Home',
           tabBarButton: (props) => (
             <TouchableOpacity
               {...props}
-              onPress={() => handleTabPress('HomeTab')}
+              onPress={() => handleTabPress('HomeTab', navigation)}
             />
           )
-        }}
+        })}
       />
       <Tab.Screen
         name="DiscoverTab"
