@@ -8,28 +8,29 @@ import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-si
 const syncUserProfileAndRole = async (userId: string, email?: string) => {
   console.log('[authHelpers] Syncing profile/role for user:', userId);
   try {
-    const username = email?.split('@')[0] || `user_${userId.slice(0, 8)}`;
-    // Create or update profile
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .upsert(
-        {
-          id: userId,
-          username: username,
-          // Ensure default notification preferences are set if needed
-          notification_preferences: { push: true, email: false },
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'id' }
-      );
+    // const username = email?.split('@')[0] || `user_${userId.slice(0, 8)}`;
+    // // Create or update profile - REMOVED: Handled by DB trigger now
+    // const { error: profileError } = await supabase
+    //   .from('profiles')
+    //   .upsert(
+    //     {
+    //       id: userId,
+    //       username: username,
+    //       // Ensure default notification preferences are set if needed
+    //       notification_preferences: { push: true, email: false },
+    //       updated_at: new Date().toISOString(),
+    //     },
+    //     { onConflict: 'id' }
+    //   );
 
-    if (profileError) {
-      console.error('[authHelpers] Profile sync error:', profileError);
-      throw profileError; // Re-throw to be caught below
-    }
-    console.log('[authHelpers] Profile sync successful.');
+    // if (profileError) {
+    //   console.error('[authHelpers] Profile sync error:', profileError);
+    //   throw profileError; // Re-throw to be caught below
+    // }
+    // console.log('[authHelpers] Profile sync successful.');
 
     // Assign user role if not exists
+    console.log('[authHelpers] Checking/assigning user role...'); // Added log
     const { data: existingRole, error: roleCheckError } = await supabase
       .from('user_roles')
       .select('role')
