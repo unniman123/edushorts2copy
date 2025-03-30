@@ -1,7 +1,8 @@
+// Merged React and GoogleSignin imports
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../utils/supabase';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 // Profile related types
 export type NotificationPreferences = {
@@ -55,15 +56,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
     session: null,
-    isLoading: true,
+    isLoading: true, // Start as loading
     userRole: null,
     profile: null,
   });
 
-  const handleSession = async (session: Session, skipLoading = false): Promise<void> => {
+  // handleSession remains largely the same, fetches profile/role
+  const handleSession = async (session: Session | null, skipLoading = false): Promise<void> => {
+    if (!session) {
+      // If session is null (e.g., on sign out), clear the state
+      setState({
+        user: null,
+        session: null,
+        isLoading: false,
+        userRole: null,
+        profile: null,
+      });
+      return;
+    }
+
     console.log('AuthContext: Handling session for user:', session.user.id);
-    
-    // Set initial state immediately
+    // Set user/session state immediately
     setState(prev => ({
       ...prev,
       user: session.user,
@@ -74,59 +87,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const FETCH_TIMEOUT = 5000; // 5 seconds timeout
 
     try {
-      // Create promises with timeouts
+      // Fetch role and profile concurrently with timeout logic
       const getRolePromise = new Promise<{ data: UserRole | null, error: DBError | null }>(async (resolve) => {
         let timeoutId: NodeJS.Timeout | null = null;
-        
         try {
-          const timeoutPromise = new Promise<{ data: UserRole | null, error: DBError | null }>((resolveTimeout) => {
-            timeoutId = setTimeout(() => {
-              resolveTimeout({ data: null, error: { code: 'TIMEOUT', message: 'Request timed out' } });
-            }, FETCH_TIMEOUT);
-          });
-
-          const result = await Promise.race([
-            supabase
-              .from('user_roles')
-              .select('role')
-              .eq('user_id', session.user.id)
-              .single(),
-            timeoutPromise
-          ]);
-
-          if (timeoutId) clearTimeout(timeoutId);
-          resolve(result);
-        } catch (error) {
-          if (timeoutId) clearTimeout(timeoutId);
-          resolve({ data: null, error: error as DBError });
-        }
+          const timeoutPromise = new Promise<{ data: UserRole | null, error: DBError | null }>((resolveTimeout) => { timeoutId = setTimeout(() => { resolveTimeout({ data: null, error: { code: 'TIMEOUT', message: 'Request timed out' } }); }, FETCH_TIMEOUT); });
+          const result = await Promise.race([ supabase.from('user_roles').select('role').eq('user_id', session.user.id).single(), timeoutPromise ]);
+          if (timeoutId) clearTimeout(timeoutId); resolve(result);
+        } catch (error) { if (timeoutId) clearTimeout(timeoutId); resolve({ data: null, error: error as DBError }); }
       });
 
       const getProfilePromise = new Promise<{ data: DatabaseProfileData | null, error: DBError | null }>(async (resolve) => {
         let timeoutId: NodeJS.Timeout | null = null;
-
         try {
-          const timeoutPromise = new Promise<{ data: DatabaseProfileData | null, error: DBError | null }>((resolveTimeout) => {
-            timeoutId = setTimeout(() => {
-              resolveTimeout({ data: null, error: { code: 'TIMEOUT', message: 'Request timed out' } });
-            }, FETCH_TIMEOUT);
-          });
-
-          const result = await Promise.race([
-            supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single(),
-            timeoutPromise
-          ]);
-
-          if (timeoutId) clearTimeout(timeoutId);
-          resolve(result);
-        } catch (error) {
-          if (timeoutId) clearTimeout(timeoutId);
-          resolve({ data: null, error: error as DBError });
-        }
+          const timeoutPromise = new Promise<{ data: DatabaseProfileData | null, error: DBError | null }>((resolveTimeout) => { timeoutId = setTimeout(() => { resolveTimeout({ data: null, error: { code: 'TIMEOUT', message: 'Request timed out' } }); }, FETCH_TIMEOUT); });
+          const result = await Promise.race([ supabase.from('profiles').select('*').eq('id', session.user.id).single(), timeoutPromise ]);
+          if (timeoutId) clearTimeout(timeoutId); resolve(result);
+        } catch (error) { if (timeoutId) clearTimeout(timeoutId); resolve({ data: null, error: error as DBError }); }
       });
 
       const [roleResult, profileResult] = await Promise.all([getRolePromise, getProfilePromise]);
@@ -134,17 +111,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Process results
       const userRole = roleResult.data?.role || null;
       let profile: IProfile | null = null;
-
       if (profileResult.data) {
         const dbProfile = profileResult.data;
         profile = {
           id: session.user.id,
           username: dbProfile.username || '',
           avatar_url: dbProfile.avatar_url,
-          notification_preferences: dbProfile.notification_preferences || {
-            push: false,
-            email: false,
-          },
+          notification_preferences: dbProfile.notification_preferences || { push: false, email: false },
           updated_at: dbProfile.updated_at || new Date().toISOString(),
         };
       }
@@ -155,12 +128,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         userRole,
         profile,
-        isLoading: false
+        isLoading: false // Mark as not loading after fetching data
       }));
 
     } catch (error) {
-      console.error('AuthContext: Error in handleSession:', error);
-      // Keep user and session but mark as not loading
+      console.error('AuthContext: Error fetching profile/role in handleSession:', error);
+      // Keep user and session but mark as not loading, clear profile/role
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -170,167 +143,110 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Simplified useEffect for session handling
   useEffect(() => {
     let isSubscribed = true;
-    let hasInitializedSession = false;
-    console.log('AuthContext: Initializing...');
+    console.log('AuthContext: Setting up session listener and initial check...');
 
-    const initializeAuth = async () => {
-      try {
-        // Always start with stored session
-        const storedSession = await AsyncStorage.getItem('userSession');
-        if (storedSession && isSubscribed) {
-          const parsedSession = JSON.parse(storedSession);
-          const { data: { session }, error } = await supabase.auth.setSession(parsedSession);
-          if (error) {
-            console.error('AuthContext: Error setting stored session:', error);
-            await AsyncStorage.removeItem('userSession');
-          } else if (session) {
-            await handleSession(session);
-            hasInitializedSession = true;
-          }
-        }
-
-        // If no stored session or it failed, get current state
-        if (!hasInitializedSession && isSubscribed) {
-          const { data: { session } } = await supabase.auth.getSession();
-          console.log('AuthContext: Session check result:', session ? 'Found session' : 'No session');
-          
-          if (session) {
-            await handleSession(session);
-            await AsyncStorage.setItem('userSession', JSON.stringify(session));
-          } else {
-            console.log('AuthContext: No session found, setting isLoading to false');
-            setState(prev => ({ ...prev, isLoading: false }));
-          }
-        }
-      } catch (error) {
-        console.error('AuthContext: Error initializing:', error);
-        if (isSubscribed) {
-          setState(prev => ({ ...prev, isLoading: false }));
-        }
+    // Immediately check for existing session from Supabase client (handles storage internally)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (isSubscribed) {
+        console.log('AuthContext: Initial session check result:', session ? 'Found session' : 'No session');
+        // Call handleSession which sets state including isLoading: false
+        handleSession(session);
       }
-    };
-
-    initializeAuth();
-
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('AuthContext: Auth state changed:', event);
-      
-      if (!isSubscribed) return;
-
-      try {
-        switch (event) {
-          case 'TOKEN_REFRESHED':
-            if (session && session.user.id === state.session?.user?.id) {
-              // Only update session data without full reload
-              await handleSession(session, true);
-              await AsyncStorage.setItem('userSession', JSON.stringify(session));
-            }
-            break;
-            
-          case 'SIGNED_IN':
-            if (session) {
-              await handleSession(session);
-              await AsyncStorage.setItem('userSession', JSON.stringify(session));
-            }
-            break;
-
-          case 'SIGNED_OUT':
-            setState({
-              user: null,
-              session: null,
-              isLoading: false,
-              userRole: null,
-              profile: null,
-            });
-            await AsyncStorage.removeItem('userSession');
-            break;
-            
-          case 'USER_UPDATED':
-            if (!session) {
-              setState({
-                user: null,
-                session: null,
-                isLoading: false,
-                userRole: null,
-                profile: null,
-              });
-              await AsyncStorage.removeItem('userSession');
-            }
-            break;
-        }
-      } catch (error) {
-        console.error('AuthContext: Error handling auth state change:', error);
-        setState(prev => ({ ...prev, isLoading: false }));
-      }
+    }).catch(error => {
+       console.error('AuthContext: Error in initial getSession:', error);
+       if (isSubscribed) {
+          setState(prev => ({ ...prev, isLoading: false })); // Ensure loading stops on error
+       }
     });
 
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('AuthContext: Auth state changed:', event, session ? 'Session provided' : 'No session');
+      if (!isSubscribed) return;
+
+      // Let handleSession manage the state update based on the session provided
+      // No need to manually save/remove from AsyncStorage here
+      handleSession(session);
+    });
+
+    // Cleanup function
     return () => {
+      console.log('AuthContext: Unsubscribing auth listener.');
       isSubscribed = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, []); // Empty dependency array ensures this runs only once on mount
 
+  // Updated signOut to also sign out from Google
   const signOut = async () => {
     try {
       setState(prev => ({ ...prev, isLoading: true }));
-      await supabase.auth.signOut();
-      await AsyncStorage.removeItem('userSession');
+      // Sign out from Supabase
+      const { error: supabaseSignOutError } = await supabase.auth.signOut();
+      if (supabaseSignOutError) {
+        console.error('Supabase sign out error:', supabaseSignOutError);
+        // Decide if we should still attempt Google sign out or throw/toast
+      }
+
+      // Sign out from Google Sign-In locally
+      try {
+        // Check if user is signed in with Google using getCurrentUser
+        const currentUser = await GoogleSignin.getCurrentUser();
+        if (currentUser) {
+          await GoogleSignin.revokeAccess(); // Revoke access token (optional but good practice)
+          await GoogleSignin.signOut();     // Clear local Google session
+          console.log('AuthContext: Google Sign-Out successful.');
+        } else {
+          console.log('AuthContext: Google Sign-Out skipped (no current Google user).');
+        }
+      } catch (googleSignOutError) {
+        console.error('AuthContext: Google Sign out error:', googleSignOutError);
+        // Don't necessarily block the overall sign-out if Google fails, but log it.
+      }
+
     } catch (error) {
-      console.error('Error signing out:', error);
+      // Catch errors from Supabase sign out primarily
+      console.error('Error during sign out process:', error);
     } finally {
-      setState({
-        user: null,
-        session: null,
-        isLoading: false,
-        userRole: null,
-        profile: null,
-      });
+      // State is cleared by the onAuthStateChange listener calling handleSession(null)
+      // We can ensure isLoading is false here just in case
+       setState(prev => ({
+         ...prev,
+         user: null,
+         session: null,
+         isLoading: false,
+         userRole: null,
+         profile: null,
+       }));
     }
   };
 
+  // refreshSession remains the same
   const refreshSession = async () => {
     try {
       const { data: { session } } = await supabase.auth.refreshSession();
-      if (session) {
-        await handleSession(session);
-      } else {
-        setState(prev => ({ ...prev, isLoading: false }));
-      }
+      // handleSession will update state and isLoading
+      await handleSession(session);
     } catch (error) {
       console.error('Error refreshing session:', error);
       setState(prev => ({ ...prev, isLoading: false }));
     }
   };
 
+  // updateProfile remains the same
   const updateProfile = async (updates: Partial<Profile>) => {
     try {
       if (!state.user?.id) throw new Error('No user logged in');
-
       const timestamp = new Date().toISOString();
-      const updateData = {
-        ...updates,
-        updated_at: timestamp,
-      };
-
-      const { error } = await supabase
-        .from('profiles')
-        .update(updateData)
-        .eq('id', state.user.id);
-
+      const updateData = { ...updates, updated_at: timestamp };
+      const { error } = await supabase.from('profiles').update(updateData).eq('id', state.user.id);
       if (error) throw error;
-
       setState(prev => ({
         ...prev,
-        profile: prev.profile 
-          ? { 
-              ...prev.profile, 
-              ...updates, 
-              updated_at: timestamp 
-            }
-          : null,
+        profile: prev.profile ? { ...prev.profile, ...updates, updated_at: timestamp } : null,
       }));
     } catch (error) {
       console.error('Error updating profile:', error);

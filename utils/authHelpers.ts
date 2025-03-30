@@ -1,171 +1,153 @@
-import { makeRedirectUri } from 'expo-auth-session';
-import * as Linking from 'expo-linking';
-import * as WebBrowser from 'expo-web-browser'; // <-- Import WebBrowser
 import { toast } from 'sonner-native';
 import { supabase } from './supabase';
 import { Provider } from '@supabase/supabase-js';
+// Remove explicit User import, rely on property checking
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
-interface OAuthSession {
-  user: {
-    id: string;
-    email?: string;
-  };
-}
-
-export const handleOAuthCallbackUrl = async (url: string) => {
+// Function to handle profile creation/update and role assignment after successful sign-in
+const syncUserProfileAndRole = async (userId: string, email?: string) => {
+  console.log('[authHelpers] Syncing profile/role for user:', userId);
   try {
-    const { data, error } = await supabase.auth.getSession();
-    if (error) throw error;
-    
-    const session = data.session;
-    if (!session?.user) throw new Error('No user returned from OAuth sign in');
-
+    const username = email?.split('@')[0] || `user_${userId.slice(0, 8)}`;
     // Create or update profile
     const { error: profileError } = await supabase
       .from('profiles')
-      .upsert([
+      .upsert(
         {
-          id: session.user.id,
-          username: session.user.email?.split('@')[0] || `user_${session.user.id.slice(0, 8)}`,
+          id: userId,
+          username: username,
+          // Ensure default notification preferences are set if needed
           notification_preferences: { push: true, email: false },
           updated_at: new Date().toISOString(),
         },
-      ], {
-        onConflict: 'id',
-      });
+        { onConflict: 'id' }
+      );
 
-    if (profileError) throw profileError;
+    if (profileError) {
+      console.error('[authHelpers] Profile sync error:', profileError);
+      throw profileError; // Re-throw to be caught below
+    }
+    console.log('[authHelpers] Profile sync successful.');
 
     // Assign user role if not exists
-    const { data: existingRole } = await supabase
+    const { data: existingRole, error: roleCheckError } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', session.user.id)
+      .eq('user_id', userId)
       .single();
 
+    // Handle potential error during role check (e.g., RLS issues)
+    if (roleCheckError && roleCheckError.code !== 'PGRST116') { // PGRST116 means no rows found, which is expected for new users
+       console.error('[authHelpers] Role check error:', roleCheckError);
+       throw roleCheckError;
+    }
+
     if (!existingRole) {
-      const { error: roleError } = await supabase
+      console.log('[authHelpers] No existing role found, inserting default role.');
+      const { error: roleInsertError } = await supabase
         .from('user_roles')
-        .insert([
-          {
-            user_id: session.user.id,
-            role: 'user',
-          },
-        ]);
+        .insert([{ user_id: userId, role: 'user' }]);
 
-      if (roleError) throw roleError;
+      if (roleInsertError) {
+        console.error('[authHelpers] Role insert error:', roleInsertError);
+        throw roleInsertError; // Re-throw
+      }
+      console.log('[authHelpers] Default role inserted successfully.');
+    } else {
+       console.log('[authHelpers] User already has a role:', existingRole.role);
     }
 
-    toast.success('Successfully signed in!');
-    return true;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to sign in';
-    toast.error(message);
-    return false;
+  } catch (syncError) {
+    console.error('[authHelpers] Error during profile/role sync:', syncError);
+    // Log the error but don't block login - show a warning toast
+    toast.warning('Profile data sync failed. Please check your profile later.');
+    // Do not re-throw here, allow login to proceed
   }
 };
 
-export const handleOAuthSignIn = async (provider: Provider) => {
-  console.log('[authHelpers] handleOAuthSignIn started for provider:', provider); // <-- ADD LOG
+
+// Updated function to handle only Google Sign-In natively
+export const handleGoogleSignIn = async (): Promise<boolean> => {
+  console.log('[authHelpers] handleGoogleSignIn started...');
   try {
-    console.log('[authHelpers] Creating redirect URL...'); // <-- ADD LOG
-    const redirectUrl = makeRedirectUri({
-      native: Linking.createURL('/auth/callback'),
-    });
-    console.log('[authHelpers] Redirect URL created:', redirectUrl); // <-- ADD LOG
+    // Optional: Check for Play Services on Android
+    // try {
+    //   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    // } catch (err) {
+    //   console.error('Play services are not available or outdated', err);
+    //   toast.error('Google Play Services required for sign-in.');
+    //   return false;
+    // }
 
-    console.log('[authHelpers] Calling supabase.auth.signInWithOAuth...'); // <-- ADD LOG
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: redirectUrl,
-        skipBrowserRedirect: true, // <-- Set to true
-      },
-    });
+    console.log('[authHelpers] Calling GoogleSignin.signIn()...');
+    // Get the result without casting
+    const signInResult = await GoogleSignin.signIn();
 
-    if (error) throw error;
-    if (!data) throw new Error('No data returned from OAuth sign in');
-    console.log('[authHelpers] signInWithOAuth successful, data:', data); // <-- ADD LOG
-
-    // Explicitly open the browser
-    const authResponse = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
-    console.log('[authHelpers] WebBrowser response:', authResponse); // <-- ADD LOG
-
-    if (authResponse.type !== 'success') {
-      // Handle cancellation or dismissal
-      if (authResponse.type === 'cancel' || authResponse.type === 'dismiss') {
-        console.log('[authHelpers] OAuth flow cancelled by user.');
-        // Optionally show a toast message
-        // toast.info('Sign in cancelled.');
-        return false; // Indicate cancellation
-      }
-      // Handle other potential non-success types if necessary
-      throw new Error(`WebBrowser failed: ${authResponse.type}`);
+    // Check for idToken within the 'data' property of the result
+    // Use optional chaining for safety
+    const idToken = signInResult?.data?.idToken;
+    if (!idToken) {
+      console.error('[authHelpers] Google Sign-In failed: No ID token received in result.data.', signInResult);
+      throw new Error('Google Sign-In failed to return an ID token.');
     }
 
-    // If successful, the deep link listener (handleOAuthCallbackUrl) will be triggered
-    // We don't need to return anything specific here as the listener handles the final steps
-    // Returning true might be misleading if the callback processing fails later
-    // Let's return void or handle the success state based on the listener's outcome if needed elsewhere
-    // For now, just log success at this stage
-    console.log('[authHelpers] WebBrowser session opened successfully. Waiting for callback...');
-    // The function implicitly returns undefined here, which is fine.
-    // The LoginScreen's finally block will still run.
+    // Log email safely using optional chaining on the user property within 'data'
+    const userEmail = signInResult?.data?.user?.email;
+    console.log('[authHelpers] Google Signin Success, User Email:', userEmail || 'Not provided');
 
-  } catch (error) {
-    console.error('[authHelpers] Error in handleOAuthSignIn:', error); // <-- ADD LOG
-    const message = error instanceof Error ? error.message : 'Failed to initiate sign in';
-    // Attempt toast, but also log in case toast fails silently
-    console.error('[authHelpers] Error message for toast:', message); // <-- ADD LOG
-    toast.error(message);
-    return false;
+    console.log('[authHelpers] Calling supabase.auth.signInWithIdToken...');
+    const { data: { session }, error: supabaseError } = await supabase.auth.signInWithIdToken({
+      provider: 'google',
+      token: idToken, // Use the validated idToken
+    });
+
+    if (supabaseError) {
+       console.error('[authHelpers] Supabase signInWithIdToken error:', supabaseError);
+       throw supabaseError;
+    }
+    if (!session) {
+       throw new Error('Supabase sign-in failed after Google Sign-In (no session).');
+    }
+
+    console.log('[authHelpers] Supabase signInWithIdToken successful for user:', session.user.id);
+
+    // Sync profile and role - errors handled internally by the function
+    await syncUserProfileAndRole(session.user.id, session.user.email);
+
+    toast.success('Successfully signed in with Google!');
+    return true; // Indicate success
+
+  } catch (error: any) {
+    console.error('[authHelpers] Error in handleGoogleSignIn:', error);
+    let message = 'Failed to sign in with Google';
+    if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+      message = 'Sign in cancelled.';
+      console.log('[authHelpers] Google Sign-In Cancelled by user.');
+      // Don't show toast for cancellation, it's intentional user action
+      return false;
+    } else if (error.code === statusCodes.IN_PROGRESS) {
+      message = 'Sign in already in progress.';
+    } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+      message = 'Google Play Services not available or outdated.';
+    } else {
+      // Use Supabase error message if available, otherwise generic
+      message = error?.message || 'An unknown error occurred during Google sign in.';
+    }
+    // Only show toast for actual errors, not cancellations
+    if (error.code !== statusCodes.SIGN_IN_CANCELLED) {
+       toast.error(message);
+    }
+    return false; // Indicate failure
   }
 };
 
-// Handle deep linking setup
-export const setupAuthDeepLinks = () => {
-  const authUrl = Linking.createURL('auth/callback');
-  let removeListener: (() => void) | undefined;
+// Removed handleOAuthCallbackUrl as deep linking is no longer used for Google Sign-In
+// Removed setupAuthDeepLinks as deep linking is no longer used for Google Sign-In
 
-  const init = () => {
-    // Remove existing listener if any
-    if (removeListener) {
-      removeListener();
-    }
-
-    // Set up new listener
-    removeListener = Linking.addEventListener('url', (event: { url: string }) => {
-      if (event.url.startsWith(authUrl)) {
-        handleOAuthCallbackUrl(event.url);
-      }
-    }).remove;
-
-    // Check for initial URL
-    Linking.getInitialURL().then((url: string | null) => {
-      if (url && url.startsWith(authUrl)) {
-        handleOAuthCallbackUrl(url);
-      }
-    });
-  };
-
-  init();
-
-  // Return cleanup function
-  return () => {
-    if (removeListener) {
-      removeListener();
-    }
-  };
-};
-
-// Initialize deep linking
+// Updated initializeAuth - Now does nothing as AuthProvider handles initialization
 export const initializeAuth = () => {
-  const cleanup = setupAuthDeepLinks();
-  
-  // Re-establish auth state from storage
-  supabase.auth.getSession().catch(error => {
-    console.error('Error restoring auth state:', error);
-  });
-
-  return cleanup;
+  console.log('[authHelpers] initializeAuth called (now passive, AuthProvider handles init)');
+  // AuthProvider now handles all session restoration and listener setup.
+  // This function is kept for compatibility if called elsewhere, but does nothing.
+  return () => {}; // Return an empty cleanup function
 };

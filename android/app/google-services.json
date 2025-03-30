@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "828151920285",
+    "project_id": "aroundtheglobe",
+    "storage_bucket": "aroundtheglobe.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:828151920285:android:213bc93563d166e1dd4674",
+        "android_client_info": {
+          "package_name": "com.yourdomain.edushorts"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "828151920285-haacabhenmfeclbmbra2er1r95b81s9m.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.yourdomain.edushorts",
+            "certificate_hash": "7aebcd8958a5a6b0c1057109f51798c7d8e24ca4"
+          }
+        },
+        {
+          "client_id": "828151920285-6gh42cvb5j8nl2te4e6aa0o0b8eqlp07.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB8Y2Rk2rs08dNH_tvK32QMCHqiQX_g6-o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "828151920285-6gh42cvb5j8nl2te4e6aa0o0b8eqlp07.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "828151920285-sb2b3gujpgppu6i9bfcb5cmleo4k0nt3.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.yourdomain.edushorts"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

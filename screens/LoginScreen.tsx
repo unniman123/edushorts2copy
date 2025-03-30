@@ -19,7 +19,8 @@ import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../types/navigation';
 import * as Linking from 'expo-linking';
 import { supabase } from '../utils/supabase';
-import { handleOAuthSignIn } from '../utils/authHelpers';
+// Import the new function and remove the old one if unused elsewhere
+import { handleGoogleSignIn } from '../utils/authHelpers';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 type RouteProps = RouteProp<RootStackParamList, 'Login'>;
@@ -116,13 +117,20 @@ export default function LoginScreen() {
     }
   };
 
-  const handleSocialLogin = async (provider: 'google') => {
+  // Updated to call the new native Google Sign-In helper
+  const handleSocialLogin = async () => { // No provider needed anymore
     setIsLoading(true);
     try {
-      await handleOAuthSignIn(provider);
+      // Call the new function, it returns true/false but we don't need to act on it here
+      // as navigation is handled by AuthContext
+      await handleGoogleSignIn();
+      // No navigation needed here on success
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to sign in';
-      Alert.alert('Error', message);
+      // Error handling is done within handleGoogleSignIn (shows toast)
+      // We could potentially add more specific handling here if needed
+      console.error('LoginScreen: Error during handleGoogleSignIn call:', error);
+      // Optionally show a generic alert as a fallback, though toast is preferred
+      // Alert.alert('Error', 'An unexpected error occurred during sign in.');
     } finally {
       setIsLoading(false);
     }
@@ -230,7 +238,7 @@ export default function LoginScreen() {
             <View style={styles.socialButtonsContainer}>
               <TouchableOpacity
                 style={[styles.socialButton, { flex: 1 }]}
-                onPress={() => handleSocialLogin('google')}
+                onPress={handleSocialLogin} // Call without provider argument
                 disabled={isLoading}
               >
                 <Feather name="chrome" size={20} color="#DB4437" />
