@@ -4,7 +4,7 @@ module.exports = {
   version: '1.0.0',
   orientation: 'portrait',
   scheme: 'edushorts',
-  icon: './assets/icon.png',
+  icon: './assets/app-logo.png',
   userInterfaceStyle: 'light',
   splash: {
     image: './assets/splash-icon.png',
@@ -24,7 +24,7 @@ module.exports = {
   },
   android: {
     adaptiveIcon: {
-      foregroundImage: './assets/adaptive-icon.png',
+      foregroundImage: './assets/app-logo.png',
       backgroundColor: '#FFFFFF'
     },
     package: 'com.yourdomain.edushorts',
@@ -43,7 +43,7 @@ module.exports = {
     ]
   },
   web: {
-    favicon: './assets/favicon.png'
+    favicon: './assets/app-logo.png'
   },
   extra: {
     supabaseUrl: process.env.SUPABASE_URL,
