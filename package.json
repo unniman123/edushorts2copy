@@ -52,7 +52,10 @@
     "react-native-svg": "15.8.0",
     "react-native-url-polyfill": "^2.0.0",
     "sonner-native": "^0.17.0",
-    "expo-dev-client": "~5.0.15"
+    "expo-dev-client": "~5.0.15",
+    "expo-notifications": "~0.29.14",
+    "expo-device": "~7.0.2",
+    "expo-constants": "~17.0.8"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
