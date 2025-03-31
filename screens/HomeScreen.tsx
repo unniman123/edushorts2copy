@@ -80,7 +80,8 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((props, ref) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['right', 'bottom', 'left']}>
+      {/* PagerView */}
       <PagerView
         ref={pagerRef}
         style={styles.pagerView}
