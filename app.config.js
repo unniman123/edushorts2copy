@@ -19,7 +19,7 @@ module.exports = {
   ],
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.yourdomain.edushorts',
+    bundleIdentifier: 'com.reviveandfight.edushorts', // Updated iOS bundleIdentifier
     associatedDomains: ['applinks:edushorts.app']
   },
   android: {
@@ -27,7 +27,8 @@ module.exports = {
       foregroundImage: './assets/app-logo.png',
       backgroundColor: '#FFFFFF'
     },
-    package: 'com.yourdomain.edushorts',
+    package: 'com.reviveandfight.edushorts', // Updated Android package name
+    googleServicesFile: './google-services.json', // Explicitly added path
     intentFilters: [
       {
         action: "VIEW",

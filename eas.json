@@ -12,7 +12,17 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "channel": "production",
+      "distribution": "store",
+      "android": {
+        "credentialsSource": "remote",
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "SUPABASE_URL": "@SUPABASE_URL",
+        "SUPABASE_ANON_KEY": "@SUPABASE_ANON_KEY"
+      }
     }
   },
   "submit": {

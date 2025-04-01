@@ -67,15 +67,8 @@ class MonitoringService {
 
     this.errors.push(fullError);
 
-    if (error.type === 'runtime') {
-      // Log critical errors immediately
-      console.error('Critical Error:', {
-        message: error.message,
-        stack: error.stack,
-        metadata: error.metadata,
-      });
-      await this.flush();
-    } else if (this.errors.length >= this.batchSize) {
+    // Flush immediately for critical runtime errors or when batch size is reached
+    if (error.type === 'runtime' || this.errors.length >= this.batchSize) {
       await this.flush();
     }
   }
