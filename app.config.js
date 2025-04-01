@@ -28,7 +28,7 @@ module.exports = {
       backgroundColor: '#FFFFFF'
     },
     package: 'com.reviveandfight.edushorts', // Updated Android package name
-    googleServicesFile: './android/app/google-services.json', // Corrected path
+    googleServicesFile: './android/app/google-services.json', // Explicitly use local file
     intentFilters: [
       {
         action: "VIEW",
