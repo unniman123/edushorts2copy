@@ -15,6 +15,7 @@
       "autoIncrement": true,
       "channel": "production",
       "distribution": "store",
+      "preInstall": "npm cache clean --force",
       "android": {
         "credentialsSource": "remote",
         "buildType": "app-bundle"
