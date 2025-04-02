@@ -48,9 +48,8 @@ module.exports = {
   extra: {
     supabaseUrl: process.env.SUPABASE_URL,
     supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
-    // Added the EAS Project ID manually
     eas: {
-      projectId: "d0ee7c53-a824-430b-af72-69e4f937a1ea"
+      projectId: "your-eas-project-id"
     }
   },
   plugins: [

@@ -14,7 +14,6 @@ import { SavedArticlesProvider } from './context/SavedArticlesContext';
 import { NewsProvider } from './context/NewsContext';
 import { initializeAuth } from './utils/authHelpers';
 import * as Linking from 'expo-linking';
-import { GoogleSignin } from '@react-native-google-signin/google-signin'; // <-- Add import
 
 import LoadingScreen from './screens/LoadingScreen';
 import HomeScreen from './screens/HomeScreen';
@@ -171,11 +170,6 @@ function RootStackNavigator() {
     </Stack.Navigator>
   );
 }
-
-// Configure Google Sign-In (Call this early, outside component if possible, or in a top-level effect)
-GoogleSignin.configure({
-  webClientId: '828151920285-6gh42cvb5j8nl2te4e6aa0o0b8eqlp07.apps.googleusercontent.com',
-});
 
 function AppContent() {
   const [isReady, setIsReady] = useState(false);

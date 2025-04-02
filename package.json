@@ -27,7 +27,6 @@
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-community/netinfo": "^11.4.1",
     "@react-native-community/slider": "4.5.5",
-    "@react-native-google-signin/google-signin": "^13.2.0",
     "@react-navigation/bottom-tabs": "^6.6.1",
     "@react-navigation/native": "^6.1.14",
     "@react-navigation/native-stack": "^6.9.22",
@@ -51,8 +50,7 @@
     "react-native-screens": "~4.4.0",
     "react-native-svg": "15.8.0",
     "react-native-url-polyfill": "^2.0.0",
-    "sonner-native": "^0.17.0",
-    "expo-dev-client": "~5.0.15"
+    "sonner-native": "^0.17.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
