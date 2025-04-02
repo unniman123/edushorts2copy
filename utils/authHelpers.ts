@@ -71,14 +71,14 @@ const syncUserProfileAndRole = async (userId: string, email?: string) => {
 export const handleGoogleSignIn = async (): Promise<boolean> => {
   console.log('[authHelpers] handleGoogleSignIn started...');
   try {
-    // Optional: Check for Play Services on Android
-    // try {
-    //   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-    // } catch (err) {
-    //   console.error('Play services are not available or outdated', err);
-    //   toast.error('Google Play Services required for sign-in.');
-    //   return false;
-    // }
+    // Check for Play Services on Android
+    try {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    } catch (err) {
+      console.error('[authHelpers] Play services error:', err);
+      toast.error('Google Play Services required for sign-in.');
+      return false;
+    }
 
     console.log('[authHelpers] Calling GoogleSignin.signIn()...');
     // Get the result without casting
@@ -121,7 +121,18 @@ export const handleGoogleSignIn = async (): Promise<boolean> => {
   } catch (error: any) {
     console.error('[authHelpers] Error in handleGoogleSignIn:', error);
     let message = 'Failed to sign in with Google';
-    if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+    
+    if (error.code === 'DEVELOPER_ERROR' || error.message?.includes('DEVELOPER_ERROR')) {
+      console.error('[authHelpers] Developer Error Details:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack,
+        // Add configuration details for verification
+        config: await GoogleSignin.getTokens().catch(e => ({ error: e.message }))
+      });
+      console.error('[authHelpers] If this error persists, verify OAuth configuration and Play Console settings.');
+      message = 'Google Sign-In configuration error. Please try again later.';
+    } else if (error.code === statusCodes.SIGN_IN_CANCELLED) {
       message = 'Sign in cancelled.';
       console.log('[authHelpers] Google Sign-In Cancelled by user.');
       // Don't show toast for cancellation, it's intentional user action

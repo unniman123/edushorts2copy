@@ -1,4 +1,4 @@
-module.exports = {
+          module.exports = {
   name: 'Edushorts',
   slug: 'edushorts',
   version: '1.0.0',
@@ -19,7 +19,7 @@ module.exports = {
   ],
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.reviveandfight.edushorts', // Updated iOS bundleIdentifier
+    bundleIdentifier: 'com.reviveandfight.edushorts',
     associatedDomains: ['applinks:edushorts.app']
   },
   android: {
@@ -27,8 +27,8 @@ module.exports = {
       foregroundImage: './assets/app-logo.png',
       backgroundColor: '#FFFFFF'
     },
-    package: 'com.reviveandfight.edushorts', // Updated Android package name
-    googleServicesFile: './android/app/google-services.json', // Explicitly use local file
+    package: 'com.reviveandfight.edushorts',
+    // googleServicesFile: './android/app/google-services.json', // Revert to using EAS Secret
     intentFilters: [
       {
         action: "VIEW",
