@@ -2,7 +2,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../utils/supabase';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
+// Removed GoogleSignin import as it's no longer used here
 
 // Profile related types
 export type NotificationPreferences = {
@@ -191,21 +191,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Decide if we should still attempt Google sign out or throw/toast
       }
 
-      // Sign out from Google Sign-In locally
-      try {
-        // Check if user is signed in with Google using getCurrentUser
-        const currentUser = await GoogleSignin.getCurrentUser();
-        if (currentUser) {
-          await GoogleSignin.revokeAccess(); // Revoke access token (optional but good practice)
-          await GoogleSignin.signOut();     // Clear local Google session
-          console.log('AuthContext: Google Sign-Out successful.');
-        } else {
-          console.log('AuthContext: Google Sign-Out skipped (no current Google user).');
-        }
-      } catch (googleSignOutError) {
-        console.error('AuthContext: Google Sign out error:', googleSignOutError);
-        // Don't necessarily block the overall sign-out if Google fails, but log it.
-      }
+      // Removed local Google Sign-Out logic. Supabase signOut handles the session.
+      // The native Google Sign-In state doesn't need explicit clearing here
+      // as the next sign-in attempt will handle it.
 
     } catch (error) {
       // Catch errors from Supabase sign out primarily

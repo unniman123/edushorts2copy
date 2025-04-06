@@ -1,17 +1,24 @@
 import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
-import { AppState, Platform } from 'react-native';
+import { AppState } from 'react-native'; // Removed Platform import
 import Constants from 'expo-constants';
 import type { Database } from '../types/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
-// Get Supabase URL and anon key from environment variables via app.config.js
-const supabaseUrl = 'https://zsnofjypqabqzbfmhvnx.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpzbm9manlwcWFicXpiZm1odm54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5Mzg3NjUsImV4cCI6MjA1NzUxNDc2NX0.bxuCEEEbzdy7WuyA6g73MIbhANsjhl6aGEJ4Dx5iAOA';
+// Get Supabase URL and anon key from environment variables via app.config.js extra field
+const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl;
+const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error("Supabase URL or Anon Key is missing. Check your .env file and app.config.js extra field.");
+  // Optionally throw an error or handle this case appropriately
+  // throw new Error("Supabase URL or Anon Key is missing.");
+}
 
 // Configure Supabase client with optimized settings
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+// Use type assertion ! because we check above, or provide default values/handle error
+export const supabase = createClient<Database>(supabaseUrl!, supabaseAnonKey!, {
   auth: {
     storage: AsyncStorage,
     autoRefreshToken: true,
@@ -55,7 +62,7 @@ export const createChannel = (channelName: string) => {
   let retryCount = 0;
   console.log(`Creating new channel: ${channelName}`);
   const channel = supabase.channel(channelName);
-  
+
   const setupChannel = () => {
     channel.subscribe(async (status: 'SUBSCRIBED' | 'TIMED_OUT' | 'CLOSED' | 'CHANNEL_ERROR') => {
       console.log(`Channel ${channelName} status: ${status}`);
@@ -63,7 +70,7 @@ export const createChannel = (channelName: string) => {
         console.log(`Successfully subscribed to ${channelName}`);
         activeChannels[channelName] = channel;
         retryCount = 0;
-        
+
         if (reconnectTimers[channelName]) {
           clearTimeout(reconnectTimers[channelName]);
           delete reconnectTimers[channelName];
@@ -71,11 +78,11 @@ export const createChannel = (channelName: string) => {
       } else if (status === 'CHANNEL_ERROR' && retryCount < MAX_RETRIES) {
         retryCount++;
         console.log(`Retrying connection to ${channelName} (${retryCount}/${MAX_RETRIES})`);
-        
+
         if (reconnectTimers[channelName]) {
           clearTimeout(reconnectTimers[channelName]);
         }
-        
+
         const delay = Math.min(1000 * Math.pow(1.5, retryCount), 15000);
         reconnectTimers[channelName] = setTimeout(async () => {
           if (activeChannels[channelName]) {
@@ -117,7 +124,7 @@ const initializeRealtime = async () => {
       console.log('No active session found, delaying realtime connection');
       return;
     }
-    
+
     console.log('Connecting to realtime...');
     await supabase.realtime.connect();
     console.log('Realtime connection established successfully');
@@ -164,11 +171,11 @@ export const cleanupSupabase = () => {
     clearTimeout(reconnectTimers[channelName]);
     delete reconnectTimers[channelName];
   });
-  
+
   // Cleanup all channels
   Object.keys(activeChannels).forEach(cleanupChannel);
   activeChannels = {};
-  
+
   // Disconnect realtime
   supabase.realtime.disconnect();
   console.log('Cleaned up Supabase channels and connections');

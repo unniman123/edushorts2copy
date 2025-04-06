@@ -174,8 +174,10 @@ function RootStackNavigator() {
 
 // Configure Google Sign-In (Call this early, outside component if possible, or in a top-level effect)
 GoogleSignin.configure({
-  webClientId: '7499971184-38lopvom57ottk6jf6gc9lsmk5a0171b.apps.googleusercontent.com',
-  offlineAccess: true,
+  // webClientId: 'YOUR_WEB_CLIENT_ID_HERE', // From Google Cloud Console
+  webClientId: '966598634176-30i8rechrbp3jidt3gvlc8si2srsi5f0.apps.googleusercontent.com', // Updated Web Client ID
+  // offlineAccess: true, // Keep offlineAccess if needed for server-side access, otherwise remove or set to false
+  // Ensure scopes are configured if needed, e.g., scopes: ['email', 'profile']
 });
 
 function AppContent() {

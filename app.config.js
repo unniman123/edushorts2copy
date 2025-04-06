@@ -1,9 +1,9 @@
-          module.exports = {
+module.exports = {
   name: 'Edushorts',
   slug: 'edushorts',
   version: '1.0.0',
   orientation: 'portrait',
-  scheme: 'edushorts',
+  scheme: 'edushort', // Updated scheme
   icon: './assets/app-logo.png',
   userInterfaceStyle: 'light',
   splash: {
@@ -19,22 +19,23 @@
   ],
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.reviveandfight.edushorts',
-    associatedDomains: ['applinks:edushorts.app']
+    bundleIdentifier: 'com.ajilkojilgokulravi.unniman', // Updated bundle ID
+    googleServicesFile: './ios/edushorts/GoogleService-Info.plist', // Added GoogleService-Info.plist path
+    associatedDomains: ['applinks:edushorts.app'] // Keep associatedDomains for now
   },
   android: {
     adaptiveIcon: {
       foregroundImage: './assets/app-logo.png',
       backgroundColor: '#FFFFFF'
     },
-    package: 'com.reviveandfight.edushorts',
-    // googleServicesFile: './android/app/google-services.json', // Revert to using EAS Secret
+    package: 'com.ajilkojilgokulravi.unniman', // Updated package name
+    googleServicesFile: './android/app/google-services.json', // Added google-services.json path
     intentFilters: [
       {
         action: "VIEW",
         data: [
           {
-            scheme: "edushorts",
+            scheme: "edushort", // Updated scheme in intent filter
             host: "*",
             pathPrefix: "/auth"
           }
@@ -49,12 +50,12 @@
   extra: {
     supabaseUrl: process.env.SUPABASE_URL,
     supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
-    // Added the EAS Project ID manually
     eas: {
-      projectId: "d0ee7c53-a824-430b-af72-69e4f937a1ea"
+      projectId: "cfa91622-46a9-49aa-86c3-177c0a05d850"
     }
   },
   plugins: [
+    '@react-native-google-signin/google-signin', // Added Google Sign-In plugin
     'expo-secure-store',
     [
       'expo-build-properties',

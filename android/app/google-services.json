@@ -1,44 +1,26 @@
 {
   "project_info": {
-    "project_number": "828151920285",
-    "project_id": "aroundtheglobe",
-    "storage_bucket": "aroundtheglobe.firebasestorage.app"
+    "project_number": "1026614924229",
+    "project_id": "edushortfinal",
+    "storage_bucket": "edushortfinal.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:828151920285:android:b68904af39dd0317dd4674",
+        "mobilesdk_app_id": "1:1026614924229:android:731a25509f377caa5071ac",
         "android_client_info": {
-          "package_name": "com.reviveandfight.edushorts"
+          "package_name": "com.ajilkojilgokulravi.unniman"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "7499971184-9n7n7ipp5q4vptguhgmq1ne0qteet1kb.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.reviveandfight.edushorts",
-            "certificate_hash": "6d9be07f11700464370486a82910dc551e257eec"
-          }
-        },
-        {
-          "client_id": "7499971184-38lopvom57ottk6jf6gc9lsmk5a0171b.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyB8Y2Rk2rs08dNH_tvK32QMCHqiQX_g6-o"
+          "current_key": "AIzaSyDvziYdngzc9Gsa3runm0nSQjEcjq4Jqqg"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "7499971184-38lopvom57ottk6jf6gc9lsmk5a0171b.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }
