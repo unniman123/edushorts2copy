@@ -7,13 +7,11 @@ import type { Database } from '../types/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
 // Get Supabase URL and anon key from environment variables via app.config.js extra field
-const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl;
-const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey;
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("Supabase URL or Anon Key is missing. Check your .env file and app.config.js extra field.");
-  // Optionally throw an error or handle this case appropriately
-  // throw new Error("Supabase URL or Anon Key is missing.");
+  throw new Error("supabaseUrl and supabaseAnonKey are required.");
 }
 
 // Configure Supabase client with optimized settings

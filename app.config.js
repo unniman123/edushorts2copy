@@ -48,8 +48,8 @@ module.exports = {
     favicon: './assets/app-logo.png'
   },
   extra: {
-    supabaseUrl: process.env.SUPABASE_URL,
-    supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
+    supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
+    supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
     eas: {
       projectId: "cfa91622-46a9-49aa-86c3-177c0a05d850"
     }
