@@ -126,7 +126,7 @@ const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
           <Text style={styles.title}>{article.title}</Text>
 
           {/* Summary */}
-          <Text style={styles.summary}>{article.summary}</Text>
+          <Text style={styles.summary} numberOfLines={10}>{article.summary}</Text>
 
           {/* Timestamp and Source Link */}
           <TouchableOpacity onPress={handleSourceLinkPress} disabled={!article.source_url}>
@@ -221,8 +221,8 @@ const styles = StyleSheet.create({
   },
   sourceLinkText: {
     fontSize: 12,
-    color: '#888888', // Made slightly darker for better readability
-    fontWeight: '400',
+    color: '#ff0000', // Using the same red as category tag
+    fontWeight: '500', // Made slightly bolder to match category tag
     marginTop: 10, // Space above the link text
     marginBottom: 20, // Add space below the link text before potential icon overlap
   },
