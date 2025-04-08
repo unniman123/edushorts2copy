@@ -28,10 +28,10 @@ const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
   // const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(); // Not needed for Phase 1
   const [showIcons, setShowIcons] = useState(false); // State for icon visibility
   // Get correct functions and state from context
-  const { savedArticles, addBookmark, removeBookmark } = useSavedArticles(); 
+  const { savedArticles, addBookmark, removeBookmark } = useSavedArticles();
 
   // Derive saved state by checking if the article id exists in the savedArticles array
-  const isSaved = savedArticles.some(saved => saved.id === article.id); 
+  const isSaved = savedArticles.some(saved => saved.id === article.id);
 
   // Function to format timestamp (basic example)
   const formatTimeAgo = (timestamp: string | undefined): string => {
@@ -54,15 +54,15 @@ const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
   // Handle Share action
   const handleShare = async () => {
     try {
-      // Construct the deep link URL
-      const deepLinkUrl = `edushorts://article/${article.id}`; 
-      // Updated message to reflect sharing the article within the app
-      const message = `Check out this article in Edushorts: ${article.title}\n\n${deepLinkUrl}`; 
-      
+      // Use the microsite URL for sharing
+      const webUrl = `https://edushortlinks.netlify.app/article/${article.id}`;
+      // Updated message to reflect sharing the article
+      const message = `Check out this article in Edushorts: ${article.title}\n\n${webUrl}`;
+
       await Share.share({
         message: message,
-        // Use the deep link URL for sharing. On Android, the URL might be included in the message.
-        url: deepLinkUrl, 
+        // Use the web URL for sharing
+        url: webUrl,
         title: article.title, // Optional title
       });
     } catch (error: any) {
@@ -80,14 +80,14 @@ const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
         showToast('success', 'Article removed from bookmarks'); // Swapped arguments
       } else {
         // Use addBookmark function from context (takes articleId)
-        addBookmark(article.id); 
+        addBookmark(article.id);
         showToast('success', 'Article saved to bookmarks'); // Swapped arguments
       }
       // Optionally hide icons after action
-      // setShowIcons(false); 
+      // setShowIcons(false);
     } catch (error: any) {
-       console.error('Error saving/unsaving article:', error.message);
-       showToast('error', 'Error updating bookmarks'); // Swapped arguments
+      console.error('Error saving/unsaving article:', error.message);
+      showToast('error', 'Error updating bookmarks'); // Swapped arguments
     }
   };
 
@@ -118,7 +118,7 @@ const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
           <View style={styles.sourceTagContainer}>
             <Text style={styles.sourceTagText} numberOfLines={1}>
               {/* Display Category Name here */}
-              {article.category?.name || 'General'} 
+              {article.category?.name || 'General'}
             </Text>
           </View>
 
@@ -143,7 +143,7 @@ const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
           {/* Save Icon */}
           <TouchableOpacity onPress={handleSaveToggle} style={styles.iconButton}>
             {/* Change icon based on saved state */}
-            <Feather name={isSaved ? "bookmark" : "bookmark"} size={28} color={isSaved ? "#ff0000" : "#333"} /> 
+            <Feather name={isSaved ? "bookmark" : "bookmark"} size={28} color={isSaved ? "#ff0000" : "#333"} />
             {/* Using same icon but changing color. Could use different icons if available */}
           </TouchableOpacity>
           {/* Share Icon */}

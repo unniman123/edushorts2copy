@@ -41,6 +41,17 @@ module.exports = {
           }
         ],
         category: ["BROWSABLE", "DEFAULT"]
+      },
+      {
+        action: "VIEW",
+        data: [
+          {
+            scheme: "https",
+            host: "edushortlinks.netlify.app",
+            pathPrefix: "/article"
+          }
+        ],
+        category: ["BROWSABLE", "DEFAULT"]
       }
     ]
   },

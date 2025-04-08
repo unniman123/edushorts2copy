@@ -37,7 +37,7 @@ export default function ArticleDetailScreen() {
   const [loading, setLoading] = useState(true);
   const { savedArticles, addBookmark, removeBookmark, isLoading } = useSavedArticles();
   const [bookmarked, setBookmarked] = useState(false);
-  
+
   // Update bookmarked state whenever savedArticles changes
   useEffect(() => {
     setBookmarked(savedArticles.some(article => article.id === articleId));
@@ -75,12 +75,11 @@ export default function ArticleDetailScreen() {
   const handleShare = async () => {
     if (!article) return;
     try {
-      const deepLinkUrl = `edushorts://articleDetail?articleId=${articleId}`;
-      // Add https fallback URL (replace with your actual web URL if available)
-      const webUrl = `https://edushorts.app/article/${articleId}`;
+      // Use the microsite URL for sharing
+      const webUrl = `https://edushortlinks.netlify.app/article/${articleId}`;
       await Share.share({
-        message: `Check out this article: ${article.title}\n${deepLinkUrl}\n${webUrl}`,
-        url: webUrl // Some platforms may use this for rich previews
+        message: `Check out this article in Edushorts: ${article.title}\n\n${webUrl}`,
+        url: webUrl // Use the web URL for sharing
       });
     } catch (error) {
       console.error('Error sharing:', error);
@@ -112,8 +111,8 @@ export default function ArticleDetailScreen() {
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>Article not found</Text>
-        <TouchableOpacity 
-          style={styles.backButton} 
+        <TouchableOpacity
+          style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
           <Text style={styles.backButtonText}>Go Back</Text>
@@ -129,18 +128,18 @@ export default function ArticleDetailScreen() {
           <Feather name="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
         <View style={styles.headerActions}>
-          <TouchableOpacity 
-            style={styles.actionButton} 
+          <TouchableOpacity
+            style={styles.actionButton}
             onPress={toggleBookmark}
             disabled={isLoading}
           >
             {isLoading ? (
               <ActivityIndicator size="small" color="#ff0000" />
             ) : (
-              <Ionicons 
-                name={bookmarked ? "bookmark" : "bookmark-outline"} 
-                size={24}              
-                color={bookmarked ? "#ff0000" : "#333"} 
+              <Ionicons
+                name={bookmarked ? "bookmark" : "bookmark-outline"}
+                size={24}
+                color={bookmarked ? "#ff0000" : "#333"}
               />
             )}
           </TouchableOpacity>
@@ -167,7 +166,7 @@ export default function ArticleDetailScreen() {
 
         <View style={styles.contentContainer}>
           <Text style={styles.title}>{article.title}</Text>
-          
+
           <View style={styles.publisherContainer}>
             {article.source_icon ? (
               <Image source={{ uri: article.source_icon }} style={styles.publisherIcon} />
@@ -179,15 +178,15 @@ export default function ArticleDetailScreen() {
               <Text style={styles.publishDate}>{article.timeAgo || new Date(article.created_at).toLocaleDateString()}</Text>
             </View>
           </View>
-          
+
           <Text style={styles.summary}>{article.summary}</Text>
-          
+
           <View style={styles.divider} />
-          
+
           {article.content && <Text style={styles.content}>{article.content}</Text>}
-          
+
           {article.source_url && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.sourceLink}
               onPress={() => Linking.openURL(article.source_url || '')}
             >
@@ -195,7 +194,7 @@ export default function ArticleDetailScreen() {
               <Feather name="external-link" size={16} color="#0066cc" />
             </TouchableOpacity>
           )}
-        </View>        
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -261,7 +260,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
     marginTop: 8,
-  },  categoryBadge: {
+  }, categoryBadge: {
     position: 'absolute',
     bottom: 16,
     left: 16,
@@ -330,7 +329,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
-  },  sourceLinkText: {
+  }, sourceLinkText: {
     fontSize: 14,
     color: '#ff0000',
     marginRight: 4,
