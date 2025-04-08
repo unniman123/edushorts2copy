@@ -7,7 +7,7 @@ module.exports = {
   icon: './assets/app-logo.png',
   userInterfaceStyle: 'light',
   splash: {
-    image: './assets/splash-icon.png',
+    image: './assets/splash icon.png', // Updated splash icon
     resizeMode: 'contain',
     backgroundColor: '#ffffff'
   },
@@ -25,7 +25,7 @@ module.exports = {
   },
   android: {
     adaptiveIcon: {
-      foregroundImage: './assets/app-logo.png',
+      foregroundImage: './assets/splash icon.png', // Updated Adaptive icon
       backgroundColor: '#FFFFFF'
     },
     package: 'com.ajilkojilgokulravi.unniman', // Updated package name
@@ -56,7 +56,7 @@ module.exports = {
     ]
   },
   web: {
-    favicon: './assets/app-logo.png'
+    favicon: './assets/favicon for apk .png' // Updated favicon again
   },
   extra: {
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
