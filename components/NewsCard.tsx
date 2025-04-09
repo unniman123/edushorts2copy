@@ -9,7 +9,6 @@ import {
   ScrollView, // Import ScrollView
   Linking, // Import Linking for source URL
   Share, // Import Share API
-  Platform, // To potentially customize share message
 } from 'react-native';
 // Removed useNavigation as it's not used in Phase 1 card directly
 // import { useNavigation } from '@react-navigation/native';
@@ -126,10 +125,14 @@ const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
           <Text style={styles.title}>{article.title}</Text>
 
           {/* Summary */}
-          <Text style={styles.summary} numberOfLines={10}>{article.summary}</Text>
+          <Text style={styles.summary} numberOfLines={6}>{article.summary}</Text>
 
           {/* Timestamp and Source Link */}
-          <TouchableOpacity onPress={handleSourceLinkPress} disabled={!article.source_url}>
+          <TouchableOpacity
+            onPress={handleSourceLinkPress}
+            disabled={!article.source_url}
+            style={styles.sourceLinkContainer}
+          >
             <Text style={styles.sourceLinkText}>
               {article.source_url ? `Read more at ${article.source_name || 'Source'}` : (article.source_name || 'Source')} / {formatTimeAgo(article.created_at)}
             </Text>
@@ -193,6 +196,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, // Horizontal padding for content
     paddingTop: 40,       // Increased padding to compensate for negative margin (20 + 20)
   },
+
   sourceTagContainer: {
     backgroundColor: '#ff0000', // Changed to red background
     paddingHorizontal: 12,
@@ -217,14 +221,27 @@ const styles = StyleSheet.create({
     fontSize: 16, // Larger summary font size
     color: '#666666', // Medium grey text color
     lineHeight: 25, // Slightly increased line height
-    marginBottom: 20, // Increased space below summary
+    marginBottom: 25, // Further increased space below summary
+  },
+  sourceLinkContainer: {
+    backgroundColor: 'rgba(255, 240, 240, 0.9)', // Very light red background with higher opacity
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    alignSelf: 'flex-start', // Only take up as much width as needed
+    marginTop: 15,
+    marginBottom: 25,
+    // Add subtle shadow for depth
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
   },
   sourceLinkText: {
     fontSize: 12,
     color: '#ff0000', // Using the same red as category tag
-    fontWeight: '500', // Made slightly bolder to match category tag
-    marginTop: 10, // Space above the link text
-    marginBottom: 20, // Add space below the link text before potential icon overlap
+    fontWeight: '600', // Made bolder for better visibility
   },
   interactionContainer: {
     position: 'absolute', // Position over the content
