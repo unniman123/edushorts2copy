@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,12 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
+  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Alert,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -33,6 +35,15 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 1000,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   // Removed useEffect for confirmation alerts
 
@@ -155,25 +166,32 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoidingView}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContainer}
-          showsVerticalScrollIndicator={false}
-        >
+    <ImageBackground
+      source={require('../assets/splash icon.png')}
+      style={styles.backgroundImage}
+      resizeMode="cover" // Ensure the image covers the background
+    >
+      <SafeAreaView style={styles.container}>
+        {/* Added overlay for readability */}
+        <View style={styles.overlay}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.keyboardAvoidingView}
+          >
+            <ScrollView
+              contentContainerStyle={styles.scrollContainer}
+              showsVerticalScrollIndicator={false}
+            >
           <View style={styles.logoContainer}>
             <Image
               source={require('../assets/app-logo.png')}
               style={styles.logo}
             />
-            <Text style={styles.logoText}>Edushorts</Text>
+            <Text style={styles.logoText}>Edushort</Text>
+            <Animated.View style={{ opacity: fadeAnim, alignItems: 'center' }}>
+              <Text style={styles.subtitle}>"Your Daily Briefing on Foreign Education & Immigration."</Text>
+            </Animated.View>
           </View>
-
-          <Text style={styles.welcomeText}>Welcome Back!</Text>
-          <Text style={styles.subtitle}>Login to access personalized news for international students</Text>
 
           <View style={styles.formContainer}>
             <View style={styles.inputContainer}>
@@ -254,16 +272,26 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </View>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    // Removed backgroundColor: '#ffffff', as background is now an image
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Standard overlay opacity
+    justifyContent: 'center',
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -275,7 +303,7 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 40,
   },
   logo: {
     width: 80,
@@ -283,21 +311,28 @@ const styles = StyleSheet.create({
     borderRadius: 40,
   },
   logoText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ff0000',
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#FFFFFF',
     marginTop: 12,
-  },
-  welcomeText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
     marginBottom: 8,
+    letterSpacing: 1,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+    textTransform: 'uppercase',
   },
   subtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 32,
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    letterSpacing: 0.25,
+    lineHeight: 22,
+    maxWidth: '80%',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   formContainer: {
     marginBottom: 24,
@@ -305,7 +340,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)', // Semi-transparent white background for inputs
     borderRadius: 12,
     paddingHorizontal: 16,
     marginBottom: 16,
@@ -313,14 +348,16 @@ const styles = StyleSheet.create({
   },
   inputIcon: {
     marginRight: 12,
+    color: '#555', // Darker icon color
   },
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
+    color: '#333', // Keep input text dark
   },
   eyeIcon: {
     padding: 4,
+    color: '#555', // Darker icon color
   },
   forgotPasswordContainer: {
     flexDirection: 'row',
@@ -333,7 +370,11 @@ const styles = StyleSheet.create({
   },
   forgotPasswordText: {
     fontSize: 14,
-    color: '#ff0000',
+    color: '#FFFFFF', // Changed to white
+    fontWeight: 'bold', // Make it bolder
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 5,
   },
   resendButton: {
     flex: 1,
@@ -371,8 +412,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#eeeeee',
   },
   orText: {
-    color: '#888',
+    color: '#FFFFFF', // Changed to white
+    fontWeight: 'bold',
     marginHorizontal: 16,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 5,
   },
   socialButtonsContainer: {
     flexDirection: 'row',
@@ -382,7 +427,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)', // Slightly less transparent white for social button
     borderRadius: 12,
     height: 56,
     paddingHorizontal: 16,
@@ -390,7 +435,8 @@ const styles = StyleSheet.create({
   socialButtonText: {
     marginLeft: 8,
     fontSize: 14,
-    color: '#333',
+    color: '#333', // Keep text dark
+    fontWeight: 'bold',
   },
   registerContainer: {
     flexDirection: 'row',
@@ -399,12 +445,19 @@ const styles = StyleSheet.create({
   },
   registerText: {
     fontSize: 14,
-    color: '#666',
+    color: '#FFFFFF', // Changed to white
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 5,
   },
   registerLink: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#ff0000',
+    color: '#FFFFFF', // Changed to white
     marginLeft: 4,
+    textDecorationLine: 'underline', // Add underline
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 5,
   },
 });

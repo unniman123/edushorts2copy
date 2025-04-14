@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -26,7 +26,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
     }
   }));
 
-  const handleLoadMore = async () => {
+  const handleLoadMore = useCallback(async () => {
     if (loading || isLoadingMore || news.length === 0) return;
 
     setIsLoadingMore(true);
@@ -37,7 +37,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
     } finally {
       setIsLoadingMore(false);
     }
-  };
+  }, [loading, isLoadingMore, news.length, loadMoreNews]);
 
   if (error) {
     return (
@@ -90,6 +90,9 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
         style={styles.pagerView}
         orientation="vertical"
         initialPage={0}
+        offscreenPageLimit={1} // Only keep 1 page in each direction in memory
+        overdrag={false} // Prevent overdragging beyond content bounds
+        pageMargin={10} // Add small margin between pages for better visual separation
         onPageScroll={(e) => {
           const { position, offset } = e.nativeEvent;
           if (offset > 0 && position >= news.length - 2 && !isLoadingMore) {

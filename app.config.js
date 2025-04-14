@@ -8,7 +8,7 @@ module.exports = {
   userInterfaceStyle: 'light',
   splash: {
     image: './assets/splash icon.png', // Updated splash icon
-    resizeMode: 'contain',
+    resizeMode: 'cover', // Changed from 'contain' to 'cover'
     backgroundColor: '#ffffff'
   },
   updates: {

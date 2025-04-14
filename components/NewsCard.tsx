@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ScrollView, // Import ScrollView
   Linking, // Import Linking for source URL
   Share, // Import Share API
+  useWindowDimensions, // For responsive design
 } from 'react-native';
 // Removed useNavigation as it's not used in Phase 1 card directly
 // import { useNavigation } from '@react-navigation/native';
@@ -23,7 +24,18 @@ interface NewsCardProps {
   article: Article;
 }
 
-const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
+const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
+  // Use window dimensions for responsive layout that updates on orientation change
+  const { width: windowWidth } = useWindowDimensions();
+  const [isSmallDevice, setIsSmallDevice] = useState(windowWidth < 375);
+
+  // Create styles based on current device size
+  const styles = React.useMemo(() => createStyleSheet(isSmallDevice), [isSmallDevice]);
+
+  // Update responsive values when dimensions change (e.g., rotation)
+  useEffect(() => {
+    setIsSmallDevice(windowWidth < 375);
+  }, [windowWidth]);
   // const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(); // Not needed for Phase 1
   const [showIcons, setShowIcons] = useState(false); // State for icon visibility
   // Get correct functions and state from context
@@ -44,14 +56,14 @@ const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
     return date.toLocaleDateString(); // Fallback for older dates
   };
 
-  const handleSourceLinkPress = () => {
+  const handleSourceLinkPress = useCallback(() => {
     if (article.source_url) {
       Linking.openURL(article.source_url).catch(err => console.error("Couldn't load page", err));
     }
-  };
+  }, [article.source_url]);
 
   // Handle Share action
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
     try {
       // Use the microsite URL for sharing
       const webUrl = `https://edushortlinks.netlify.app/article/${article.id}`;
@@ -68,10 +80,10 @@ const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
       console.error('Error sharing article:', error.message);
       showToast('error', 'Error sharing article'); // Swapped arguments
     }
-  };
+  }, [article.id, article.title]);
 
   // Handle Save/Unsave action
-  const handleSaveToggle = () => {
+  const handleSaveToggle = useCallback(() => {
     try {
       if (isSaved) {
         // Use removeBookmark function from context
@@ -88,7 +100,7 @@ const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
       console.error('Error saving/unsaving article:', error.message);
       showToast('error', 'Error updating bookmarks'); // Swapped arguments
     }
-  };
+  }, [article.id, isSaved, removeBookmark, addBookmark]);
 
   return (
     // Root TouchableOpacity for the full card, toggles icons
@@ -98,21 +110,36 @@ const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
       activeOpacity={1} // Use 1 to prevent visual feedback on the whole card tap
     >
       {/* Image Section */}
-      {article.image_path ? (
-        <Image
-          source={{ uri: article.image_path }}
-          style={styles.cardImage}
-        />
-      ) : (
-        <View style={[styles.cardImage, styles.noImage]}>
-          <Text style={styles.noImageText}>No Image Available</Text>
+      <View style={styles.imageContainer}>
+        {article.image_path ? (
+          <Image
+            source={{ uri: article.image_path }}
+            style={styles.cardImage}
+            resizeMethod="resize" // More efficient resize method
+            progressiveRenderingEnabled={true} // Enable progressive loading
+          />
+        ) : (
+          <View style={[styles.cardImage, styles.noImage]}>
+            <Text style={styles.noImageText}>No Image Available</Text>
+          </View>
+        )}
+
+        {/* Edushorts Logo Overlay */}
+        <View style={styles.logoOverlay}>
+          <Text style={styles.logoText}>Edushorts</Text>
         </View>
-      )}
+      </View>
 
       {/* Content Area */}
       <View style={styles.cardContentContainer}>
         {/* Scrollable content within the content area */}
-        <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          style={styles.scrollView}
+          removeClippedSubviews={true} // Improve performance by removing offscreen views
+          scrollEventThrottle={16} // Optimize scroll event firing (60fps)
+          overScrollMode="never" // Prevent overscroll effect on Android
+        >
           {/* Source Tag */}
           <View style={styles.sourceTagContainer}>
             <Text style={styles.sourceTagText} numberOfLines={1}>
@@ -121,23 +148,31 @@ const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
             </Text>
           </View>
 
+          {/* Timestamp - Moved below category */}
+          <Text style={styles.timeText}>{formatTimeAgo(article.created_at)}</Text>
+
           {/* Title */}
           <Text style={styles.title}>{article.title}</Text>
 
           {/* Summary */}
-          <Text style={styles.summary} numberOfLines={6}>{article.summary}</Text>
+          <Text style={styles.summary} numberOfLines={isSmallDevice ? 8 : 10}>{article.summary}</Text>
 
-          {/* Timestamp and Source Link */}
-          <TouchableOpacity
-            onPress={handleSourceLinkPress}
-            disabled={!article.source_url}
-            style={styles.sourceLinkContainer}
-          >
-            <Text style={styles.sourceLinkText}>
-              {article.source_url ? `Read more at ${article.source_name || 'Source'}` : (article.source_name || 'Source')} / {formatTimeAgo(article.created_at)}
-            </Text>
-          </TouchableOpacity>
+          {/* Read More Button - Moved below summary */}
+          {article.source_url && (
+            <TouchableOpacity
+              style={styles.readMoreButton}
+              onPress={handleSourceLinkPress}
+            >
+              <Text style={styles.readMoreText}>Read more at {article.source_name || 'Source'}</Text>
+              <Feather name="external-link" size={14} color="#ff0000" style={styles.linkIcon} />
+            </TouchableOpacity>
+          )}
+
+          {/* Add padding at the bottom to ensure content doesn't get hidden */}
+          <View style={styles.scrollViewBottomPadding} />
         </ScrollView>
+
+        {/* Removed the fixed position Read More button */}
       </View>
 
       {/* Interaction Icons - Conditionally Rendered Overlay */}
@@ -157,11 +192,13 @@ const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
       )}
     </TouchableOpacity>
   );
-};
+});
 
+// Get static dimensions for initial layout
 const { height, width } = Dimensions.get('window');
 
-const styles = StyleSheet.create({
+// Create a StyleSheet factory function for responsive styles
+const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
   fullScreenCard: {
     flex: 1, // Make card fill the SafeAreaView in HomeScreen
     backgroundColor: 'white',
@@ -170,8 +207,26 @@ const styles = StyleSheet.create({
   },
   cardImage: {
     width: '100%',
-    height: height * 0.45, // Image takes top 45% of the screen height
+    height: height * (smallDevice ? 0.3 : 0.35), // Adjust height based on device size
     resizeMode: 'cover', // Ensure image covers the area
+  },
+  imageContainer: {
+    position: 'relative', // For absolute positioning of children
+    width: '100%',
+  },
+  logoOverlay: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  logoText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   noImage: {
     backgroundColor: '#e0e0e0', // Slightly darker grey for placeholder
@@ -184,17 +239,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   cardContentContainer: {
-    flex: 1, // Take remaining vertical space
+    flex: 1.5, // Increased from 1 to 1.5 to give more space to content
     // Position absolutely to overlay image slightly if needed, or use negative margin
     marginTop: -20, // Pull the container up to overlap the image
     backgroundColor: 'white', // Ensure background is white
     borderTopLeftRadius: 20, // Added curve to top-left corner
     borderTopRightRadius: 20, // Added curve to top-right corner
     paddingBottom: 20, // Add padding at the very bottom
+    position: 'relative', // Ensure proper positioning for absolute elements
   },
   scrollView: {
-    paddingHorizontal: 20, // Horizontal padding for content
+    paddingHorizontal: smallDevice ? 16 : 20, // Adjust horizontal padding based on device size
     paddingTop: 40,       // Increased padding to compensate for negative margin (20 + 20)
+    paddingBottom: 20,    // Add padding at bottom
+  },
+  scrollViewBottomPadding: {
+    height: 20, // Extra padding at the bottom of the ScrollView content
   },
 
   sourceTagContainer: {
@@ -211,41 +271,45 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   title: {
-    fontSize: 22, // Larger title font size
+    fontSize: smallDevice ? 22 : 24, // Adjust font size based on device size
     fontWeight: 'bold', // Bold title
-    marginBottom: 10, // Increased space below title
+    marginBottom: 12, // Increased space below title
     color: '#333333', // Dark text color
-    lineHeight: 28, // Adjust line height for better readability
+    lineHeight: smallDevice ? 28 : 30, // Adjust line height based on device size
   },
   summary: {
-    fontSize: 16, // Larger summary font size
+    fontSize: smallDevice ? 15 : 16, // Adjust font size based on device size
     color: '#666666', // Medium grey text color
-    lineHeight: 25, // Slightly increased line height
-    marginBottom: 25, // Further increased space below summary
+    lineHeight: smallDevice ? 22 : 24, // Adjust line height based on device size
+    marginBottom: 16, // Space below summary
+    marginTop: 4, // Added small space above summary
   },
-  sourceLinkContainer: {
-    backgroundColor: 'rgba(255, 240, 240, 0.9)', // Very light red background with higher opacity
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    alignSelf: 'flex-start', // Only take up as much width as needed
-    marginTop: 15,
-    marginBottom: 25,
-    // Add subtle shadow for depth
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
+
+  timeText: {
+    fontSize: smallDevice ? 11 : 12,
+    color: '#666666',
+    marginTop: 4,
+    marginBottom: smallDevice ? 8 : 10,
   },
-  sourceLinkText: {
-    fontSize: 12,
-    color: '#ff0000', // Using the same red as category tag
-    fontWeight: '600', // Made bolder for better visibility
+  readMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: smallDevice ? 10 : 12,
+    marginBottom: smallDevice ? 16 : 20,
+    paddingVertical: 4, // Added vertical padding for better touch target
+  },
+  readMoreText: {
+    fontSize: smallDevice ? 14 : 15,
+    color: '#ff0000',
+    fontWeight: '600',
+    letterSpacing: 0.2, // Slightly increase letter spacing for better readability
+  },
+  linkIcon: {
+    marginLeft: 8,
   },
   interactionContainer: {
     position: 'absolute', // Position over the content
-    bottom: 30,           // Distance from bottom (increased)
+    bottom: 30,           // Distance from bottom
     right: 20,            // Distance from right
     // Removed flexDirection: 'column' and alignItems: 'center' if icons are side-by-side
     // If icons should be vertical, uncomment below:
