@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet, Image, Text } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, ActivityIndicator, StyleSheet, Image, Text, Animated, Dimensions } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 
 export default function LoadingScreen() {
@@ -77,55 +78,101 @@ export default function LoadingScreen() {
     return cleanup;
   }, [isLoading, loadingDuration, refreshSession]);
 
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
   return (
-    <View style={styles.container}>
-      <Image
-        source={require('../assets/app-logo.png')}
-        style={styles.logo}
-        onError={(error) => console.error('LoadingScreen: Error loading logo:', error)}
-      />
-      <Text style={styles.brandText}>Edushorts</Text>
-      <ActivityIndicator size="large" color="#ff0000" style={styles.spinner} />
-      {error ? (
-        <Text style={[styles.loadingText, styles.errorText]}>{error}</Text>
-      ) : loadingDuration > 5 && (
-        <Text style={styles.loadingText}>
-          {isLoading ? 'Still loading...' : 'Almost there...'}
-        </Text>
-      )}
-    </View>
+    <LinearGradient
+      colors={['#ffffff', '#f8f8f8', '#f0f0f0']}
+      style={styles.container}
+    >
+      <Animated.View
+        style={[
+          styles.contentContainer,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: scaleAnim }],
+          },
+        ]}
+      >
+        <Image
+          source={require('../assets/apk icon .png')}
+          style={styles.logo}
+          onError={(error) => console.error('LoadingScreen: Error loading logo:', error)}
+        />
+        <Text style={styles.brandText}>Edushorts</Text>
+        <ActivityIndicator size="large" color="#ff0000" style={styles.spinner} />
+        {error ? (
+          <Text style={[styles.loadingText, styles.errorText]}>{error}</Text>
+        ) : loadingDuration > 5 && (
+          <Animated.Text style={[styles.loadingText, { opacity: fadeAnim }]}>
+            {isLoading ? 'Still loading...' : 'Almost there...'}
+          </Animated.Text>
+        )}
+      </Animated.View>
+    </LinearGradient>
   );
 }
 
+const { width } = Dimensions.get('window');
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  contentContainer: {
     alignItems: 'center',
     paddingHorizontal: 20,
   },
   logo: {
-    width: 100,
-    height: 100,
-    // borderRadius: 50, // Removed as requested
-    marginBottom: 16,
+    width: width * 0.35,
+    height: width * 0.35,
+    resizeMode: 'contain',
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
   },
   brandText: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#ff0000',
-    marginBottom: 24,
+    marginBottom: 32,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   spinner: {
-    transform: [{ scale: 1.5 }],
-    marginBottom: 16,
+    transform: [{ scale: 1.75 }],
+    marginBottom: 24,
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#666666',
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: 12,
+    letterSpacing: 0.5,
   },
   errorText: {
     color: '#ff0000',
