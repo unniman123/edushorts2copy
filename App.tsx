@@ -195,7 +195,7 @@ function AppContent() {
   }
 
   const linking: LinkingOptions<RootStackParamList> = {
-    prefixes: ['edushorts://', 'https://edushorts.app.link', 'exp://localhost:19000'],
+    prefixes: ['edushort://', 'https://edushortlinks.netlify.app', 'exp://localhost:19000'],
     config: {
       screens: {
         Login: {
@@ -220,7 +220,7 @@ function AppContent() {
         },
         Main: 'main',
         ArticleDetail: {
-          path: 'article/:articleId',
+          path: '/article/:articleId',
           parse: {
             articleId: (articleId: string) => articleId
           }

@@ -22,25 +22,26 @@
         <action android:name="android.intent.action.MAIN"/>
         <category android:name="android.intent.category.LAUNCHER"/>
       </intent-filter>
-      <intent-filter>
-        <action android:name="android.intent.action.VIEW"/>
-        <category android:name="android.intent.category.DEFAULT"/>
-        <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="edushort"/>
-        <data android:scheme="com.ajilkojilgokulravi.unniman"/>
-        <data android:scheme="exp+edushorts"/>
-      </intent-filter>
-      <intent-filter data-generated="true">
-        <action android:name="android.intent.action.VIEW"/>
-        <data android:scheme="edushort" android:host="*" android:pathPrefix="/auth"/>
-        <category android:name="android.intent.category.BROWSABLE"/>
-        <category android:name="android.intent.category.DEFAULT"/>
-      </intent-filter>
+      <!-- App Links (HTTPS) -->
       <intent-filter android:autoVerify="true">
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="https" android:host="edushortlinks.netlify.app" android:pathPrefix="/article"/>
+        <data
+            android:scheme="https"
+            android:host="edushortlinks.netlify.app"
+            android:pathPattern="/article/.*"/>
+      </intent-filter>
+
+      <!-- Custom Scheme - edushort:// -->
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+        <category android:name="android.intent.category.BROWSABLE"/>
+        <data
+            android:scheme="edushort"
+            android:host="article"
+            android:pathPattern="/.*"/>
       </intent-filter>
     </activity>
   </application>

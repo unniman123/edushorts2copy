@@ -3,7 +3,7 @@ module.exports = {
   slug: 'edushorts',
   version: '1.0.0',
   orientation: 'portrait',
-  scheme: 'edushort', // Updated scheme
+  scheme: 'edushort',
   icon: './assets/app-logo.png',
   userInterfaceStyle: 'light',
   splash: {
@@ -25,19 +25,20 @@ module.exports = {
   },
   android: {
     adaptiveIcon: {
-      foregroundImage: './assets/splash icon.png', // Updated Adaptive icon
+      foregroundImage: './assets/splash icon.png',
       backgroundColor: '#FFFFFF'
     },
-    package: 'com.ajilkojilgokulravi.unniman', // Updated package name
-    googleServicesFile: './android/app/google-services.json', // Added google-services.json path
+    package: 'com.ajilkojilgokulravi.unniman',
+    googleServicesFile: './android/app/google-services.json',
     intentFilters: [
       {
         action: "VIEW",
+        autoVerify: true,
         data: [
           {
-            scheme: "edushort", // Updated scheme in intent filter
-            host: "*",
-            pathPrefix: "/auth"
+            scheme: "https",
+            host: "edushortlinks.netlify.app",
+            pathPattern: "/article/*"
           }
         ],
         category: ["BROWSABLE", "DEFAULT"]
@@ -46,9 +47,9 @@ module.exports = {
         action: "VIEW",
         data: [
           {
-            scheme: "https",
-            host: "edushortlinks.netlify.app",
-            pathPrefix: "/article"
+            scheme: "edushort",
+            host: "article",
+            pathPattern: "/*"
           }
         ],
         category: ["BROWSABLE", "DEFAULT"]
