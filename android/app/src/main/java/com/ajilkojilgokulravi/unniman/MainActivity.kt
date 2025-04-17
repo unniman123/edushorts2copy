@@ -2,11 +2,17 @@ package com.ajilkojilgokulravi.unniman
 
 import android.os.Build
 import android.os.Bundle
+import android.content.Intent
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
 import com.facebook.react.defaults.DefaultReactActivityDelegate
+
+import io.branch.referral.Branch
+import io.branch.referral.BranchError
+import io.branch.referral.util.BranchLogger
+import io.branch.referral.validators.IntegrationValidator
 
 import expo.modules.ReactActivityDelegateWrapper
 
@@ -15,8 +21,58 @@ class MainActivity : ReactActivity() {
     // Set the theme to AppTheme BEFORE onCreate to support
     // coloring the background, status bar, and navigation bar.
     // This is required for expo-splash-screen.
-    setTheme(R.style.AppTheme);
+    setTheme(R.style.AppTheme)
     super.onCreate(null)
+
+    // Initialize Branch session
+    Branch.sessionBuilder(this).withCallback { branchUniversalObject, linkProperties, error ->
+      if (error != null) {
+        BranchLogger.e("Branch Error: " + error.message)
+      } else {
+        BranchLogger.i("Branch: session initialized")
+        // Handle deep link data if needed
+        branchUniversalObject?.contentMetadata?.customMetadata?.let { metadata ->
+          // Log metadata for debugging
+          BranchLogger.i("Branch: metadata = $metadata")
+        }
+      }
+    }.withData(this.intent?.data).init()
+  }
+
+  override fun onNewIntent(intent: Intent?) {
+    super.onNewIntent(intent)
+    this.intent = intent
+
+    // Handle Branch deep links in onNewIntent
+    if (intent != null && intent.hasExtra("branch_force_new_session") && intent.getBooleanExtra("branch_force_new_session", false)) {
+      Branch.sessionBuilder(this).withCallback { branchUniversalObject, linkProperties, error ->
+        if (error != null) {
+          BranchLogger.e("Branch Error: " + error.message)
+        } else {
+          BranchLogger.i("Branch: session re-initialized")
+        }
+      }.reInit()
+    }
+  }
+
+  override fun onStart() {
+    super.onStart()
+
+    // Run Branch Integration Validator
+    if (BuildConfig.DEBUG) {
+      // This will validate your Branch SDK integration
+      // Check your logcat output for validation results
+      IntegrationValidator.validate(this)
+      BranchLogger.i("Branch: Integration validation executed")
+    }
+
+    Branch.sessionBuilder(this).withCallback { branchUniversalObject, linkProperties, error ->
+      if (error != null) {
+        BranchLogger.e("Branch Error: " + error.message)
+      } else {
+        BranchLogger.i("Branch: onStart session initialized")
+      }
+    }.init()
   }
 
   /**

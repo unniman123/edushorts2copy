@@ -13,6 +13,10 @@ import com.facebook.react.defaults.DefaultReactNativeHost
 import com.facebook.react.soloader.OpenSourceMergedSoMapping
 import com.facebook.soloader.SoLoader
 
+import io.branch.referral.Branch
+import io.branch.referral.util.BranchLogger
+import io.branch.referral.validators.IntegrationValidator
+
 import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ReactNativeHostWrapper
 
@@ -40,15 +44,38 @@ class MainApplication : Application(), ReactApplication {
   override val reactHost: ReactHost
     get() = ReactNativeHostWrapper.createReactHost(applicationContext, reactNativeHost)
 
-  override fun onCreate() {
-    super.onCreate()
-    SoLoader.init(this, OpenSourceMergedSoMapping)
-    if (BuildConfig.IS_NEW_ARCHITECTURE_ENABLED) {
-      // If you opted-in for the New Architecture, we load the native entry point for this app.
-      load()
+    override fun onCreate() {
+        super.onCreate()
+        SoLoader.init(this, OpenSourceMergedSoMapping)
+
+        // Branch initialization
+        // Enable logging and testing for debug builds
+        if (BuildConfig.DEBUG) {
+            Branch.enableLogging()
+            Branch.enableTestMode()
+            Branch.setPlayStoreReferrerCheckTimeout(5000)
+        }
+
+        // Configure Branch SDK
+        Branch.getAutoInstance(this)
+            .setRetryCount(3)
+            .setRetryInterval(1000)
+            .setRequestMetadata("$platform", "android")
+
+        // Run Integration Validator in debug builds
+        if (BuildConfig.DEBUG) {
+            try {
+                IntegrationValidator.validate(this)
+            } catch (e: Exception) {
+                Log.e("Branch", "Error validating Branch integration: ${e.message}")
+            }
+        }
+
+        if (BuildConfig.IS_NEW_ARCHITECTURE_ENABLED) {
+            load()
+        }
+        ApplicationLifecycleDispatcher.onApplicationCreate(this)
     }
-    ApplicationLifecycleDispatcher.onApplicationCreate(this)
-  }
 
   override fun onConfigurationChanged(newConfig: Configuration) {
     super.onConfigurationChanged(newConfig)

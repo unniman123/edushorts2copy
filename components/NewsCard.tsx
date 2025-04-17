@@ -5,12 +5,33 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
-  Dimensions, // Import Dimensions
-  ScrollView, // Import ScrollView
-  Linking, // Import Linking for source URL
-  Share, // Import Share API
-  useWindowDimensions, // For responsive design
+  Dimensions,
+  ScrollView,
+  Linking,
+  Share,
+  useWindowDimensions,
 } from 'react-native';
+import branch from 'react-native-branch';
+
+interface BranchParams {
+  canonicalIdentifier?: string;
+  title?: string;
+  contentDescription?: string;
+  contentImageUrl?: string;
+  contentMetadata?: {
+    articleId?: string;
+    category?: string;
+    sourceName?: string;
+    customMetadata?: {
+      source_url?: string;
+      $deeplink_path?: string;
+      $canonical_url?: string;
+      date?: string;
+      title?: string;
+      summary?: string;
+    };
+  };
+}
 // Removed useNavigation as it's not used in Phase 1 card directly
 // import { useNavigation } from '@react-navigation/native';
 // import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -62,25 +83,68 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
     }
   }, [article.source_url]);
 
-  // Handle Share action
+  // Handle Share action using Branch.io
   const handleShare = useCallback(async () => {
     try {
-      // Use the microsite URL for sharing
-      const webUrl = `https://edushortlinks.netlify.app/article/${article.id}`;
-      // Updated message to reflect sharing the article
-      const message = `Check out this article in Edushorts: ${article.title}\n\n${webUrl}`;
+      const canonicalUrl = `article/${article.id}`;
+      const branchObjectParams: BranchParams = {
+        canonicalIdentifier: canonicalUrl,
+        title: String(article.title || 'Edushorts Article'),
+        contentDescription: article.summary ? String(article.summary) : '',
+        contentImageUrl: article.image_path ? String(article.image_path) : '',
+        contentMetadata: {
+          articleId: String(article.id),
+          category: String(article.category?.name || 'General'),
+          sourceName: article.source_name ? String(article.source_name) : '',
+          customMetadata: {
+            source_url: article.source_url ? String(article.source_url) : '',
+            $deeplink_path: `article/${article.id}`,
+            $canonical_url: article.source_url || '',
+            date: article.created_at || '',
+            title: article.title || '',
+            summary: article.summary || ''
+          }
+        }
+      };
 
-      await Share.share({
-        message: message,
-        // Use the web URL for sharing
-        url: webUrl,
-        title: article.title, // Optional title
-      });
+      // Create Branch Universal Object
+      const branchUniversalObject = await branch.createBranchUniversalObject(canonicalUrl, branchObjectParams);
+
+      // Configure link properties
+      const linkProperties = {
+        feature: 'sharing',
+        channel: 'app'
+      };
+
+      // Configure control parameters
+      const controlParams = article.source_url ? {
+        $desktop_url: String(article.source_url)
+      } : {};
+
+      // Show native share sheet with generated link
+      const { channel, completed, error } = await branchUniversalObject.showShareSheet(
+        {
+          messageHeader: 'Check out this article in Edushorts',
+          messageBody: String(article.title || 'Check out this article in Edushorts')
+        },
+        linkProperties,
+        controlParams
+      );
+
+      if (completed) {
+        showToast('success', 'Article shared successfully');
+      } else if (error) {
+        console.error('Share sheet error:', error);
+        showToast('error', 'Error sharing article');
+      }
+
+      // Release the Branch Universal Object
+      branchUniversalObject.release();
     } catch (error: any) {
       console.error('Error sharing article:', error.message);
-      showToast('error', 'Error sharing article'); // Swapped arguments
+      showToast('error', 'Error sharing article');
     }
-  }, [article.id, article.title]);
+  }, [article]);
 
   // Handle Save/Unsave action
   const handleSaveToggle = useCallback(() => {

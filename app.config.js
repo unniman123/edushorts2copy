@@ -19,9 +19,12 @@ module.exports = {
   ],
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.ajilkojilgokulravi.unniman', // Updated bundle ID
-    googleServicesFile: './ios/edushorts/GoogleService-Info.plist', // Added GoogleService-Info.plist path
-    associatedDomains: ['applinks:edushorts.app'] // Keep associatedDomains for now
+    bundleIdentifier: 'com.ajilkojilgokulravi.unniman',
+    googleServicesFile: './ios/edushorts/GoogleService-Info.plist',
+    associatedDomains: [
+      'applinks:lh1wg.app.link',
+      'applinks:lh1wg-alternate.app.link'
+    ]
   },
   android: {
     adaptiveIcon: {
@@ -37,8 +40,11 @@ module.exports = {
         data: [
           {
             scheme: "https",
-            host: "edushortlinks.netlify.app",
-            pathPattern: "/article/*"
+            host: "lh1wg.app.link"
+          },
+          {
+            scheme: "https",
+            host: "lh1wg-alternate.app.link"
           }
         ],
         category: ["BROWSABLE", "DEFAULT"]
@@ -48,8 +54,7 @@ module.exports = {
         data: [
           {
             scheme: "edushort",
-            host: "article",
-            pathPattern: "/*"
+            host: "open"
           }
         ],
         category: ["BROWSABLE", "DEFAULT"]
@@ -62,13 +67,16 @@ module.exports = {
   extra: {
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
     supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+    branchKey: "key_live_mtk16153Ngoe3o4XBsd8iehnFDichSM4",
+    branchKeyTest: "key_test_msd11792Nogd5j81wCe6hnbpstfgbSQG",
     eas: {
       projectId: "cfa91622-46a9-49aa-86c3-177c0a05d850"
     }
   },
   plugins: [
-    '@react-native-google-signin/google-signin', // Added Google Sign-In plugin
+    '@react-native-google-signin/google-signin',
     'expo-secure-store',
+    'react-native-branch',
     [
       'expo-build-properties',
       {

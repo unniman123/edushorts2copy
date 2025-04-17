@@ -3,6 +3,7 @@ import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { RootStackParamList } from './types/navigation';
+import branch from 'react-native-branch';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Toaster } from 'sonner-native';
@@ -184,10 +185,45 @@ function AppContent() {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // Initialize auth and mark as ready
+    // Initialize auth and Branch
     const cleanup = initializeAuth();
+    
+    // Subscribe to Branch deep links
+    const unsubscribe = branch.subscribe(({ error, params, uri }) => {
+      // Type assertion for params since we know its structure from Branch SDK
+      const branchParams = (params || {}) as {
+        '+clicked_branch_link'?: boolean;
+        articleId?: string;
+        $canonical_identifier?: string;
+        [key: string]: any;
+      };
+      if (error) {
+        console.error('Branch Error:', error);
+        return;
+      }
+
+      // Check if the user clicked on a Branch link
+      if (branchParams['+clicked_branch_link']) {
+        console.log('Branch link clicked:', branchParams);
+        const articleId = branchParams.articleId || branchParams.$canonical_identifier;
+        
+        if (articleId) {
+          // Navigate to the article detail screen
+          // Note: We'll handle the actual navigation in the linking config
+          console.log('Navigating to article:', articleId);
+        } else {
+          console.log('No article ID found in Branch link params:', branchParams);
+        }
+      }
+    });
+
     setIsReady(true);
-    return cleanup;
+    
+    // Cleanup both auth and Branch subscriptions
+    return () => {
+      cleanup();
+      unsubscribe();
+    };
   }, []);
 
   if (!isReady) {
@@ -195,7 +231,7 @@ function AppContent() {
   }
 
   const linking: LinkingOptions<RootStackParamList> = {
-    prefixes: ['edushort://', 'https://edushortlinks.netlify.app', 'exp://localhost:19000'],
+    prefixes: ['edushort://open', 'https://lh1wg.app.link', 'https://lh1wg-alternate.app.link', 'exp://localhost:19000'],
     config: {
       screens: {
         Login: {

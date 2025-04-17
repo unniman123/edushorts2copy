@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Linking,
 } from 'react-native';
+import branch from 'react-native-branch';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -61,6 +62,36 @@ export default function ArticleDetailScreen() {
         if (error) throw error;
         if (data) {
           setArticle(data as Article);
+
+          // Track article view with Branch
+          try {
+            // Create a Branch Universal Object for the article
+            const branchUniversalObject = await branch.createBranchUniversalObject(`article/${articleId}`, {
+              title: data.title || 'Article',
+              contentDescription: data.summary || '',
+              contentImageUrl: data.image_path || '',
+              contentMetadata: {
+                customMetadata: {
+                  articleId: articleId,
+                  category: data.category?.name || 'General',
+                  source: data.source_name || '',
+                  title: data.title || ''
+                }
+              }
+            });
+
+            // Log VIEW_ITEM standard event
+            await branchUniversalObject.logEvent('VIEW_ITEM', {
+              description: data.summary || '',
+              customData: {
+                category: data.category?.name || 'General'
+              }
+            });
+
+            console.log('Branch: VIEW_ITEM event logged for article', articleId);
+          } catch (branchError) {
+            console.error('Error logging Branch event:', branchError);
+          }
         }
       } catch (error) {
         console.error('Error fetching article:', error);

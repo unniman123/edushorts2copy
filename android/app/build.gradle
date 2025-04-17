@@ -149,6 +149,15 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+    
+    // Branch SDK core dependencies
+    implementation 'io.branch.sdk.android:library:5.8.0'
+    implementation 'com.android.installreferrer:installreferrer:2.2'
+    
+    // Branch required dependencies
+    implementation 'com.google.android.gms:play-services-ads-identifier:18.0.1'
+    implementation 'store.galaxy.samsung.installreferrer:samsung_galaxystore_install_referrer:4.0.0'
+    implementation 'com.huawei.hms:ads-identifier:3.4.39.302'
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";
