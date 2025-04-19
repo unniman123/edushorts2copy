@@ -17,45 +17,50 @@ module.exports = {
   assetBundlePatterns: [
     '**/*'
   ],
-  ios: {
-    supportsTablet: true,
-    bundleIdentifier: 'com.ajilkojilgokulravi.unniman', // Updated bundle ID
-    googleServicesFile: './ios/edushorts/GoogleService-Info.plist', // Added GoogleService-Info.plist path
-    associatedDomains: ['applinks:edushorts.app'] // Keep associatedDomains for now
-  },
-  android: {
-    adaptiveIcon: {
-      foregroundImage: './assets/splash icon.png',
-      backgroundColor: '#FFFFFF'
+    ios: {
+      supportsTablet: true,
+      bundleIdentifier: 'com.ajilkojilgokulravi.unniman',
+      googleServicesFile: './ios/edushorts/GoogleService-Info.plist',
+      associatedDomains: [
+        'applinks:lh1wg.app.link',
+        'applinks:lh1wg-alternate.app.link'
+      ]
     },
-    package: 'com.ajilkojilgokulravi.unniman',
-    googleServicesFile: './android/app/google-services.json',
-    intentFilters: [
-      {
-        action: "VIEW",
-        autoVerify: true,
-        data: [
-          {
-            scheme: "https",
-            host: "edushortlinks.netlify.app",
-            pathPattern: "/article/*"
-          }
-        ],
-        category: ["BROWSABLE", "DEFAULT"]
+    android: {
+      adaptiveIcon: {
+        foregroundImage: './assets/splash icon.png',
+        backgroundColor: '#FFFFFF'
       },
-      {
-        action: "VIEW",
-        data: [
-          {
-            scheme: "edushort",
-            host: "article",
-            pathPattern: "/*"
-          }
-        ],
-        category: ["BROWSABLE", "DEFAULT"]
-      }
-    ]
-  },
+      package: 'com.ajilkojilgokulravi.unniman',
+      googleServicesFile: './android/app/google-services.json',
+      intentFilters: [
+        {
+          action: "VIEW",
+          autoVerify: true,
+          data: [
+            {
+              scheme: "https",
+              host: "lh1wg.app.link"
+            },
+            {
+              scheme: "https",
+              host: "lh1wg-alternate.app.link"
+            }
+          ],
+          category: ["BROWSABLE", "DEFAULT"]
+        },
+        {
+          action: "VIEW",
+          data: [
+            {
+              scheme: "edushort",
+              host: "*"
+            }
+          ],
+          category: ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
   web: {
     favicon: './assets/favicon for apk .png' // Updated favicon again
   },
@@ -67,7 +72,7 @@ module.exports = {
     }
   },
   plugins: [
-    '@react-native-google-signin/google-signin', // Added Google Sign-In plugin
+    '@react-native-google-signin/google-signin',
     'expo-secure-store',
     [
       'expo-build-properties',
@@ -76,6 +81,7 @@ module.exports = {
           useFrameworks: 'static'
         }
       }
-    ]
+    ],
+    'react-native-branch'
   ]
 };

@@ -11,27 +11,48 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "scheme": "edushorts",
+    "scheme": "edushort",
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourdomain.edushorts",
-      "associatedDomains": ["applinks:edushorts.app.link"]
+      "bundleIdentifier": "com.ajilkojilgokulravi.unniman",
+      "associatedDomains": [
+        "applinks:lh1wg.app.link",
+        "applinks:lh1wg-alternate.app.link"
+      ]
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.yourdomain.edushorts",
+      "package": "com.ajilkojilgokulravi.unniman",
       "intentFilters": [
         {
           "action": "VIEW",
-          "data": {
-            "scheme": "edushorts"
-          },
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "lh1wg.app.link"
+            },
+            {
+              "scheme": "https",
+              "host": "lh1wg-alternate.app.link"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        },
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "edushort",
+              "host": "*"
+            }
+          ],
           "category": ["BROWSABLE", "DEFAULT"]
         }
       ]

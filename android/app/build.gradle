@@ -173,6 +173,23 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    // Add Branch.io SDK dependency (Pinning version for stability)
+    implementation 'io.branch.sdk.android:library:5.10.0'
+
+    // Add specific versions for androidx dependencies to prevent conflicts
+    implementation "androidx.core:core-ktx:1.13.1"
+    implementation "androidx.browser:browser:1.6.0"
+
+    // Add multidex support
+    implementation "androidx.multidex:multidex:2.0.1"
+}
+
+configurations.all {
+resolutionStrategy {
+    force "androidx.core:core-ktx:1.13.1"
+    force "androidx.browser:browser:1.6.0"
+}
 }
 
 apply plugin: 'com.google.gms.google-services'

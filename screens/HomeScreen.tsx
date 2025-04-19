@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,21 +10,27 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNews } from '../context/NewsContext';
 import NewsCard from '../components/NewsCard';
 import PagerView from 'react-native-pager-view';
+import branch from 'react-native-branch';
+import { useNavigation } from '@react-navigation/native';
+import BranchHelper from '../utils/branchHelper';
 
 interface HomeScreenRef {
   scrollToTop: () => void;
 }
 
-const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
+const HomeScreen = React.forwardRef<HomeScreenRef>((props, ref) => {
   const pagerRef = React.useRef<PagerView>(null);
   const { news, loading, error, refreshNews, loadMoreNews } = useNews();
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const navigation = useNavigation();
 
   React.useImperativeHandle(ref, () => ({
     scrollToTop: () => {
       pagerRef.current?.setPage(0);
     }
   }));
+
+  
 
   const handleLoadMore = useCallback(async () => {
     if (loading || isLoadingMore || news.length === 0) return;
@@ -110,6 +116,8 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
     </SafeAreaView>
   );
 });
+
+HomeScreen.displayName = 'HomeScreen';
 
 const styles = StyleSheet.create({
   emptyList: {

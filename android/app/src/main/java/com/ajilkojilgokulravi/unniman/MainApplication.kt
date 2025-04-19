@@ -16,6 +16,8 @@ import com.facebook.soloader.SoLoader
 import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ReactNativeHostWrapper
 
+import io.branch.referral.Branch
+
 class MainApplication : Application(), ReactApplication {
 
   override val reactNativeHost: ReactNativeHost = ReactNativeHostWrapper(
@@ -28,7 +30,7 @@ class MainApplication : Application(), ReactApplication {
             return packages
           }
 
-          override fun getJSMainModuleName(): String = ".expo/.virtual-metro-entry"
+          override fun getJSMainModuleName(): String = "index"
 
           override fun getUseDeveloperSupport(): Boolean = BuildConfig.DEBUG
 
@@ -47,6 +49,13 @@ class MainApplication : Application(), ReactApplication {
       // If you opted-in for the New Architecture, we load the native entry point for this app.
       load()
     }
+
+    // Initialize Branch
+    Branch.enableLogging() // Enable logging for debugging
+
+    // Initialize Branch SDK
+    Branch.getAutoInstance(this)
+
     ApplicationLifecycleDispatcher.onApplicationCreate(this)
   }
 

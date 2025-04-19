@@ -10,6 +10,7 @@ import {
   Share,
   ActivityIndicator,
   Linking,
+  Alert, // Import Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, Ionicons } from '@expo/vector-icons';
@@ -18,6 +19,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import { supabase } from '../utils/supabase';
 import { Article } from '../types/supabase';
+import BranchHelper from '../utils/branchHelper'; // Import BranchHelper
 
 type ArticleDetailScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -75,14 +77,23 @@ export default function ArticleDetailScreen() {
   const handleShare = async () => {
     if (!article) return;
     try {
-      // Use the microsite URL for sharing
-      const webUrl = `https://edushortlinks.netlify.app/article/${articleId}`;
-      await Share.share({
-        message: `Check out this article in Edushorts: ${article.title}\n\n${webUrl}`,
-        url: webUrl // Use the web URL for sharing
+      const url = await BranchHelper.createBranchLink(articleId, article);
+      
+      const result = await Share.share({
+        message: `Check out this article in Edushorts: ${article.title}\n\n${url}`,
+        url: url
       });
-    } catch (error) {
+      
+      if (result.action === Share.sharedAction) {
+        // Track successful share
+        await BranchHelper.trackShare(articleId);
+      }
+    } catch (error: any) { // Explicitly type error as any for now
       console.error('Error sharing:', error);
+      Alert.alert(
+        'Sharing Failed',
+        'Unable to share this article at the moment. Please try again later.'
+      );
     }
   };
 

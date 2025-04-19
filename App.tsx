@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
+import { NavigationContainer, LinkingOptions, useNavigationContainerRef } from '@react-navigation/native'; // Import useNavigationContainerRef
+import branch, { BranchEvent } from 'react-native-branch';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { RootStackParamList } from './types/navigation';
@@ -14,7 +15,9 @@ import { SavedArticlesProvider } from './context/SavedArticlesContext';
 import { NewsProvider } from './context/NewsContext';
 import { initializeAuth } from './utils/authHelpers';
 import * as Linking from 'expo-linking';
-import { GoogleSignin } from '@react-native-google-signin/google-signin'; // <-- Add import
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import type { GoogleSigninType } from '@react-native-google-signin/google-signin';
+import BranchHelper from './utils/branchHelper'; // Import BranchHelper
 
 import LoadingScreen from './screens/LoadingScreen';
 import HomeScreen from './screens/HomeScreen';
@@ -98,7 +101,7 @@ function MainTabs() {
         <Tab.Screen
         name="HomeTab"
         children={() => <HomeScreen ref={homeScreenRef} />}
-        options={({ navigation }) => ({ 
+        options={({ navigation }) => ({
           tabBarLabel: 'Home',
           tabBarButton: (props) => (
             <TouchableOpacity
@@ -169,7 +172,7 @@ function RootStackNavigator() {
         </>
       )}
     </Stack.Navigator>
-  );
+    );
 }
 
 // Configure Google Sign-In (Call this early, outside component if possible, or in a top-level effect)
@@ -182,13 +185,46 @@ GoogleSignin.configure({
 
 function AppContent() {
   const [isReady, setIsReady] = useState(false);
+  const navigationRef = useNavigationContainerRef<RootStackParamList>(); // Get navigation container ref and explicitly type it
 
   useEffect(() => {
     // Initialize auth and mark as ready
-    const cleanup = initializeAuth();
+    const cleanupAuth = initializeAuth();
     setIsReady(true);
-    return cleanup;
-  }, []);
+
+    // Setup Branch.io subscription
+    let cleanupBranch: () => void = () => {}; // Initialize with a no-op function
+
+    const setupBranch = async () => {
+      if (navigationRef.isReady()) {
+        try {
+          cleanupBranch = await BranchHelper.setupBranchSubscription(navigationRef);
+        } catch (error) {
+          console.error("Error setting up Branch subscription", error);
+        }
+      } else {
+        // If navigation is not ready, wait for it
+        const unsubscribe = navigationRef.addListener('state', async () => {
+          try {
+            cleanupBranch = await BranchHelper.setupBranchSubscription(navigationRef);
+          } catch (error) {
+            console.error("Error setting up Branch subscription", error);
+          }
+          unsubscribe(); // Remove listener after setup
+        });
+        cleanupBranch = unsubscribe; // Return unsubscribe for cleanup
+      }
+    };
+
+    setupBranch();
+
+    return () => {
+      cleanupAuth();
+      if (cleanupBranch) {
+        cleanupBranch();
+      }
+    };
+  }, [navigationRef]); // Add navigationRef to dependencies
 
   if (!isReady) {
     return <LoadingScreen />;
@@ -226,12 +262,12 @@ function AppContent() {
           }
         }
       },
-      initialRouteName: 'Login' as keyof RootStackParamList
+      // Removed initialRouteName from linking config
     }
   };
 
   return (
-    <NavigationContainer linking={linking}>
+    <NavigationContainer<RootStackParamList> linking={linking} ref={navigationRef}> {/* Explicitly type NavigationContainer */}
       <RootStackNavigator />
     </NavigationContainer>
   );
