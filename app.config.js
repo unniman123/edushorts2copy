@@ -1,3 +1,4 @@
+/** @type {import('expo/config').ExpoConfig} */
 module.exports = {
   name: 'Edushorts',
   slug: 'edushorts',
@@ -11,9 +12,6 @@ module.exports = {
     resizeMode: 'cover',
     backgroundColor: '#ffffff'
   },
-  updates: {
-    fallbackToCacheTimeout: 0,
-  },
   assetBundlePatterns: [
     '**/*'
   ],
@@ -22,8 +20,7 @@ module.exports = {
     bundleIdentifier: 'com.ajilkojilgokulravi.unniman',
     googleServicesFile: './ios/edushorts/GoogleService-Info.plist',
     associatedDomains: [
-      'applinks:lh1wg.app.link',
-      'applinks:lh1wg-alternate.app.link'
+      'applinks:edushorts.app'
     ]
   },
   android: {
@@ -35,59 +32,38 @@ module.exports = {
     googleServicesFile: './android/app/google-services.json',
     intentFilters: [
       {
-        action: "VIEW",
+        action: 'VIEW',
         autoVerify: true,
         data: [
           {
-            scheme: "https",
-            host: "lh1wg.app.link"
-          },
-          {
-            scheme: "https",
-            host: "lh1wg-alternate.app.link"
+            scheme: 'https',
+            host: 'edushorts.app',
+            pathPrefix: '/'
           }
         ],
-        category: ["BROWSABLE", "DEFAULT"]
-      },
-      {
-        action: "VIEW",
-        data: [
-          {
-            scheme: "edushort",
-            host: "article",
-            pathPattern: "/*"
-          }
-        ],
-        category: ["BROWSABLE", "DEFAULT"]
+        category: ['BROWSABLE', 'DEFAULT']
       }
     ]
-  },
-  web: {
-    favicon: './assets/favicon for apk .png'
-  },
-  extra: {
-    supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
-    supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-    eas: {
-      projectId: "cfa91622-46a9-49aa-86c3-177c0a05d850"
-    }
   },
   plugins: [
     '@react-native-google-signin/google-signin',
     'expo-secure-store',
-    [
-      'expo-build-properties',
-      {
-        ios: {
-          useFrameworks: 'static'
-        }
+    ['expo-build-properties', {
+      android: {
+        compileSdkVersion: 33,
+        targetSdkVersion: 33,
+        buildToolsVersion: "33.0.0",
+        kotlinVersion: "1.8.0",
+        enableProguardInReleaseBuilds: true,
+      },
+      ios: {
+        useFrameworks: 'static'
       }
-    ],
-    [
-      'react-native-branch',
-      {
-        apiKey: 'key_live_mtk16153Ngoe3o4XBsd8iehnFDichSM4'
-      }
-    ]
-  ]
+    }]
+  ],
+  extra: {
+    eas: {
+      projectId: "cfa91622-46a9-49aa-86c3-177c0a05d850"
+    }
+  }
 };

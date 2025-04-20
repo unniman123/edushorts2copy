@@ -1,298 +1,191 @@
-# In-depth Analysis and Migration Plan for Supabase Integration
+1. Configure Branch Dashboard
+Start by configuring the Branch Dashboard for your application:
 
-After analyzing your codebase, I've developed a comprehensive plan for migrating to your new Supabase backend while removing the admin dashboard functionality. This plan focuses on maintaining core functionality while ensuring a smooth transition.
+iOS Branch Dashboard Configuration steps.
 
-## Current Codebase Analysis
+Android Branch Dashboard Configuration steps.
 
-### Components to Keep
-- **UI Components**: Your well-designed UI components like input fields, buttons, and layout containers
-- **Navigation Structure**: The existing navigation flow works well for your app
-- **Screen Structure**: Most screen components can be preserved with backend modifications
-- **State Management**: Your current state management approach is effective
+Make sure to configure your default link settings as part of the setup process.
 
-### Components to Remove
-- **Admin Dashboard**: All admin-related screens and functionality
-- **Current Backend Services**: API calls to your existing backend
-- **Custom Authentication Logic**: This will be replaced with Supabase auth
-- **Data Fetching Logic**: Current data fetching methods need to be replaced
+2. Install Branch
+Please choose one of the following integration methods to install the Branch React Native SDK into your app.
 
-### Components to Modify
-- **Authentication Screens**: Update to use Supabase auth
-- **Data Display Components**: Modify to work with Supabase data structure
-- **Service Layer**: Create a new service layer for Supabase integration
+Pure React Native App
+Use one of the following commands to install the module:
 
-## Migration Plan
+NPM
+npm install react-native-branch
+NpmCopy
+Yarn
+yarn add react-native-branch
+YarnCopy
+Note: The react-native-branch module requires your react-native version to be greater than or equal to 0.60.
 
-### Phase 1: Setup and Infrastructure (Week 1)
+Native iOS App With CocoaPods
+Add the following code to your Podfile in order to install Branch using CocoaPods:
 
-1. **Create Service Architecture**
-   - Create a services directory structure
-   - Set up Supabase client configuration
-   - Implement authentication service
+platform :ios, '11.0'
 
-2. **Remove Admin Dashboard**
-   - Identify and remove admin-specific screens
-   - Remove admin-related navigation routes
-   - Clean up any admin-specific utilities
+target 'APP_NAME' do
+  # if swift
+  use_frameworks!
 
-3. **Update Project Dependencies**
-   - Install Supabase client libraries
-   - Update or remove outdated packages
-   - Configure environment variables
+  pod 'react-native-branch', path: '../node_modules/react-native-branch'
+end
+PodfileCopy
+Run the pod install command to regenerate the Pods project with the new dependencies. Please note that the location of node_modules relative to your Podfile may vary.
 
-### Phase 2: Authentication Migration (Week 1-2)
+Expo Framework
+Branch does support applications that use Expo, but please note that we do not maintain the react-native-branch plugin for Expo. This means we cannot fix any issues that arise related to this plugin.
 
-1. **Implement Authentication Service**
-   - Create auth context provider
-   - Set up session management
-   - Implement login, registration, and password reset methods
+To learn more, visit Expo's react-native-branch plugin GitHub page.
 
-2. **Update Authentication Screens**
-   - Modify RegisterScreen (already mostly compatible)
-   - Update LoginScreen to use Supabase
-   - Create password reset functionality
+3. Configure App
+Complete the app configuration steps for the relevant platform(s) you are using.
 
-3. **Implement User Profile Management**
-   - Create profile service for user data
-   - Update profile screens to use Supabase
+iOS Configuration
+To configure iOS:
 
-### Phase 3: Data Services Migration (Week 2-3)
+Configure bundle identifier.
 
-1. **Create Core Data Services**
-   - Implement news service
-   - Create educational content service
-   - Set up user preferences service
+Configure associated domains.
 
-2. **Implement Real-time Features**
-   - Set up Supabase subscriptions for real-time updates
-   - Create notification service
+Configure Info.plist file.
 
-3. **Update UI Components**
-   - Modify data display components to work with new data structure
-   - Update forms and input handling
+Add a branch.json file to your project, which you will use to access certain Branch configuration settings:
 
-### Phase 4: Testing and Refinement (Week 3-4)
+Create an empty file called branch.json.
 
-1. **Comprehensive Testing**
-   - Test all authentication flows
-   - Verify data fetching and updates
-   - Test real-time functionality
+Add the file to your project using Xcode. Within your project, navigate to File → Add Files.
 
-2. **Performance Optimization**
-   - Implement caching strategies
-   - Optimize data fetching
-   - Reduce unnecessary re-renders
+Select the branch.json file and make sure every target in your project that uses Branch is selected.
 
-3. **Error Handling Improvements**
-   - Implement consistent error handling
-   - Add retry mechanisms
-   - Improve user feedback for errors
+Click Add.
 
-### Phase 5: Deployment and Monitoring (Week 4)
+Android Configuration
+To configure Android:
 
-1. **Final Cleanup**
-   - Remove any remaining legacy code
-   - Update documentation
-   - Final code review
+Add dependencies.
 
-2. **Deployment Preparation**
-   - Configure production environment
-   - Set up monitoring tools
-   - Prepare release notes
+Configure AndroidManifest.xml file.
 
-3. **Gradual Rollout**
-   - Deploy to beta testers
-   - Monitor for issues
-   - Full production release
+Add a branch.json file to your project, which you will use to access certain Branch configuration settings.
 
-## Specific Implementation Tasks
+Create an empty file called branch.json.
 
-### 1. Create Supabase Client Configuration
+Place the file in the src/main/assets folder of your app.
 
-Create a dedicated utility file for Supabase configuration:
+4. Initialize Branch
+Use the code samples in this section to initialize the SDK in your application(s).
 
-```typescript:c:\a0 edushorts\a0-project\utils\supabase.ts
-import { createClient } from '@supabase/supabase-js';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import 'react-native-url-polyfill/auto';
+Branch Initialization on iOS
+To initialize Branch on iOS, add the following to your app's AppDelegate file:
 
-// Replace with your Supabase URL and anon key
-const supabaseUrl = 'YOUR_SUPABASE_URL';
-const supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: AsyncStorage,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-  },
-});
-```
-
-### 2. Create Authentication Context
-
-```typescript:c:\a0 edushorts\a0-project\contexts\AuthContext.tsx
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import { supabase } from '../utils/supabase';
-import { Session, User } from '@supabase/supabase-js';
-
-type AuthContextType = {
-  session: Session | null;
-  user: User | null;
-  loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signOut: () => Promise<void>;
-};
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const signIn = async (email: string, password: string) => {
-    try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      return { error };
-    } catch (error) {
-      return { error: error as Error };
-    }
-  };
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-  };
-
-  return (
-    <AuthContext.Provider value={{ session, user, loading, signIn, signOut }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
-```
-
-### 3. Create Data Services
-
-Create service modules for each data entity:
-
-```typescript:c:\a0 edushorts\a0-project\services\newsService.ts
-import { supabase } from '../utils/supabase';
-
-export interface NewsItem {
-  id: string;
-  title: string;
-  summary: string;
-  content: string;
-  image_url: string | null;
-  source_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export const newsService = {
-  async getNews(): Promise<NewsItem[]> {
-    const { data, error } = await supabase
-      .from('news')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error('Error fetching news:', error);
-      throw error;
-    }
-    
-    return data || [];
-  },
+Swift
+Objective-C
+#import "AppDelegate.h"
+#import <RNBranch/RNBranch.h>
   
-  async getNewsById(id: string): Promise<NewsItem | null> {
-    const { data, error } = await supabase
-      .from('news')
-      .select('*')
-      .eq('id', id)
-      .single();
-    
-    if (error) {
-      console.error(`Error fetching news with id ${id}:`, error);
-      throw error;
-    }
-    
-    return data;
-  }
-};
-```
+@implementation AppDelegate
 
-### 4. Update App Entry Point
-
-```typescript:c:\a0 edushorts\a0-project\App.tsx
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { AuthProvider } from './contexts/AuthContext';
-import AppNavigator from './navigation/AppNavigator';
-import { Toaster } from 'sonner-native';
-
-export default function App() {
-  return (
-    <NavigationContainer>
-      <AuthProvider>
-        <AppNavigator />
-        <Toaster />
-      </AuthProvider>
-    </NavigationContainer>
-  );
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+{
+    // Optional: Uncomment next line to use test instead of live key
+    // [RNBranch useTestInstance];
+    [RNBranch initSessionWithLaunchOptions:launchOptions isReferrable:YES];
+    NSURL *jsCodeLocation;
+    //...
 }
-```
 
-## Migration Checklist
+- (BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options {
+  [RNBranch application:app openURL:url options:options];
+  return YES;
+}
 
-### Files to Create
-- [ ] `utils/supabase.ts` - Supabase client configuration
-- [ ] `contexts/AuthContext.tsx` - Authentication context
-- [ ] `services/newsService.ts` - News data service
-- [ ] `services/profileService.ts` - User profile service
-- [ ] `services/contentService.ts` - Educational content service
-- [ ] `services/notificationService.ts` - Notification service
+- (BOOL)application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity restorationHandler:(void (^)(NSArray<id<UIUserActivityRestoring>> * _Nullable))restorationHandler {
+  [RNBranch continueUserActivity:userActivity];
+  return YES;
+}
 
-### Files to Modify
-- [ ] `screens/RegisterScreen.tsx` - Update error handling
-- [ ] `screens/LoginScreen.tsx` - Integrate with Supabase auth
-- [ ] `screens/ProfileScreen.tsx` - Update to use profile service
-- [ ] `navigation/AppNavigator.tsx` - Remove admin routes
+@end
+Objective-C
+Branch Initialization on Android
+To initialize Branch on Android, you need to:
 
-### Files to Remove
-- [ ] All admin dashboard screens
-- [ ] Admin-specific utilities
-- [ ] Current backend service files
+Add Branch to your MainApplication.java file or MainApplication.kt file:
 
-## Conclusion
+Java
+Kotlin
+import io.branch.rnbranch.*
 
-This migration plan provides a structured approach to transition your application to Supabase while removing the admin dashboard functionality. By focusing on creating a clean service layer architecture, you'll be able to maintain the core functionality of your app while making it easier to integrate with your new backend.
+// ...
 
-The plan emphasizes gradual changes and thorough testing to ensure a smooth transition with minimal disruption to your users. By following this approach, you'll be able to leverage the power of Supabase's real-time capabilities and authentication system while maintaining the excellent user experience of your current application.
+override fun onCreate() {
+    super.onCreate()
+    RNBranchModule.getAutoInstance(this)
+
+    SoLoader.init(this, false)
+    if (BuildConfig.IS_NEW_ARCHITECTURE_ENABLED) {
+        // If you opted-in for the New Architecture, we load the native entry point for this app
+        load()
+    }
+  
+    // Enable logging for debugging (remove in production)
+    RNBranchModule.enableLogging();
+  
+    ReactNativeFlipper.initializeFlipper(this, reactNativeHost.reactInstanceManager)
+}
+
+// ...
+Kotlin
+Add Branch to your MainActivity.java file or MainActivity.kt file:
+
+Java
+Kotlin
+import io.branch.rnbranch.*
+import android.content.Intent
+
+// ...
+
+override fun onStart() {
+    super.onStart()
+    RNBranchModule.initSession(getIntent().getData(), this)
+}
+
+override fun onNewIntent(intent: Intent?) {
+    super.onNewIntent(intent)
+    setIntent(intent)
+    RNBranchModule.reInitSession(this)
+}
+
+// ...
+Kotlin
+5. Validate Integration
+Use the guides below to validate that your SDK integration(s) are properly configured:
+
+iOS
+iOS Validation
+
+iOS Testing
+
+iOS Troubleshooting
+
+Android
+Android Validation
+
+Android Testing
+
+Android Troubleshooting
+
+Common Build Problems
+Be sure to update from < 2.0.0 if your app used an earlier version of react-native-branch. In version 2.x, the native SDKs are embedded in the NPM module and must not also be added from elsewhere (Gradle, CocoaPods, etc.).
+
+Note that when using the React pod in a native app, the name of the native SDK pod is Branch-SDK, not Branch, and it comes from node_modules, not the CocoaPods repo.
+
+Starting with React Native 0.40, all external iOS headers in Objective-C must be imported as #import . This applies to React Native headers as well as the  header from this SDK.
+
+If you upgraded from RN < 0.40 manually, without adjusting your Xcode project settings, you may still be importing headers with double quotes. This probably indicates a problem with your settings.
+
+The react-native-git-upgrade tool from NPM may be used to update dependencies as well as project settings.
+
+On Android, when using Proguard in release builds, depending on your build settings, it may be necessary to add one or both of these lines to your android/app/proguard-rules.pro file:

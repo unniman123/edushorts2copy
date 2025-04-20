@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import * as React from 'react';
+import { useEffect, useState } from 'react';
 import { NavigationContainer, LinkingOptions, NavigationContainerRef } from '@react-navigation/native';
-import BranchHelper from './utils/branchHelper';
+import linking from './utils/linking';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { RootStackParamList } from './types/navigation';
@@ -197,38 +198,6 @@ function AppContent() {
     const cleanup = initializeAuth();
     setIsReady(true);
 
-    // Handle Branch.io deep links
-    const handleDeepLink = async (url: string | null) => {
-      try {
-        if (!url) return;
-
-        const deepLinkData = await BranchHelper.handleBranchDeepLink(url);
-        if (deepLinkData?.newsId && navigationRef.current) {
-          // If user is not authenticated, navigate after login
-          if (!session) {
-            navigate('Login');
-          } else {
-            navigate('ArticleDetail', { articleId: deepLinkData.newsId });
-          }
-        }
-      } catch (error) {
-        console.error('Error handling deep link:', error);
-      }
-    };
-
-    // Handle initial URL
-    Linking.getInitialURL().then(handleDeepLink);
-
-    // Listen for new deep links while app is running
-    const linkingSubscription = Linking.addEventListener('url', (event) => {
-      handleDeepLink(event.url);
-    });
-
-    // Cleanup
-    return () => {
-      cleanup();
-      linkingSubscription.remove();
-    };
     return cleanup;
   }, []);
 
@@ -236,46 +205,6 @@ function AppContent() {
     return <LoadingScreen />;
   }
 
-  const linking: LinkingOptions<RootStackParamList> = {
-    prefixes: [
-      'edushort://',
-      'https://lh1wg.app.link',
-      'https://lh1wg-alternate.app.link',
-      'exp://localhost:19000'
-    ],
-    config: {
-      screens: {
-        Login: {
-          path: 'login',
-          parse: {
-            emailConfirmed: (emailConfirmed: string) => emailConfirmed === 'true',
-            pendingConfirmation: (pendingConfirmation: string) => pendingConfirmation === 'true'
-          }
-        },
-        Register: 'register',
-        EmailConfirmation: {
-          path: 'auth/confirm',
-          parse: {
-            token: (token: string) => token
-          }
-        },
-        ResetPassword: {
-          path: 'auth/reset-password',
-          parse: {
-            token: (token: string) => token
-          }
-        },
-        Main: 'main',
-        ArticleDetail: {
-          path: '/article/:articleId',
-          parse: {
-            articleId: (articleId: string) => articleId
-          }
-        }
-      },
-      initialRouteName: 'Login' as keyof RootStackParamList
-    }
-  };
 
   return (
     <NavigationContainer ref={navigationRef} linking={linking}>

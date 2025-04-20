@@ -1,17 +1,25 @@
-export default function(api) {
+module.exports = function (api) {
   api.cache(true);
   return {
-    presets: ['babel-preset-expo'],
-    plugins: [
-      'react-native-reanimated/plugin',
-      ['module:react-native-dotenv', {
-        moduleName: '@env',
-        path: '.env',
-        blacklist: null,
-        whitelist: null,
-        safe: false,
-        allowUndefined: true,
-      }],
+    presets: [
+      ['babel-preset-expo', {
+        lazyImports: true
+      }]
     ],
+    plugins: [
+      ['module-resolver', {
+        root: ['./'],
+        extensions: ['.ios.js', '.android.js', '.js', '.ts', '.tsx', '.json'],
+        alias: {
+          '@': './'
+        }
+      }],
+      ['@babel/plugin-transform-modules-commonjs', {
+        allowTopLevelThis: true,
+        loose: true,
+        strict: false
+      }],
+      'react-native-reanimated/plugin'
+    ]
   };
 };
