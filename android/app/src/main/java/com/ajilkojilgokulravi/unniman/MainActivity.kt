@@ -2,6 +2,8 @@ package com.ajilkojilgokulravi.unniman
 
 import android.os.Build
 import android.os.Bundle
+import android.content.Intent
+import io.branch.referral.Branch
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
@@ -17,6 +19,31 @@ class MainActivity : ReactActivity() {
     // This is required for expo-splash-screen.
     setTheme(R.style.AppTheme);
     super.onCreate(null)
+    
+    // Initialize Branch session
+    Branch.sessionBuilder(this).withCallback { branchUniversalObject, linkProperties, error ->
+      if (error != null) {
+        error.message?.let { android.util.Log.e("BranchError", it) }
+      } else {
+        android.util.Log.i("BranchSuccess", "Deep link params: ${linkProperties?.controlParams}")
+      }
+    }.withData(this.intent?.data).init()
+  }
+
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    this.intent = intent
+    
+    // Handle new intent for Branch deep links
+    if (intent != null && intent.hasExtra("branch_force_new_session") && intent.getBooleanExtra("branch_force_new_session", false)) {
+      Branch.sessionBuilder(this).withCallback { referringParams, error ->
+        if (error != null) {
+          android.util.Log.e("BranchError", error.message ?: "Unknown error")
+        } else {
+          android.util.Log.i("BranchSuccess", "Referring params: $referringParams")
+        }
+      }.reInit()
+    }
   }
 
   /**

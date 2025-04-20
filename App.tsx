@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
+import { NavigationContainer, LinkingOptions, NavigationContainerRef } from '@react-navigation/native';
+import BranchHelper from './utils/branchHelper';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { RootStackParamList } from './types/navigation';
@@ -182,11 +183,52 @@ GoogleSignin.configure({
 
 function AppContent() {
   const [isReady, setIsReady] = useState(false);
+  const { session } = useAuth();
+  const navigationRef = React.useRef<NavigationContainerRef<RootStackParamList>>(null);
+
+  const navigate = (name: keyof RootStackParamList, params?: any) => {
+    if (navigationRef.current) {
+      navigationRef.current.navigate(name, params);
+    }
+  };
 
   useEffect(() => {
     // Initialize auth and mark as ready
     const cleanup = initializeAuth();
     setIsReady(true);
+
+    // Handle Branch.io deep links
+    const handleDeepLink = async (url: string | null) => {
+      try {
+        if (!url) return;
+
+        const deepLinkData = await BranchHelper.handleBranchDeepLink(url);
+        if (deepLinkData?.newsId && navigationRef.current) {
+          // If user is not authenticated, navigate after login
+          if (!session) {
+            navigate('Login');
+          } else {
+            navigate('ArticleDetail', { articleId: deepLinkData.newsId });
+          }
+        }
+      } catch (error) {
+        console.error('Error handling deep link:', error);
+      }
+    };
+
+    // Handle initial URL
+    Linking.getInitialURL().then(handleDeepLink);
+
+    // Listen for new deep links while app is running
+    const linkingSubscription = Linking.addEventListener('url', (event) => {
+      handleDeepLink(event.url);
+    });
+
+    // Cleanup
+    return () => {
+      cleanup();
+      linkingSubscription.remove();
+    };
     return cleanup;
   }, []);
 
@@ -195,7 +237,12 @@ function AppContent() {
   }
 
   const linking: LinkingOptions<RootStackParamList> = {
-    prefixes: ['edushort://', 'https://edushortlinks.netlify.app', 'exp://localhost:19000'],
+    prefixes: [
+      'edushort://',
+      'https://lh1wg.app.link',
+      'https://lh1wg-alternate.app.link',
+      'exp://localhost:19000'
+    ],
     config: {
       screens: {
         Login: {
@@ -231,7 +278,7 @@ function AppContent() {
   };
 
   return (
-    <NavigationContainer linking={linking}>
+    <NavigationContainer ref={navigationRef} linking={linking}>
       <RootStackNavigator />
     </NavigationContainer>
   );

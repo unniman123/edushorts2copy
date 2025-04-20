@@ -10,6 +10,8 @@ Edushorts is a news application focused on international students, providing per
 - News article bookmarking
 - Personalized news feed
 - Profile management
+- Analytics and error tracking
+- Performance monitoring
 
 ## Development
 
@@ -31,9 +33,18 @@ expo start
 ### Environment Variables
 Copy `.env.example` to `.env` and fill in the required values:
 ```bash
+# Supabase Configuration
 EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# Branch.io Configuration
+BRANCH_LIVE_KEY=your_branch_live_key
+BRANCH_TEST_KEY=your_branch_test_key
+BRANCH_APP_DOMAIN=your_app_domain.app.link
+BRANCH_ALT_DOMAIN=your_app_domain-alternate.app.link
 ```
+
+For Branch.io setup details, see [Branch.io Testing Guide](./docs/branch-testing-guide.md)
 
 ### Deep Linking
 The app supports deep linking for authentication flows:
@@ -57,13 +68,31 @@ edushorts://auth/reset-password?token=test-token
 For detailed information, see [Deep Linking Documentation](./docs/deep-linking.md)
 
 ### Testing
+
+#### Unit Tests
 ```bash
-# Run tests
+# Run all tests
 npm test
+
+# Run unit tests only
+npm run test:unit
 
 # Run tests with coverage
 npm run test:coverage
 ```
+
+#### Deep Link Testing
+```bash
+# Test Android deep links
+npm run test:deeplinks:android
+
+# Test iOS deep links
+npm run test:deeplinks:ios
+```
+
+For detailed information about deep link testing, see:
+- [Branch.io Testing Guide](./docs/branch-testing-guide.md)
+- [Deep Linking Documentation](./docs/deep-linking.md)
 
 ### Build and Deploy
 ```bash
@@ -81,6 +110,26 @@ eas submit
 - [Auth Implementation](./docs/auth-implementation.md)
 - [Deep Linking](./docs/deep-linking.md)
 - [Google OAuth Setup](./docs/google-oauth-setup.md)
+- [Monitoring Service](./docs/monitoring-service.md)
+
+## Testing
+
+### Unit Tests
+```bash
+npm test
+```
+
+### Deep Link Testing
+```bash
+npm run test:deeplinks:android
+npm run test:deeplinks:ios
+```
+
+### Monitoring Tests
+```bash
+# Run monitoring service tests
+npm run test:monitoring
+```
 
 ## Scripts
 - `scripts/test-deep-links.sh` - Test deep linking functionality

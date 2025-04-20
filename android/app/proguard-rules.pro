@@ -12,3 +12,11 @@
 -keep class com.facebook.react.turbomodule.** { *; }
 
 # Add any project specific keep options here:
+
+# Branch.io
+-keep class com.google.android.gms.** { *; }
+-keep class com.huawei.hms.ads.** { *; }
+-keep interface com.huawei.hms.ads.** { *; }
+-keepclassmembers class * implements com.huawei.hms.ads.identifier.AdvertisingIdClient$Info {
+    *;
+}

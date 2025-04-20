@@ -34,3 +34,9 @@ local.properties
 # iOS
 ios/Pods/
 *.xcworkspace
+
+# Test results and logs
+test-results/
+deep-link-test-results/
+*.log
+branch-test-logs/

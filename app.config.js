@@ -7,8 +7,8 @@ module.exports = {
   icon: './assets/app-logo.png',
   userInterfaceStyle: 'light',
   splash: {
-    image: './assets/splash icon.png', // Updated splash icon
-    resizeMode: 'cover', // Changed from 'contain' to 'cover'
+    image: './assets/splash icon.png',
+    resizeMode: 'cover',
     backgroundColor: '#ffffff'
   },
   updates: {
@@ -19,9 +19,12 @@ module.exports = {
   ],
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.ajilkojilgokulravi.unniman', // Updated bundle ID
-    googleServicesFile: './ios/edushorts/GoogleService-Info.plist', // Added GoogleService-Info.plist path
-    associatedDomains: ['applinks:edushorts.app'] // Keep associatedDomains for now
+    bundleIdentifier: 'com.ajilkojilgokulravi.unniman',
+    googleServicesFile: './ios/edushorts/GoogleService-Info.plist',
+    associatedDomains: [
+      'applinks:lh1wg.app.link',
+      'applinks:lh1wg-alternate.app.link'
+    ]
   },
   android: {
     adaptiveIcon: {
@@ -37,8 +40,11 @@ module.exports = {
         data: [
           {
             scheme: "https",
-            host: "edushortlinks.netlify.app",
-            pathPattern: "/article/*"
+            host: "lh1wg.app.link"
+          },
+          {
+            scheme: "https",
+            host: "lh1wg-alternate.app.link"
           }
         ],
         category: ["BROWSABLE", "DEFAULT"]
@@ -57,7 +63,7 @@ module.exports = {
     ]
   },
   web: {
-    favicon: './assets/favicon for apk .png' // Updated favicon again
+    favicon: './assets/favicon for apk .png'
   },
   extra: {
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
@@ -67,7 +73,7 @@ module.exports = {
     }
   },
   plugins: [
-    '@react-native-google-signin/google-signin', // Added Google Sign-In plugin
+    '@react-native-google-signin/google-signin',
     'expo-secure-store',
     [
       'expo-build-properties',
@@ -75,6 +81,12 @@ module.exports = {
         ios: {
           useFrameworks: 'static'
         }
+      }
+    ],
+    [
+      'react-native-branch',
+      {
+        apiKey: 'key_live_mtk16153Ngoe3o4XBsd8iehnFDichSM4'
       }
     ]
   ]

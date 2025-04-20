@@ -1,0 +1,94 @@
+name: Deep Linking Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  test-deeplinks:
+    name: Test Deep Links
+    runs-on: macos-latest # Use macOS for both iOS and Android
+    
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v2
+
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+
+    - name: Install iOS dependencies
+      run: |
+        cd ios
+        pod install
+      
+    - name: Create .env file
+      run: |
+        echo "BRANCH_LIVE_KEY=${{ secrets.BRANCH_LIVE_KEY }}" >> .env
+        echo "BRANCH_TEST_KEY=${{ secrets.BRANCH_TEST_KEY }}" >> .env
+        echo "BRANCH_APP_DOMAIN=${{ secrets.BRANCH_APP_DOMAIN }}" >> .env
+        echo "BRANCH_ALT_DOMAIN=${{ secrets.BRANCH_ALT_DOMAIN }}" >> .env
+
+    - name: Make test script executable
+      run: chmod +x ./scripts/test-branch-links.sh
+
+    - name: Start Android Emulator
+      uses: reactivecircus/android-emulator-runner@v2
+      with:
+        api-level: 29
+        script: |
+          npm run test:deeplinks:android
+          
+    - name: Start iOS Simulator and Test
+      run: |
+        xcrun simctl boot "iPhone 14" || true
+        npm run test:deeplinks:ios
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: deeplink-test-results
+        path: |
+          test-results/
+          *.log
+
+    - name: Send notification on failure
+      if: failure()
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        SLACK_COLOR: '#FF0000'
+        SLACK_MESSAGE: 'Deep linking tests failed! :x:'
+        SLACK_TITLE: Deep Linking Test Results
+
+    - name: Send notification on success
+      if: success()
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        SLACK_COLOR: '#00FF00'
+        SLACK_MESSAGE: 'Deep linking tests passed! :white_check_mark:'
+        SLACK_TITLE: Deep Linking Test Results

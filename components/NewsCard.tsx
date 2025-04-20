@@ -5,12 +5,13 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
-  Dimensions, // Import Dimensions
-  ScrollView, // Import ScrollView
-  Linking, // Import Linking for source URL
-  Share, // Import Share API
-  useWindowDimensions, // For responsive design
+  Dimensions,
+  ScrollView,
+  Linking,
+  Share,
+  useWindowDimensions,
 } from 'react-native';
+import BranchHelper from '../utils/branchHelper';
 // Removed useNavigation as it's not used in Phase 1 card directly
 // import { useNavigation } from '@react-navigation/native';
 // import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -18,7 +19,7 @@ import { Article } from '../types/supabase';
 // import { RootStackParamList } from '../types/navigation'; // Not needed for Phase 1 card
 import { Feather } from '@expo/vector-icons'; // Import icons
 import { useSavedArticles } from '../context/SavedArticlesContext'; // Import saved articles context
-import { showToast } from '../utils/toast'; // Import showToast directly
+import { toast } from '../utils/toast';
 
 interface NewsCardProps {
   article: Article;
@@ -62,25 +63,31 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
     }
   }, [article.source_url]);
 
-  // Handle Share action
+  // Handle Share action using Branch.io
   const handleShare = useCallback(async () => {
     try {
-      // Use the microsite URL for sharing
-      const webUrl = `https://edushortlinks.netlify.app/article/${article.id}`;
-      // Updated message to reflect sharing the article
-      const message = `Check out this article in Edushorts: ${article.title}\n\n${webUrl}`;
-
-      await Share.share({
-        message: message,
-        // Use the web URL for sharing
-        url: webUrl,
-        title: article.title, // Optional title
+      const branchLink = await BranchHelper.createShareLink({
+        title: article.title,
+        description: article.summary || '',
+        newsId: article.id,
+        category: article.category?.name
       });
+
+      if (branchLink) {
+        const message = `${article.title} - Read more on EduShorts app:\n\n${branchLink}`;
+        await Share.share({
+          message,
+          url: branchLink,
+          title: article.title,
+        });
+      } else {
+        toast.error('Error creating share link');
+      }
     } catch (error: any) {
       console.error('Error sharing article:', error.message);
-      showToast('error', 'Error sharing article'); // Swapped arguments
+      toast.error('Error sharing article');
     }
-  }, [article.id, article.title]);
+  }, [article]);
 
   // Handle Save/Unsave action
   const handleSaveToggle = useCallback(() => {
@@ -88,17 +95,17 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
       if (isSaved) {
         // Use removeBookmark function from context
         removeBookmark(article.id);
-        showToast('success', 'Article removed from bookmarks'); // Swapped arguments
+        toast.success('Article removed from bookmarks');
       } else {
         // Use addBookmark function from context (takes articleId)
         addBookmark(article.id);
-        showToast('success', 'Article saved to bookmarks'); // Swapped arguments
+        toast.success('Article saved to bookmarks');
       }
       // Optionally hide icons after action
       // setShowIcons(false);
     } catch (error: any) {
       console.error('Error saving/unsaving article:', error.message);
-      showToast('error', 'Error updating bookmarks'); // Swapped arguments
+      toast.error('Error updating bookmarks');
     }
   }, [article.id, isSaved, removeBookmark, addBookmark]);
 

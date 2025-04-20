@@ -1,21 +1,28 @@
-import { Alert } from 'react-native';
+import { toast as sonnerToast } from 'sonner-native';
 
-export type ToastType = 'success' | 'error' | 'info';
-
-export const showToast = (type: ToastType, message: string): void => {
-  let title = 'Notice';
-  
-  switch (type) {
-    case 'success':
-      title = 'Success';
-      break;
-    case 'error':
-      title = 'Error';
-      break;
-    case 'info':
-      title = 'Info';
-      break;
+export const toast = {
+  success: (message: string) => {
+    sonnerToast.success(message, {
+      duration: 4000,
+      style: { backgroundColor: '#4CAF50' }
+    });
+  },
+  error: (message: string) => {
+    sonnerToast.error(message, {
+      duration: 4000,
+      style: { backgroundColor: '#f44336' }
+    });
+  },
+  info: (message: string) => {
+    sonnerToast.info(message, {
+      duration: 4000,
+      style: { backgroundColor: '#2196F3' }
+    });
+  },
+  warning: (message: string) => {
+    sonnerToast.warning(message, {
+      duration: 4000,
+      style: { backgroundColor: '#ff9800' }
+    });
   }
-
-  Alert.alert(title, message);
 };

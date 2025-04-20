@@ -9,6 +9,14 @@
     "isolatedModules": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "module": "esnext",
+    "target": "esnext",
+    "lib": ["es2020"],
+    "allowJs": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
   }
 }
