@@ -1,0 +1,93 @@
+name: Protect Critical Branches
+
+on:
+  pull_request:
+    branches:
+      - feature/deeplink-withexpo
+      - backup/working-google-signin-april21
+  push:
+    branches:
+      - feature/deeplink-withexpo
+      - backup/working-google-signin-april21
+
+jobs:
+  verify-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Check package.json changes
+        run: |
+          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q "package.json"; then
+            echo "⚠️ Warning: package.json has been modified"
+            echo "Please review dependency changes carefully"
+            exit 1
+          fi
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Verify critical files exist
+        run: |
+          files=(
+            "android/local.properties"
+            "google-services.json"
+            "app.json"
+          )
+          
+          for file in "${files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Error: Critical file $file is missing"
+              exit 1
+            fi
+          done
+
+  build-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          
+      - name: Build Android (Check Only)
+        run: |
+          cd android
+          ./gradlew assembleDebug -x bundleReleaseJsAndAssets
+
+  documentation-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Verify documentation
+        run: |
+          required_docs=(
+            "docs/working-state-april21.md"
+            "scripts/rollback/restore-working-state.sh"
+          )
+          
+          for doc in "${required_docs[@]}"; do
+            if [ ! -f "$doc" ]; then
+              echo "❌ Error: Required documentation $doc is missing"
+              exit 1
+            fi
+          done
