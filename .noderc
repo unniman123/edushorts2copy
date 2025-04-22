@@ -1,0 +1,2 @@
+--experimental-specifier-resolution=node
+--require=ts-node/register

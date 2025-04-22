@@ -4,46 +4,29 @@
     "slug": "edushorts",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "scheme": "edushorts",
+    "userInterfaceStyle": "light",
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourdomain.edushorts",
-      "associatedDomains": ["applinks:edushorts.app.link"]
+      "bundleIdentifier": "com.ajilkojilgokulravi.unniman",
+      "associatedDomains": ["applinks:edushorts.app"]
     },
     "android": {
+      "package": "com.ajilkojilgokulravi.unniman",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "package": "com.yourdomain.edushorts",
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "data": {
-            "scheme": "edushorts"
-          },
-          "category": ["BROWSABLE", "DEFAULT"]
-        }
-      ]
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
+        "backgroundColor": "#FFFFFF"
+      }
     },
     "plugins": [
-      "expo-linking"
-    ],
-    "experiments": {
-      "newArchEnabled": true
-    }
+      ["expo-linking", {
+        "scheme": "edushorts"
+      }]
+    ]
   }
 }

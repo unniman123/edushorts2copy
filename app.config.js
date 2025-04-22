@@ -3,7 +3,7 @@ module.exports = {
   slug: 'edushorts',
   version: '1.0.0',
   orientation: 'portrait',
-  scheme: 'edushort',
+  scheme: 'edushorts',
   icon: './assets/app-logo.png',
   userInterfaceStyle: 'light',
   splash: {
@@ -36,20 +36,14 @@ module.exports = {
         autoVerify: true,
         data: [
           {
-            scheme: "https",
-            host: "edushortlinks.netlify.app",
+            scheme: "http",
+            host: "*.exp.direct",
             pathPattern: "/article/*"
-          }
-        ],
-        category: ["BROWSABLE", "DEFAULT"]
-      },
-      {
-        action: "VIEW",
-        data: [
+          },
           {
-            scheme: "edushort",
-            host: "article",
-            pathPattern: "/*"
+            scheme: "https",
+            host: "*.exp.direct",
+            pathPattern: "/article/*"
           }
         ],
         category: ["BROWSABLE", "DEFAULT"]
@@ -67,8 +61,11 @@ module.exports = {
     }
   },
   plugins: [
-    '@react-native-google-signin/google-signin', // Added Google Sign-In plugin
+    '@react-native-google-signin/google-signin',
     'expo-secure-store',
+    ['expo-linking', {
+      scheme: 'edushorts'
+    }],
     [
       'expo-build-properties',
       {

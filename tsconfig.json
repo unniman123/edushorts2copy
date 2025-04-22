@@ -9,6 +9,9 @@
     "isolatedModules": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "module": "CommonJS",
+    "target": "ES2017",
+    "allowJs": true
   }
 }

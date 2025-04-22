@@ -7,10 +7,10 @@ import {
   TouchableOpacity,
   Dimensions, // Import Dimensions
   ScrollView, // Import ScrollView
-  Linking, // Import Linking for source URL
   Share, // Import Share API
   useWindowDimensions, // For responsive design
 } from 'react-native';
+import * as Linking from 'expo-linking';
 // Removed useNavigation as it's not used in Phase 1 card directly
 // import { useNavigation } from '@react-navigation/native';
 // import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -62,23 +62,20 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
     }
   }, [article.source_url]);
 
-  // Handle Share action
+  // Handle Share action using Expo's Linking API
   const handleShare = useCallback(async () => {
     try {
-      // Use the microsite URL for sharing
-      const webUrl = `https://edushortlinks.netlify.app/article/${article.id}`;
-      // Updated message to reflect sharing the article
-      const message = `Check out this article in Edushorts: ${article.title}\n\n${webUrl}`;
-
+      // Create a URL using Expo's Linking API
+      const shareUrl = Linking.createURL(`article/${article.id}`);
+      
       await Share.share({
-        message: message,
-        // Use the web URL for sharing
-        url: webUrl,
-        title: article.title, // Optional title
+        message: `Check out this article in EduShorts: ${article.title}\n\n${shareUrl}`,
+        url: shareUrl, // iOS only
+        title: article.title,
       });
     } catch (error: any) {
       console.error('Error sharing article:', error.message);
-      showToast('error', 'Error sharing article'); // Swapped arguments
+      showToast('error', 'Error sharing article');
     }
   }, [article.id, article.title]);
 

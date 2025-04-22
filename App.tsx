@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
+import { NavigationContainer, LinkingOptions, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { RootStackParamList } from './types/navigation';
 import { StyleSheet, TouchableOpacity } from 'react-native';
@@ -182,22 +183,59 @@ GoogleSignin.configure({
 
 function AppContent() {
   const [isReady, setIsReady] = useState(false);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const prefix = Linking.createURL('/');
 
   useEffect(() => {
-    // Initialize auth and mark as ready
     const cleanup = initializeAuth();
     setIsReady(true);
     return cleanup;
   }, []);
+
+  useEffect(() => {
+    const extractArticleIdFromPath = (path: string): string | null => {
+      const matches = path.match(/\/article\/([^\/]+)/);
+      return matches ? matches[1] : null;
+    };
+
+    const handleDeepLink = ({ url }: { url: string }) => {
+      const parsedUrl = Linking.parse(url);
+      console.log('Received deep link:', parsedUrl);
+      
+      if (parsedUrl.path && parsedUrl.path.includes('article')) {
+        const articleId = extractArticleIdFromPath(parsedUrl.path);
+        if (articleId) {
+          navigation.navigate('ArticleDetail', { articleId });
+        }
+      }
+    };
+
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+    
+    const getInitialURL = async () => {
+      const initialUrl = await Linking.getInitialURL();
+      if (initialUrl) {
+        handleDeepLink({ url: initialUrl });
+      }
+    };
+    
+    getInitialURL();
+    
+    return () => {
+      subscription.remove();
+    };
+  }, [navigation]);
 
   if (!isReady) {
     return <LoadingScreen />;
   }
 
   const linking: LinkingOptions<RootStackParamList> = {
-    prefixes: ['edushort://', 'https://edushortlinks.netlify.app', 'exp://localhost:19000'],
+    prefixes: ['edushort://', `https://${process.env.EXPO_PUBLIC_EAS_PROJECT_ID}.exp.direct`, 'exp://localhost:19000'],
     config: {
       screens: {
+        ArticleDetail: 'article/:id',
+        // Keep other screens configuration
         Login: {
           path: 'login',
           parse: {
@@ -218,13 +256,7 @@ function AppContent() {
             token: (token: string) => token
           }
         },
-        Main: 'main',
-        ArticleDetail: {
-          path: '/article/:articleId',
-          parse: {
-            articleId: (articleId: string) => articleId
-          }
-        }
+        Main: 'main'
       },
       initialRouteName: 'Login' as keyof RootStackParamList
     }
