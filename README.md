@@ -1,103 +1,172 @@
-# Edushorts Mobile App
+# Notification System
 
-## Overview
-Edushorts is a news application focused on international students, providing personalized educational news and updates.
+A comprehensive notification management system for React Native applications, providing support for push notifications, in-app notifications, and scheduled notifications with configurable quiet hours.
 
 ## Features
-- User authentication with email and Google sign-in
-- Email verification with deep linking
-- Password reset functionality
-- News article bookmarking
-- Personalized news feed
-- Profile management
 
-## Development
+- Push notifications support (using Expo notifications)
+- In-app notifications with customizable rendering
+- Scheduled notifications with quiet hours
+- Deep linking support
+- Offline support with notification persistence
+- Configurable notification settings
+- Comprehensive monitoring and analytics
+- TypeScript support
 
-### Prerequisites
-- Node.js >= 16
-- Expo CLI
-- iOS Simulator or Android Emulator
-- Supabase account
+## Architecture
 
-### Setup
+The notification system is built using a modular architecture with the following key components:
+
+### Services
+
+- `NotificationService`: Main service for handling notifications
+- `NotificationBridge`: Bridge between Expo notifications and the app
+- `NotificationStorage`: Handles offline storage and syncing
+- `AppLifecycleHandler`: Manages notification behavior during app state changes
+- `DeepLinkHandler`: Processes notification deep links
+- `MonitoringService`: Tracks notification metrics and health
+
+### Components
+
+- `NotificationRenderer`: Renders notifications with customizable styling
+- `NotificationSettingsScreen`: UI for managing notification preferences
+
+### Hooks
+
+- `useNotificationPermissions`: Manages notification permissions
+- `useNotificationSettings`: Handles notification settings state
+
+## Setup
+
+1. Install dependencies:
+
 ```bash
-# Install dependencies
-npm install
-
-# Start development server
-expo start
+npm install @react-native-community/async-storage @expo/vector-icons date-fns
+npm install @react-native-community/datetimepicker
 ```
 
-### Environment Variables
-Copy `.env.example` to `.env` and fill in the required values:
-```bash
-EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+2. Configure the notification service in your app:
+
+```typescript
+// App.tsx
+import { NotificationService, AppLifecycleHandler } from './services';
+
+function App() {
+  useEffect(() => {
+    const notificationService = NotificationService.getInstance();
+    const appLifecycleHandler = AppLifecycleHandler.getInstance();
+    
+    notificationService.initialize();
+    appLifecycleHandler.initialize();
+
+    return () => {
+      notificationService.cleanup();
+      appLifecycleHandler.cleanup();
+    };
+  }, []);
+
+  return (
+    <NotificationProvider>
+      {/* Your app content */}
+    </NotificationProvider>
+  );
+}
 ```
 
-### Deep Linking
-The app supports deep linking for authentication flows:
+## Usage
 
-```bash
-# Test deep linking setup
-./scripts/test-deep-links.sh
+### Sending Notifications
 
-# Manual testing
-expo url edushorts://auth/confirm?token=test-token
+```typescript
+const notificationService = NotificationService.getInstance();
 
-# Development URLs
-exp://localhost:19000/--/auth/confirm?token=test-token
-exp://localhost:19000/--/auth/reset-password?token=test-token
+// Send a push notification
+await notificationService.sendNotification({
+  title: 'New Message',
+  body: 'You have a new message',
+  data: { type: 'message', id: '123' }
+});
 
-# Production URLs
-edushorts://auth/confirm?token=test-token
-edushorts://auth/reset-password?token=test-token
+// Schedule a notification
+await notificationService.scheduleNotification({
+  title: 'Reminder',
+  body: 'Don\'t forget your appointment',
+  scheduledFor: new Date('2025-04-26T10:00:00')
+});
 ```
 
-For detailed information, see [Deep Linking Documentation](./docs/deep-linking.md)
+### Managing Settings
 
-### Testing
+```typescript
+const { settings, updateQuietHours, togglePushNotifications } = useNotificationSettings();
+
+// Toggle push notifications
+togglePushNotifications();
+
+// Update quiet hours
+updateQuietHours({
+  enabled: true,
+  start: '22:00',
+  end: '07:00'
+});
+```
+
+### Handling Deep Links
+
+```typescript
+const deepLinkHandler = DeepLinkHandler.getInstance();
+
+deepLinkHandler.registerHandler('article', (params) => {
+  navigation.navigate('ArticleDetail', { articleId: params.id });
+});
+```
+
+## Monitoring
+
+The system includes built-in monitoring for:
+
+- Delivery success/failure rates
+- Token health
+- Sync status
+- User engagement metrics
+- Error tracking
+
+Access monitoring data:
+
+```typescript
+const monitoringService = MonitoringService.getInstance();
+const metrics = monitoringService.getMetrics();
+```
+
+## Testing
+
+The system includes comprehensive tests:
+
 ```bash
-# Run tests
+# Run all tests
 npm test
 
-# Run tests with coverage
-npm run test:coverage
+# Run specific test suite
+npm test notification
 ```
-
-### Build and Deploy
-```bash
-# Build for iOS
-eas build --platform ios
-
-# Build for Android
-eas build --platform android
-
-# Submit to stores
-eas submit
-```
-
-## Documentation
-- [Auth Implementation](./docs/auth-implementation.md)
-- [Deep Linking](./docs/deep-linking.md)
-- [Google OAuth Setup](./docs/google-oauth-setup.md)
-
-## Scripts
-- `scripts/test-deep-links.sh` - Test deep linking functionality
-- `scripts/rollback/rollback.sh` - Rollback configuration changes
-- `scripts/migration.ts` - Database migration script
 
 ## Error Handling
-The app uses a combination of:
-- Toast notifications for user feedback
-- Sentry for error monitoring
-- Console logging in development
+
+The system includes robust error handling:
+
+- Automatic retry for failed deliveries
+- Offline queueing
+- Token refresh on failure
+- Error logging and monitoring
 
 ## Contributing
-1. Create a new branch
-2. Make your changes
-3. Submit a pull request
-4. Ensure CI passes
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
-MIT License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

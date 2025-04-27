@@ -3,7 +3,7 @@ module.exports = {
   slug: 'edushorts',
   version: '1.0.0',
   orientation: 'portrait',
-  scheme: 'edushort',
+  scheme: 'edushorts',
   icon: './assets/app-logo.png',
   userInterfaceStyle: 'light',
   splash: {
@@ -67,7 +67,7 @@ module.exports = {
     }
   },
   plugins: [
-    '@react-native-google-signin/google-signin', // Added Google Sign-In plugin
+    '@react-native-google-signin/google-signin',
     'expo-secure-store',
     [
       'expo-build-properties',
@@ -75,6 +75,13 @@ module.exports = {
         ios: {
           useFrameworks: 'static'
         }
+      }
+    ],
+    [
+      'expo-notifications',
+      {
+        icon: './assets/notification-icon.png',
+        color: '#ffffff'
       }
     ]
   ]

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
+import { NavigationContainer, LinkingOptions, useNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { RootStackParamList } from './types/navigation';
@@ -9,12 +9,14 @@ import { Toaster } from 'sonner-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
 import { useNews } from './context/NewsContext';
 import { SavedArticlesProvider } from './context/SavedArticlesContext';
 import { NewsProvider } from './context/NewsContext';
 import { initializeAuth } from './utils/authHelpers';
 import * as Linking from 'expo-linking';
-import { GoogleSignin } from '@react-native-google-signin/google-signin'; // <-- Add import
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { NotificationBridge, MonitoringService, DeepLinkHandler } from './services';
 
 import LoadingScreen from './screens/LoadingScreen';
 import HomeScreen from './screens/HomeScreen';
@@ -182,19 +184,49 @@ GoogleSignin.configure({
 
 function AppContent() {
   const [isReady, setIsReady] = useState(false);
+  const navigationRef = useNavigationContainerRef();
 
   useEffect(() => {
-    // Initialize auth and mark as ready
-    const cleanup = initializeAuth();
-    setIsReady(true);
-    return cleanup;
-  }, []);
+    const initializeApp = async () => {
+      try {
+        // Initialize auth
+        const authCleanup = initializeAuth();
+
+        // Initialize notification services
+        const notificationBridge = NotificationBridge.getInstance();
+        await notificationBridge.initialize();
+
+        const monitoringService = MonitoringService.getInstance();
+        await monitoringService.initialize();
+
+        // Initialize deep link handler with navigation ref
+        const deepLinkHandler = DeepLinkHandler.getInstance();
+        deepLinkHandler.setNavigationRef(navigationRef);
+
+        setIsReady(true);
+      } catch (error) {
+        console.error('Failed to initialize services:', error);
+        // You might want to show an error state here
+      }
+    };
+
+    initializeApp();
+
+    // Cleanup function
+    return () => {
+      const notificationBridge = NotificationBridge.getInstance();
+      const monitoringService = MonitoringService.getInstance();
+      
+      notificationBridge.cleanup();
+      monitoringService.cleanup();
+    };
+  }, [navigationRef]);
 
   if (!isReady) {
     return <LoadingScreen />;
   }
 
-  const linking: LinkingOptions<RootStackParamList> = {
+  const linking: LinkingOptions<any> = {
     prefixes: ['edushort://', 'https://edushortlinks.netlify.app', 'exp://localhost:19000'],
     config: {
       screens: {
@@ -226,13 +258,15 @@ function AppContent() {
           }
         }
       },
-      initialRouteName: 'Login' as keyof RootStackParamList
+      initialRouteName: 'Login'
     }
   };
 
   return (
-    <NavigationContainer linking={linking}>
-      <RootStackNavigator />
+    <NavigationContainer ref={navigationRef} linking={linking}>
+      <NotificationProvider navigation={navigationRef}>
+        <RootStackNavigator />
+      </NotificationProvider>
     </NavigationContainer>
   );
 }
@@ -244,7 +278,7 @@ export default function App() {
         <AuthProvider>
           <NewsProvider>
             <SavedArticlesProvider>
-              <Toaster />
+              <Toaster richColors />
               <AppContent />
             </SavedArticlesProvider>
           </NewsProvider>

@@ -40,7 +40,14 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-linking"
+      "expo-linking",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#ffffff"
+        }
+      ]
     ],
     "experiments": {
       "newArchEnabled": true

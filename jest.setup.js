@@ -1,46 +1,42 @@
-// Mock React Native's Platform
-jest.mock('react-native', () => ({
-  Platform: {
-    OS: 'ios',
-  },
-}));
+import '@testing-library/jest-native/extend-expect';
 
 // Mock AsyncStorage
 jest.mock('@react-native-async-storage/async-storage', () => ({
   setItem: jest.fn(),
   getItem: jest.fn(),
   removeItem: jest.fn(),
+  clear: jest.fn(),
 }));
 
-// Mock NetInfo
-jest.mock('@react-native-community/netinfo', () => ({
-  fetch: jest.fn(),
-}));
-
-// Mock Supabase
-jest.mock('./utils/supabase', () => ({
-  supabase: {
-    from: jest.fn(),
-    rpc: jest.fn(),
+// Mock expo-notifications
+jest.mock('expo-notifications', () => ({
+  setNotificationHandler: jest.fn(),
+  getPermissionsAsync: jest.fn(),
+  requestPermissionsAsync: jest.fn(),
+  getExpoPushTokenAsync: jest.fn(),
+  addNotificationReceivedListener: jest.fn(),
+  addNotificationResponseReceivedListener: jest.fn(),
+  removeNotificationSubscription: jest.fn(),
+  AndroidImportance: {
+    MAX: 5,
   },
+  setNotificationChannelAsync: jest.fn(),
+}));
+
+// Mock expo-device
+jest.mock('expo-device', () => ({
+  isDevice: true,
 }));
 
 // Mock fetch
 global.fetch = jest.fn();
-
-// Add console mock to prevent noise in test output
-global.console = {
-  ...console,
-  // Uncomment the following lines to suppress specific console methods during testing
-  // log: jest.fn(),
-  // error: jest.fn(),
-  // warn: jest.fn(),
-};
 
 // Clear all mocks before each test
 beforeEach(() => {
   jest.clearAllMocks();
 });
 
-// Set timezone for consistent date handling in tests
-process.env.TZ = 'UTC';
+// Clean up after each test
+afterEach(() => {
+  jest.clearAllMocks();
+});
