@@ -8,17 +8,54 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNews } from '../context/NewsContext';
+import { useAdvertisements } from '../context/AdvertisementContext';
 import NewsCard from '../components/NewsCard';
+import AdvertCard from '../components/AdvertCard';
 import PagerView from 'react-native-pager-view';
+import { Article } from '../types/supabase';
+import { Advertisement } from '../types/advertisement';
 
 interface HomeScreenRef {
   scrollToTop: () => void;
 }
 
+type AdItem = { type: 'ad'; id: string; content: Advertisement };
+type NewsItem = Article;
+type ContentItem = NewsItem | AdItem;
+
+const isNewsItem = (item: ContentItem): item is NewsItem => {
+  return !('type' in item);
+};
+
 const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
   const pagerRef = React.useRef<PagerView>(null);
-  const { news, loading, error, refreshNews, loadMoreNews } = useNews();
+  const { news, loading: newsLoading, error: newsError, refreshNews, loadMoreNews } = useNews();
+  const { advertisements } = useAdvertisements();
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  // Function to merge news and ads
+  const getMergedContent = useCallback((): ContentItem[] => {
+    const merged = [...news] as ContentItem[];
+    if (advertisements.length > 0) {
+      let adIndex = 0;
+      // Insert an ad every N news items (using first ad's display_frequency or default to 5)
+      const frequency = advertisements[0]?.display_frequency || 5;
+      for (let i = frequency; i < merged.length; i += frequency) {
+        const ad = advertisements[adIndex];
+        if (ad) {
+          merged.splice(i, 0, { 
+            type: 'ad', 
+            id: ad.id || `ad-${adIndex}`, 
+            content: ad 
+          });
+          adIndex = (adIndex + 1) % advertisements.length; // Cycle through ads
+        }
+      }
+    }
+    return merged;
+  }, [news, advertisements]);
+
+  const content = getMergedContent();
 
   React.useImperativeHandle(ref, () => ({
     scrollToTop: () => {
@@ -27,7 +64,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
   }));
 
   const handleLoadMore = useCallback(async () => {
-    if (loading || isLoadingMore || news.length === 0) return;
+    if (newsLoading || isLoadingMore || news.length === 0) return;
 
     setIsLoadingMore(true);
     try {
@@ -37,13 +74,13 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
     } finally {
       setIsLoadingMore(false);
     }
-  }, [loading, isLoadingMore, news.length, loadMoreNews]);
+  }, [newsLoading, isLoadingMore, news.length, loadMoreNews]);
 
-  if (error) {
+  if (newsError) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Error: {error}</Text>
+          <Text style={styles.errorText}>Error: {newsError}</Text>
           <TouchableOpacity onPress={refreshNews} style={styles.retryButton}>
             <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>
@@ -52,7 +89,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
     );
   }
 
-  if (loading && news.length === 0) {
+  if (newsLoading && news.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -62,7 +99,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
     );
   }
 
-  if (!loading && news.length === 0 && !error) {
+  if (!newsLoading && news.length === 0 && !newsError) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.emptyList}>
@@ -72,12 +109,17 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
     );
   }
 
-  // Create page elements outside of the JSX to avoid TypeScript issues with keys
-  const pages = news.map((article) => {
+  const pages = content.map((item) => {
+    if (!isNewsItem(item)) {
+      return (
+        <View style={styles.pageContainer} key={`ad_${item.id}`}>
+          <AdvertCard advertisement={item.content} />
+        </View>
+      );
+    }
     return (
-      // @ts-ignore - Ignoring the key prop TypeScript error
-      <View style={styles.pageContainer} key={`page_${article.id}`}>
-        <NewsCard article={article} />
+      <View style={styles.pageContainer} key={`news_${item.id}`}>
+        <NewsCard article={item} />
       </View>
     );
   });
@@ -90,9 +132,9 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
         style={styles.pagerView}
         orientation="vertical"
         initialPage={0}
-        offscreenPageLimit={1} // Only keep 1 page in each direction in memory
-        overdrag={false} // Prevent overdragging beyond content bounds
-        pageMargin={10} // Add small margin between pages for better visual separation
+        offscreenPageLimit={1}
+        overdrag={false}
+        pageMargin={10}
         onPageScroll={(e) => {
           const { position, offset } = e.nativeEvent;
           if (offset > 0 && position >= news.length - 2 && !isLoadingMore) {

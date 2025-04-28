@@ -13,6 +13,7 @@ import { NotificationProvider } from './context/NotificationContext';
 import { useNews } from './context/NewsContext';
 import { SavedArticlesProvider } from './context/SavedArticlesContext';
 import { NewsProvider } from './context/NewsContext';
+import { AdvertisementProvider } from './context/AdvertisementContext';
 import { initializeAuth } from './utils/authHelpers';
 import * as Linking from 'expo-linking';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -278,8 +279,10 @@ export default function App() {
         <AuthProvider>
           <NewsProvider>
             <SavedArticlesProvider>
-              <Toaster richColors />
-              <AppContent />
+              <AdvertisementProvider>
+                <Toaster richColors />
+                <AppContent />
+              </AdvertisementProvider>
             </SavedArticlesProvider>
           </NewsProvider>
         </AuthProvider>
