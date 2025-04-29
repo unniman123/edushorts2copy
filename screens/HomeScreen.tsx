@@ -35,23 +35,39 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
 
   // Function to merge news and ads
   const getMergedContent = useCallback((): ContentItem[] => {
-    const merged = [...news] as ContentItem[];
-    if (advertisements.length > 0) {
-      let adIndex = 0;
-      // Insert an ad every N news items (using first ad's display_frequency or default to 5)
-      const frequency = advertisements[0]?.display_frequency || 5;
-      for (let i = frequency; i < merged.length; i += frequency) {
-        const ad = advertisements[adIndex];
-        if (ad) {
-          merged.splice(i, 0, { 
-            type: 'ad', 
-            id: ad.id || `ad-${adIndex}`, 
-            content: ad 
-          });
-          adIndex = (adIndex + 1) % advertisements.length; // Cycle through ads
-        }
-      }
+    console.log('Debug - News count:', news.length);
+    console.log('Debug - Advertisements:', advertisements);
+
+    if (!advertisements || advertisements.length === 0) {
+      console.log('Debug - No advertisements available');
+      return [...news] as ContentItem[];
     }
+
+    // Initialize merged array
+    const merged: ContentItem[] = [];
+    const frequency = advertisements[0]?.display_frequency || 5;
+    let adIndex = 0;
+
+    console.log('Debug - Ad frequency:', frequency);
+
+    // Insert news items and ads in sequence
+    news.forEach((newsItem, index) => {
+      merged.push(newsItem as ContentItem);
+      
+      // If we've reached the frequency point, insert an ad
+      if ((index + 1) % frequency === 0 && adIndex < advertisements.length) {
+        const ad = advertisements[adIndex];
+        console.log('Debug - Inserting ad after news index:', index);
+        merged.push({
+          type: 'ad',
+          id: ad.id || `ad-${adIndex}`,
+          content: ad
+        });
+        adIndex = (adIndex + 1) % advertisements.length;
+      }
+    });
+
+    console.log('Debug - Final merged content:', merged);
     return merged;
   }, [news, advertisements]);
 
