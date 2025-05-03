@@ -28,6 +28,10 @@
     "@react-native-community/datetimepicker": "^8.3.0",
     "@react-native-community/netinfo": "^11.4.1",
     "@react-native-community/slider": "4.5.5",
+    "@react-native-firebase/analytics": "^22.1.0",
+    "@react-native-firebase/app": "^22.1.0",
+    "@react-native-firebase/messaging": "^22.1.0",
+    "@react-native-firebase/remote-config": "^22.1.0",
     "@react-native-google-signin/google-signin": "^13.2.0",
     "@react-navigation/bottom-tabs": "^6.6.1",
     "@react-navigation/native": "^6.1.14",
@@ -61,6 +65,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@testing-library/react-hooks": "^8.0.1",
     "@testing-library/react-native": "^13.2.0",
     "@types/jest": "^29.5.14",
     "@types/react": "~18.3.12",

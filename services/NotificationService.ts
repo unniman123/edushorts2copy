@@ -4,6 +4,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { supabase } from '../utils/supabase';
 import { toast, TOAST_MESSAGES, TOAST_CONFIG, TOAST_SUCCESS_CONFIG, TOAST_ERROR_CONFIG } from '../src/utils/toast/config';
+import messaging from '@react-native-firebase/messaging';
 import { NotificationResponse as LocalNotificationResponse, PushNotificationData, NotificationPreferences } from '../src/types/notification'; // Renamed import to avoid conflict
 
 // Configure notification handling
@@ -66,47 +67,55 @@ class NotificationService {
     }
   }
 
-  async registerForPushNotifications(): Promise<string | null> {
+  async registerForPushNotifications(): Promise<{ expoToken: string | null, fcmToken: string | null }> {
     try {
       const hasPermission = await this.requestPermissions();
       if (!hasPermission) {
-        return null;
+        return { expoToken: null, fcmToken: null };
       }
 
+      // Get Expo token
       const tokenResponse = await Notifications.getExpoPushTokenAsync({
         projectId: Constants.expoConfig?.extra?.eas?.projectId,
       });
-
       const expoToken = tokenResponse.data;
 
-      if (!expoToken) {
-        console.error('Error: No push token returned from Expo');
+      // Get FCM token
+      const fcmToken = await messaging().getToken();
+
+      if (!expoToken && !fcmToken) {
+        console.error('Error: No push tokens returned');
         toast.error(TOAST_MESSAGES.TOKEN_ERROR, TOAST_ERROR_CONFIG);
-        return null;
+        return { expoToken: null, fcmToken: null };
       }
 
-      // Setup Android channel *before* storing token potentially
+      // Setup Android channel
       if (Platform.OS === 'android') {
         await Notifications.setNotificationChannelAsync('default', {
-          name: 'default', // Keep name simple or use a constant
+          name: 'default',
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
           lightColor: '#FF231F7C',
         });
       }
 
-      await this.storeExpoToken(expoToken); // Pass the non-null token
-      return expoToken;
+      // Store both tokens
+      await this.storeTokens(expoToken, fcmToken);
 
+      // Setup FCM token refresh listener
+      messaging().onTokenRefresh(async (newFcmToken) => {
+        await this.storeTokens(expoToken, newFcmToken);
+      });
+
+      return { expoToken, fcmToken };
     } catch (error) {
       console.error('Error registering for push notifications:', error);
       toast.error(TOAST_MESSAGES.REGISTRATION_ERROR, TOAST_ERROR_CONFIG);
-      return null;
+      return { expoToken: null, fcmToken: null };
     }
   }
 
-  // Method is public as it's called from NotificationContext
-  async storeExpoToken(token: string): Promise<void> { // token is guaranteed string
+  private async storeTokens(expoToken: string | null, fcmToken: string | null): Promise<void> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -117,8 +126,8 @@ class NotificationService {
       const notificationPrefs: NotificationPreferences = {
         push: true,
         email: false,
-        expo_push_token: token,
-        fcm_token: token, // Store same token in both fields
+        expo_push_token: expoToken || undefined,
+        fcm_token: fcmToken || undefined,
         push_enabled: true,
         subscriptions: ['all']
       };
@@ -126,7 +135,7 @@ class NotificationService {
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
-          notification_preferences: notificationPrefs // Pass the correctly typed object
+          notification_preferences: notificationPrefs
         })
         .eq('id', user.id);
 
@@ -144,7 +153,8 @@ class NotificationService {
         body: 'Push notifications enabled',
         target_audience: 'all' as const, // Use const assertion for literal type
         created_by: user.id,
-        expo_push_token: token,
+        expo_push_token: expoToken || undefined,
+        fcm_token: fcmToken || undefined,
         sent_at: new Date().toISOString()
       };
 
@@ -157,7 +167,7 @@ class NotificationService {
         console.error('Error storing notification:', notifError);
         toast.warning('Device registered, but failed to create notification record.', TOAST_ERROR_CONFIG);
       } else {
-        console.log('Successfully stored push token in both locations:', token);
+        console.log('Successfully stored tokens:', { expoToken, fcmToken });
         toast.success(TOAST_MESSAGES.PUSH_ENABLED, TOAST_SUCCESS_CONFIG);
       }
 

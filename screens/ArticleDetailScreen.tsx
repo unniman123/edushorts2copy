@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSavedArticles } from '../context/SavedArticlesContext';
 import {
   View,
@@ -10,11 +10,15 @@ import {
   Share,
   ActivityIndicator,
   Linking,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
 } from 'react-native';
+import { analyticsService } from '../services/AnalyticsService';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useRemoteConfig } from '../hooks/useRemoteConfig';
 import { RootStackParamList } from '../types/navigation';
 import { supabase } from '../utils/supabase';
 import { Article } from '../types/supabase';
@@ -37,11 +41,71 @@ export default function ArticleDetailScreen() {
   const [loading, setLoading] = useState(true);
   const { savedArticles, addBookmark, removeBookmark, isLoading } = useSavedArticles();
   const [bookmarked, setBookmarked] = useState(false);
+  const { config } = useRemoteConfig();
+
+  // Get layout configuration from remote config
+  const layout = config.article_layout;
+  const showSourceIcon = config.show_source_icon;
+  const enableSharing = config.enable_sharing;
+  const maxSummaryLength = config.max_summary_length;
 
   // Update bookmarked state whenever savedArticles changes
   useEffect(() => {
     setBookmarked(savedArticles.some(article => article.id === articleId));
   }, [savedArticles, articleId]);
+
+  // Track view time and scroll depth
+  const viewStartTime = useRef(Date.now());
+  const hasLoggedView = useRef(false);
+  const maxScrollDepth = useRef(0);
+  const scrollDepthTimeout = useRef<NodeJS.Timeout>();
+
+  // Handle scroll events to track reading progress
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const scrollDepth = Math.round(
+      ((contentOffset.y + layoutMeasurement.height) / contentSize.height) * 100
+    );
+
+    // Only update if we've scrolled further than before
+    if (scrollDepth > maxScrollDepth.current) {
+      maxScrollDepth.current = scrollDepth;
+
+      // Debounce the scroll depth logging
+      if (scrollDepthTimeout.current) {
+        clearTimeout(scrollDepthTimeout.current);
+      }
+
+      scrollDepthTimeout.current = setTimeout(() => {
+        if (article) {
+          analyticsService.logArticleScroll({
+            article_id: article.id,
+            category: article.category?.name || 'Uncategorized',
+            scroll_depth: maxScrollDepth.current,
+            source: article.source_name || 'Unknown',
+            author: article.source_name || 'Unknown'
+          });
+        }
+      }, 1000); // Wait 1 second after last scroll before logging
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      // Log view duration and final scroll depth when component unmounts
+      if (hasLoggedView.current && article) {
+        const viewDuration = Math.floor((Date.now() - viewStartTime.current) / 1000); // Convert to seconds
+          analyticsService.logArticleReadTime({
+            article_id: article.id,
+            category: article.category?.name || 'Uncategorized',
+            author: article.source_name || 'Unknown',
+            reading_time: viewDuration,
+            source: article.source_name || 'Unknown',
+            scroll_depth: maxScrollDepth.current
+          });
+      }
+    };
+  }, [article]);
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -61,6 +125,19 @@ export default function ArticleDetailScreen() {
         if (error) throw error;
         if (data) {
           setArticle(data as Article);
+          // Log article view once data is loaded
+          if (!hasLoggedView.current) {
+            const viewParams = {
+              article_id: data.id,
+              category: data.category?.name || 'Uncategorized',
+              author: data.source_name || 'Unknown',
+              reading_time: 0,
+              source: data.source_name || 'Unknown',
+              scroll_depth: 0
+            };
+            analyticsService.logArticleView(viewParams);
+            hasLoggedView.current = true;
+          }
         }
       } catch (error) {
         console.error('Error fetching article:', error);
@@ -81,6 +158,15 @@ export default function ArticleDetailScreen() {
         message: `Check out this article in Edushorts: ${article.title}\n\n${webUrl}`,
         url: webUrl // Use the web URL for sharing
       });
+
+      // Log share event using standard method
+      analyticsService.logArticleShare({
+        article_id: article.id,
+        category: article.category?.name || 'Uncategorized',
+        platform: 'native_share',
+        source: article.source_name || 'Unknown',
+        author: article.source_name || 'Unknown'
+      });
     } catch (error) {
       console.error('Error sharing:', error);
     }
@@ -92,6 +178,16 @@ export default function ArticleDetailScreen() {
         await removeBookmark(articleId);
       } else {
         await addBookmark(articleId);
+        // Log bookmark event only when adding (not when removing)
+        if (article) {
+          analyticsService.logArticleBookmark({
+            article_id: article.id,
+            category: article.category?.name || 'Uncategorized',
+            author: article.source_name || 'Unknown',
+            source: article.source_name || 'Unknown',
+            interaction_type: 'bookmark'
+          });
+        }
       }
     } catch (error) {
       // Error will be handled by context with toast
@@ -143,13 +239,19 @@ export default function ArticleDetailScreen() {
               />
             )}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
-            <Feather name="share" size={22} color="#333" />
-          </TouchableOpacity>
+          {enableSharing && (
+            <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
+              <Feather name="share" size={22} color="#333" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16} // Throttle scroll events to ~60fps
+      >
         <View style={styles.heroContainer}>
           {article.image_path ? (
             <Image source={{ uri: article.image_path }} style={styles.heroImage} />
@@ -165,13 +267,18 @@ export default function ArticleDetailScreen() {
         </View>
 
         <View style={styles.contentContainer}>
-          <Text style={styles.title}>{article.title}</Text>
+          <Text style={[
+            styles.title,
+            layout === 'compact' && styles.compactTitle
+          ]}>{article.title}</Text>
 
           <View style={styles.publisherContainer}>
-            {article.source_icon ? (
-              <Image source={{ uri: article.source_icon }} style={styles.publisherIcon} />
-            ) : (
-              <View style={[styles.publisherIcon, styles.noSourceIcon]} />
+            {showSourceIcon && (
+              article.source_icon ? (
+                <Image source={{ uri: article.source_icon }} style={styles.publisherIcon} />
+              ) : (
+                <View style={[styles.publisherIcon, styles.noSourceIcon]} />
+              )
             )}
             <View style={styles.publisherInfo}>
               <Text style={styles.publisherName}>{article.source_name || 'Unknown Source'}</Text>
@@ -179,11 +286,23 @@ export default function ArticleDetailScreen() {
             </View>
           </View>
 
-          <Text style={styles.summary}>{article.summary}</Text>
+          <Text style={[
+            styles.summary,
+            layout === 'compact' && styles.compactSummary
+          ]}>
+            {article.summary.length > maxSummaryLength
+              ? `${article.summary.substring(0, maxSummaryLength)}...`
+              : article.summary}
+          </Text>
 
           <View style={styles.divider} />
 
-          {article.content && <Text style={styles.content}>{article.content}</Text>}
+          {article.content && (
+            <Text style={[
+              styles.content,
+              layout === 'compact' && styles.compactContent
+            ]}>{article.content}</Text>
+          )}
 
           {article.source_url && (
             <TouchableOpacity
@@ -204,6 +323,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
+  },
+  compactTitle: {
+    fontSize: 18,
+    marginBottom: 12,
+  },
+  compactSummary: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  compactContent: {
+    fontSize: 14,
+    lineHeight: 20,
   },
   loadingContainer: {
     flex: 1,

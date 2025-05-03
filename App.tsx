@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { NavigationContainer, LinkingOptions, useNavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import messaging from '@react-native-firebase/messaging';
 import { RootStackParamList } from './types/navigation';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -18,6 +19,9 @@ import { initializeAuth } from './utils/authHelpers';
 import * as Linking from 'expo-linking';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { NotificationBridge, MonitoringService, DeepLinkHandler } from './services';
+import { useScreenTracking } from './hooks/useAnalytics';
+import { remoteConfigService } from './services/RemoteConfigService';
+import { RemoteConfigProvider } from './context/RemoteConfigContext';
 
 import LoadingScreen from './screens/LoadingScreen';
 import HomeScreen from './screens/HomeScreen';
@@ -185,13 +189,29 @@ GoogleSignin.configure({
 
 function AppContent() {
   const [isReady, setIsReady] = useState(false);
-  const navigationRef = useNavigationContainerRef();
+  // Use the screen tracking hook which provides the navigationRef
+  const navigationRef = useScreenTracking(); 
 
   useEffect(() => {
     const initializeApp = async () => {
       try {
         // Initialize auth
         const authCleanup = initializeAuth();
+
+        // Initialize FCM background handler
+        messaging().setBackgroundMessageHandler(async remoteMessage => {
+          console.log('Message handled in the background!', remoteMessage);
+          // Store the notification using existing service
+          await NotificationBridge.getInstance().processNotification({
+            type: 'push',
+            payload: {
+              title: remoteMessage.notification?.title || '',
+              body: remoteMessage.notification?.body || '',
+              data: remoteMessage.data || {},
+              deep_link: typeof remoteMessage.data?.deep_link === 'string' ? remoteMessage.data.deep_link : undefined
+            }
+          });
+        });
 
         // Initialize notification services
         const notificationBridge = NotificationBridge.getInstance();
@@ -203,6 +223,9 @@ function AppContent() {
         // Initialize deep link handler with navigation ref
         const deepLinkHandler = DeepLinkHandler.getInstance();
         deepLinkHandler.setNavigationRef(navigationRef);
+
+        // Initialize remote config
+        await remoteConfigService.initialize();
 
         setIsReady(true);
       } catch (error) {
@@ -276,12 +299,14 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider style={styles.container}>
-        <AuthProvider>
+      <AuthProvider>
           <NewsProvider>
             <SavedArticlesProvider>
               <AdvertisementProvider>
-                <Toaster richColors />
-                <AppContent />
+                <RemoteConfigProvider>
+                  <Toaster richColors />
+                  <AppContent />
+                </RemoteConfigProvider>
               </AdvertisementProvider>
             </SavedArticlesProvider>
           </NewsProvider>

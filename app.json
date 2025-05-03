@@ -17,7 +17,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourdomain.edushorts",
+      "bundleIdentifier": "com.ajilkojilgokulravi.unniman",
       "associatedDomains": ["applinks:edushorts.app.link"]
     },
     "android": {
@@ -25,7 +25,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.yourdomain.edushorts",
+      "package": "com.ajilkojilgokulravi.unniman",
       "intentFilters": [
         {
           "action": "VIEW",

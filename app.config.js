@@ -3,7 +3,7 @@ module.exports = {
   slug: 'edushorts',
   version: '1.0.0',
   orientation: 'portrait',
-  scheme: 'edushorts',
+  schemes: ['edushorts', 'exp+edushorts'],
   icon: './assets/app-logo.png',
   userInterfaceStyle: 'light',
   splash: {
@@ -21,7 +21,10 @@ module.exports = {
     supportsTablet: true,
     bundleIdentifier: 'com.ajilkojilgokulravi.unniman', // Updated bundle ID
     googleServicesFile: './ios/edushorts/GoogleService-Info.plist', // Added GoogleService-Info.plist path
-    associatedDomains: ['applinks:edushorts.app'] // Keep associatedDomains for now
+    associatedDomains: ['applinks:edushorts.app'], // Keep associatedDomains for now
+    entitlements: {
+      "aps-environment": "development"
+    }
   },
   android: {
     adaptiveIcon: {
@@ -47,7 +50,7 @@ module.exports = {
         action: "VIEW",
         data: [
           {
-            scheme: "edushort",
+            scheme: "edushorts",
             host: "article",
             pathPattern: "/*"
           }
@@ -66,14 +69,24 @@ module.exports = {
       projectId: "cfa91622-46a9-49aa-86c3-177c0a05d850"
     }
   },
+  developmentClient: {
+    silentLaunch: false
+  },
+  owner: "edushorts",
   plugins: [
     '@react-native-google-signin/google-signin',
     'expo-secure-store',
+    '@react-native-firebase/app',
+    '@react-native-firebase/messaging',
     [
       'expo-build-properties',
       {
         ios: {
-          useFrameworks: 'static'
+          useFrameworks: 'static',
+          infoPlist: {
+            UIBackgroundModes: ["remote-notification"],
+            FirebaseAppDelegateProxyEnabled: false
+          }
         }
       }
     ],
