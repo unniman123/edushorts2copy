@@ -147,33 +147,12 @@ class NotificationService {
         throw profileError;
       }
 
-      // Also store a record in the notifications table (optional, based on requirements)
-      const notificationRecord = {
-        type: 'push' as const, // Use const assertion for literal type
-        title: 'Device Registration',
-        body: 'Push notifications enabled',
-        target_audience: 'all' as const, // Use const assertion for literal type
-        created_by: user.id,
-        expo_push_token: expoToken || undefined,
-        fcm_token: fcmToken || undefined,
-        sent_at: new Date().toISOString()
-      };
-
-      const { error: notifError } = await supabase
-        .from('notifications')
-        .insert(notificationRecord); // Pass the correctly typed object
-
-      if (notifError) {
-        // Log this error but maybe don't fail the whole process? Depends on requirements.
-        console.error('Error storing notification:', notifError);
-        toast.warning('Device registered, but failed to create notification record.', TOAST_ERROR_CONFIG);
-      } else {
-        console.log('Successfully stored tokens:', { expoToken, fcmToken });
-        toast.success(TOAST_MESSAGES.PUSH_ENABLED, TOAST_SUCCESS_CONFIG);
-      }
+      // Successfully updated profile with tokens
+      console.log('Successfully stored tokens in profile:', { expoToken, fcmToken });
+      toast.success(TOAST_MESSAGES.PUSH_ENABLED, TOAST_SUCCESS_CONFIG);
 
     } catch (error) {
-      console.error('Error storing push token:', error);
+      console.error('Error storing push tokens in profile:', error);
       toast.error(TOAST_MESSAGES.TOKEN_STORE_ERROR, TOAST_ERROR_CONFIG);
       // Re-throw or handle as appropriate
       throw error;
