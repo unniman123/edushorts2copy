@@ -82,6 +82,7 @@ class NotificationService {
 
       // Get FCM token
       const fcmToken = await messaging().getToken();
+      console.log('FCM Token for testing:', fcmToken);
 
       if (!expoToken && !fcmToken) {
         console.error('Error: No push tokens returned');
@@ -192,8 +193,8 @@ class NotificationService {
         // Note: Expo's Notification type doesn't directly match NotificationResponse structure
         // We need to construct it or adjust the handler
         const response: Notifications.NotificationResponse = {
-            actionIdentifier: Notifications.DEFAULT_ACTION_IDENTIFIER, // Default action
-            notification: notification,
+          actionIdentifier: Notifications.DEFAULT_ACTION_IDENTIFIER, // Default action
+          notification: notification,
         };
         this.handleNotificationResponse(response);
       }
@@ -283,8 +284,8 @@ class NotificationService {
     link_to_article?: string;
   }) {
     const timestamp = new Date().toISOString(); // Consistent timestamp format
-    const deep_link = notification.link_to_article 
-      ? `edushorts://articles/${notification.link_to_article}` 
+    const deep_link = notification.link_to_article
+      ? `edushorts://articles/${notification.link_to_article}`
       : undefined;
 
     return await supabase

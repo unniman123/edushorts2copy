@@ -11,9 +11,6 @@ module.exports = {
     resizeMode: 'cover', // Changed from 'contain' to 'cover'
     backgroundColor: '#ffffff'
   },
-  updates: {
-    fallbackToCacheTimeout: 0,
-  },
   assetBundlePatterns: [
     '**/*'
   ],
@@ -23,7 +20,7 @@ module.exports = {
     googleServicesFile: './ios/edushorts/GoogleService-Info.plist', // Added GoogleService-Info.plist path
     associatedDomains: ['applinks:edushorts.app'], // Keep associatedDomains for now
     entitlements: {
-      "aps-environment": "development"
+      "aps-environment": "production"
     }
   },
   android: {
@@ -33,6 +30,7 @@ module.exports = {
     },
     package: 'com.ajilkojilgokulravi.unniman',
     googleServicesFile: './android/app/google-services.json',
+
     intentFilters: [
       {
         action: "VIEW",
@@ -72,7 +70,7 @@ module.exports = {
   developmentClient: {
     silentLaunch: false
   },
-  owner: "edushorts",
+  owner: "unniman",
   plugins: [
     '@react-native-google-signin/google-signin',
     'expo-secure-store',
@@ -93,8 +91,10 @@ module.exports = {
     [
       'expo-notifications',
       {
-        icon: './assets/notification-icon.png',
-        color: '#ffffff'
+        icon: './assets/app-logo.png',
+        color: '#ffffff',
+        androidMode: 'default',
+        androidCollapsedTitle: 'Edushorts'
       }
     ]
   ]
