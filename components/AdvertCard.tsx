@@ -6,9 +6,9 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
-  Linking,
   useWindowDimensions,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Advertisement } from '../types/advertisement';
 import { advertisementService } from '../services/advertisementService';
 import { showToast } from '../utils/toast';
@@ -47,9 +47,10 @@ const AdvertCard: React.FC<AdvertCardProps> = ({ advertisement }) => {
   return (
     <TouchableOpacity
       style={styles.fullScreenCard}
-      activeOpacity={1}
+      activeOpacity={0.95}
+      onPress={handleCtaPress} // Make the entire card clickable
     >
-      {/* Image Section */}
+      {/* Full Screen Image with Overlays */}
       <View style={styles.imageContainer}>
         {advertisement.image_path ? (
           <Image
@@ -68,14 +69,19 @@ const AdvertCard: React.FC<AdvertCardProps> = ({ advertisement }) => {
         <View style={styles.sponsoredOverlay}>
           <Text style={styles.sponsoredText}>Sponsored</Text>
         </View>
-      </View>
 
-      {/* Content Area */}
-      <View style={styles.cardContentContainer}>
-        {/* Title */}
-        <Text style={styles.title}>{advertisement.title}</Text>
+        {/* Gradient Overlay for better text visibility */}
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.7)']}
+          style={styles.gradientOverlay}
+        />
 
-        {/* CTA Button */}
+        {/* Title Overlay */}
+        <View style={styles.titleOverlay}>
+          <Text style={styles.title}>{advertisement.title}</Text>
+        </View>
+
+        {/* CTA Button Overlay */}
         <TouchableOpacity
           style={styles.ctaButton}
           onPress={handleCtaPress}
@@ -94,18 +100,19 @@ const { height, width } = Dimensions.get('window');
 const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
   fullScreenCard: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: 'black', // Changed to black for better edge blending
     height: height,
     width: width,
   },
   cardImage: {
     width: '100%',
-    height: height * (smallDevice ? 0.5 : 0.6),
+    height: height, // Full screen height
     resizeMode: 'cover',
   },
   imageContainer: {
     position: 'relative',
     width: '100%',
+    height: '100%', // Full container height
   },
   sponsoredOverlay: {
     position: 'absolute',
@@ -115,6 +122,7 @@ const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 4,
+    zIndex: 10,
   },
   sponsoredText: {
     color: '#ffffff',
@@ -131,35 +139,49 @@ const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
     color: '#888',
     textAlign: 'center',
   },
-  cardContentContainer: {
-    flex: 1,
-    marginTop: -20,
-    backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
+  gradientOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '50%', // Cover bottom half of the image
+    zIndex: 5,
+  },
+  titleOverlay: {
+    position: 'absolute',
+    bottom: smallDevice ? 120 : 150, // Position above the CTA button
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
     alignItems: 'center',
-    justifyContent: 'center',
+    zIndex: 10, // Above the gradient
   },
   title: {
     fontSize: smallDevice ? 24 : 28,
     fontWeight: 'bold',
-    marginBottom: 24,
-    color: '#333333',
+    color: '#ffffff', // White text for better visibility on image
     textAlign: 'center',
-    paddingHorizontal: 20,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3, // Text shadow for better visibility on any background
   },
   ctaButton: {
+    position: 'absolute',
+    bottom: smallDevice ? 50 : 70, // Position from bottom
+    alignSelf: 'center', // Center horizontally
     backgroundColor: '#ff0000',
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 30,
-    marginTop: 20,
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3,
+    zIndex: 10,
+    // Add a border for better visibility on any background
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   ctaText: {
     color: '#ffffff',

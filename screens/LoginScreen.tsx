@@ -6,7 +6,6 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
-  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -166,14 +165,8 @@ export default function LoginScreen() {
   };
 
   return (
-    <ImageBackground
-      source={require('../assets/splash icon.png')}
-      style={styles.backgroundImage}
-      resizeMode="cover" // Ensure the image covers the background
-    >
+    <View style={styles.backgroundImage}>
       <SafeAreaView style={styles.container}>
-        {/* Added overlay for readability */}
-        <View style={styles.overlay}>
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={styles.keyboardAvoidingView}
@@ -274,23 +267,18 @@ export default function LoginScreen() {
 
             </ScrollView>
           </KeyboardAvoidingView>
-        </View>
       </SafeAreaView>
-    </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
+    backgroundColor: '#FF0000', // Solid red background
   },
   container: {
     flex: 1,
-    // Removed backgroundColor: '#ffffff', as background is now an image
-  },
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Standard overlay opacity
     justifyContent: 'center',
   },
   keyboardAvoidingView: {
