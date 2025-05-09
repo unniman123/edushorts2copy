@@ -1,9 +1,0 @@
-{
-  "current_settings": {
-    "site_url": "https://fvbdikvdtnehnszbhfnm.supabase.co",
-    "anon_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2YmRpa3ZkdG5laG5zemJoZm5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDExNjkxNjEsImV4cCI6MjA1Njc0NTE2MX0.FAGDblfHAeCgX98ZIvMtPIRSi-De5bYl6UxG5D3qsG8",
-    "use_mock": false
-  },
-  "timestamp": "2025-03-24T16:14:53+05:30",
-  "note": "Initial backup before implementing deep linking"
-}

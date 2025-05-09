@@ -1,0 +1,7 @@
+// This file directly replaces the problematic task in expo-battery
+
+task androidSourcesJar(type: Jar) {
+    archiveClassifier = 'sources'
+    from android.sourceSets.main.java.source
+    include "**/*.java"
+} 

@@ -1,0 +1,606 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ArticleResultCard Component renders correctly with all props 1`] = `
+<TouchableOpacity
+  onPress={[MockFunction]}
+  style={
+    {
+      "backgroundColor": "white",
+      "borderRadius": 12,
+      "elevation": 2,
+      "flexDirection": "row",
+      "marginBottom": 16,
+      "overflow": "hidden",
+      "shadowColor": "#000",
+      "shadowOffset": {
+        "height": 1,
+        "width": 0,
+      },
+      "shadowOpacity": 0.1,
+      "shadowRadius": 2,
+    }
+  }
+>
+  <View
+    style={
+      [
+        {
+          "height": 120,
+          "width": 120,
+        },
+        false,
+      ]
+    }
+  >
+    <Image
+      source={
+        {
+          "uri": "https://example.com/image.jpg",
+        }
+      }
+      style={
+        {
+          "height": 120,
+          "width": 120,
+        }
+      }
+    />
+  </View>
+  <View
+    style={
+      {
+        "flex": 1,
+        "justifyContent": "space-between",
+        "padding": 12,
+      }
+    }
+  >
+    <View
+      style={
+        {
+          "alignSelf": "flex-start",
+          "backgroundColor": "#0066cc",
+          "borderRadius": 4,
+          "marginBottom": 8,
+          "paddingHorizontal": 8,
+          "paddingVertical": 4,
+        }
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "white",
+            "fontSize": 10,
+            "fontWeight": "bold",
+          }
+        }
+      >
+        Education
+      </Text>
+    </View>
+    <Text
+      numberOfLines={2}
+      style={
+        {
+          "color": "#333",
+          "fontSize": 14,
+          "fontWeight": "bold",
+          "marginBottom": 8,
+        }
+      }
+    >
+      Test Article Title
+    </Text>
+    <View
+      style={
+        {
+          "alignItems": "center",
+          "flexDirection": "row",
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "height": 16,
+            "marginRight": 4,
+            "width": 16,
+          }
+        }
+      >
+        <Image
+          source={
+            {
+              "uri": "https://example.com/icon.png",
+            }
+          }
+          style={
+            {
+              "borderRadius": 8,
+              "height": 16,
+              "marginRight": 4,
+              "width": 16,
+            }
+          }
+        />
+      </View>
+      <Text
+        style={
+          {
+            "color": "#666",
+            "fontSize": 12,
+          }
+        }
+      >
+        Test Source
+      </Text>
+      <Text
+        style={
+          {
+            "color": "#888",
+            "fontSize": 12,
+          }
+        }
+      >
+         • 
+        3h ago
+      </Text>
+    </View>
+  </View>
+</TouchableOpacity>
+`;
+
+exports[`ArticleResultCard Component renders correctly without a source icon 1`] = `
+<TouchableOpacity
+  onPress={[MockFunction]}
+  style={
+    {
+      "backgroundColor": "white",
+      "borderRadius": 12,
+      "elevation": 2,
+      "flexDirection": "row",
+      "marginBottom": 16,
+      "overflow": "hidden",
+      "shadowColor": "#000",
+      "shadowOffset": {
+        "height": 1,
+        "width": 0,
+      },
+      "shadowOpacity": 0.1,
+      "shadowRadius": 2,
+    }
+  }
+>
+  <View
+    style={
+      [
+        {
+          "height": 120,
+          "width": 120,
+        },
+        false,
+      ]
+    }
+  >
+    <Image
+      source={
+        {
+          "uri": "https://example.com/image.jpg",
+        }
+      }
+      style={
+        {
+          "height": 120,
+          "width": 120,
+        }
+      }
+    />
+  </View>
+  <View
+    style={
+      {
+        "flex": 1,
+        "justifyContent": "space-between",
+        "padding": 12,
+      }
+    }
+  >
+    <View
+      style={
+        {
+          "alignSelf": "flex-start",
+          "backgroundColor": "#0066cc",
+          "borderRadius": 4,
+          "marginBottom": 8,
+          "paddingHorizontal": 8,
+          "paddingVertical": 4,
+        }
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "white",
+            "fontSize": 10,
+            "fontWeight": "bold",
+          }
+        }
+      >
+        Education
+      </Text>
+    </View>
+    <Text
+      numberOfLines={2}
+      style={
+        {
+          "color": "#333",
+          "fontSize": 14,
+          "fontWeight": "bold",
+          "marginBottom": 8,
+        }
+      }
+    >
+      Test Article Title
+    </Text>
+    <View
+      style={
+        {
+          "alignItems": "center",
+          "flexDirection": "row",
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "height": 16,
+            "marginRight": 4,
+            "width": 16,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "borderRadius": 8,
+                "height": 16,
+                "marginRight": 4,
+                "width": 16,
+              },
+              {
+                "backgroundColor": "#f0f0f0",
+              },
+            ]
+          }
+        />
+      </View>
+      <Text
+        style={
+          {
+            "color": "#666",
+            "fontSize": 12,
+          }
+        }
+      >
+        Test Source
+      </Text>
+      <Text
+        style={
+          {
+            "color": "#888",
+            "fontSize": 12,
+          }
+        }
+      >
+         • 
+        3h ago
+      </Text>
+    </View>
+  </View>
+</TouchableOpacity>
+`;
+
+exports[`ArticleResultCard Component renders correctly without an image 1`] = `
+<TouchableOpacity
+  onPress={[MockFunction]}
+  style={
+    {
+      "backgroundColor": "white",
+      "borderRadius": 12,
+      "elevation": 2,
+      "flexDirection": "row",
+      "marginBottom": 16,
+      "overflow": "hidden",
+      "shadowColor": "#000",
+      "shadowOffset": {
+        "height": 1,
+        "width": 0,
+      },
+      "shadowOpacity": 0.1,
+      "shadowRadius": 2,
+    }
+  }
+>
+  <View
+    style={
+      [
+        {
+          "height": 120,
+          "width": 120,
+        },
+        {
+          "alignItems": "center",
+          "backgroundColor": "#f0f0f0",
+          "justifyContent": "center",
+        },
+      ]
+    }
+  >
+    <Text
+      style={
+        {
+          "color": "#888",
+          "fontSize": 12,
+        }
+      }
+    >
+      No Image
+    </Text>
+  </View>
+  <View
+    style={
+      {
+        "flex": 1,
+        "justifyContent": "space-between",
+        "padding": 12,
+      }
+    }
+  >
+    <View
+      style={
+        {
+          "alignSelf": "flex-start",
+          "backgroundColor": "#0066cc",
+          "borderRadius": 4,
+          "marginBottom": 8,
+          "paddingHorizontal": 8,
+          "paddingVertical": 4,
+        }
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "white",
+            "fontSize": 10,
+            "fontWeight": "bold",
+          }
+        }
+      >
+        Education
+      </Text>
+    </View>
+    <Text
+      numberOfLines={2}
+      style={
+        {
+          "color": "#333",
+          "fontSize": 14,
+          "fontWeight": "bold",
+          "marginBottom": 8,
+        }
+      }
+    >
+      Test Article Title
+    </Text>
+    <View
+      style={
+        {
+          "alignItems": "center",
+          "flexDirection": "row",
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "height": 16,
+            "marginRight": 4,
+            "width": 16,
+          }
+        }
+      >
+        <Image
+          source={
+            {
+              "uri": "https://example.com/icon.png",
+            }
+          }
+          style={
+            {
+              "borderRadius": 8,
+              "height": 16,
+              "marginRight": 4,
+              "width": 16,
+            }
+          }
+        />
+      </View>
+      <Text
+        style={
+          {
+            "color": "#666",
+            "fontSize": 12,
+          }
+        }
+      >
+        Test Source
+      </Text>
+      <Text
+        style={
+          {
+            "color": "#888",
+            "fontSize": 12,
+          }
+        }
+      >
+         • 
+        3h ago
+      </Text>
+    </View>
+  </View>
+</TouchableOpacity>
+`;
+
+exports[`ArticleResultCard Component renders with uncategorized when category is missing 1`] = `
+<TouchableOpacity
+  onPress={[MockFunction]}
+  style={
+    {
+      "backgroundColor": "white",
+      "borderRadius": 12,
+      "elevation": 2,
+      "flexDirection": "row",
+      "marginBottom": 16,
+      "overflow": "hidden",
+      "shadowColor": "#000",
+      "shadowOffset": {
+        "height": 1,
+        "width": 0,
+      },
+      "shadowOpacity": 0.1,
+      "shadowRadius": 2,
+    }
+  }
+>
+  <View
+    style={
+      [
+        {
+          "height": 120,
+          "width": 120,
+        },
+        false,
+      ]
+    }
+  >
+    <Image
+      source={
+        {
+          "uri": "https://example.com/image.jpg",
+        }
+      }
+      style={
+        {
+          "height": 120,
+          "width": 120,
+        }
+      }
+    />
+  </View>
+  <View
+    style={
+      {
+        "flex": 1,
+        "justifyContent": "space-between",
+        "padding": 12,
+      }
+    }
+  >
+    <View
+      style={
+        {
+          "alignSelf": "flex-start",
+          "backgroundColor": "#0066cc",
+          "borderRadius": 4,
+          "marginBottom": 8,
+          "paddingHorizontal": 8,
+          "paddingVertical": 4,
+        }
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "white",
+            "fontSize": 10,
+            "fontWeight": "bold",
+          }
+        }
+      >
+        Uncategorized
+      </Text>
+    </View>
+    <Text
+      numberOfLines={2}
+      style={
+        {
+          "color": "#333",
+          "fontSize": 14,
+          "fontWeight": "bold",
+          "marginBottom": 8,
+        }
+      }
+    >
+      Test Article Title
+    </Text>
+    <View
+      style={
+        {
+          "alignItems": "center",
+          "flexDirection": "row",
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "height": 16,
+            "marginRight": 4,
+            "width": 16,
+          }
+        }
+      >
+        <Image
+          source={
+            {
+              "uri": "https://example.com/icon.png",
+            }
+          }
+          style={
+            {
+              "borderRadius": 8,
+              "height": 16,
+              "marginRight": 4,
+              "width": 16,
+            }
+          }
+        />
+      </View>
+      <Text
+        style={
+          {
+            "color": "#666",
+            "fontSize": 12,
+          }
+        }
+      >
+        Test Source
+      </Text>
+      <Text
+        style={
+          {
+            "color": "#888",
+            "fontSize": 12,
+          }
+        }
+      >
+         • 
+        3h ago
+      </Text>
+    </View>
+  </View>
+</TouchableOpacity>
+`;

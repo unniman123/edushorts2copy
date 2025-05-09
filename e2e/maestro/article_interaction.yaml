@@ -1,0 +1,77 @@
+appId: com.ajilkojilgokulravi.unniman # Update this with your actual app ID
+---
+# Maestro flow for article interaction testing
+- launchApp
+
+# Log in with test user
+- tapOn: "Email Address"
+- inputText: "test-user@example.com"
+- tapOn: "Password"
+- inputText: "Test@123456"
+- tapOn: "Login"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Verify home screen loaded
+- assertVisible: "Home"
+
+# Open first article
+- tapOn:
+    id: "article-item-0"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Verify article detail screen loaded
+- assertVisible:
+    id: "article-detail-screen"
+
+# Test article interaction - scrolling
+- scroll:
+    direction: DOWN
+    amount: 50
+- waitForAnimationToEnd:
+    timeout: 500
+
+# Bookmark the article
+- tapOn:
+    id: "bookmark-button"
+- assertVisible: "Article bookmarked"
+
+# Navigate back to home
+- tapOn:
+    id: "back-button"
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Go to bookmarks to verify it was saved
+- tapOn: "Bookmarks"
+- waitForAnimationToEnd:
+    timeout: 1000
+- assertVisible: "Your Bookmarks"
+
+# Verify article appears in bookmarks
+- assertVisible:
+    id: "bookmark-item-0"
+
+# Open the bookmarked article
+- tapOn:
+    id: "bookmark-item-0"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Remove bookmark
+- tapOn:
+    id: "bookmark-button"
+- assertVisible: "Bookmark removed"
+
+# Go back to bookmarks
+- tapOn:
+    id: "back-button"
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Return to home screen
+- tapOn: "Home"
+- waitForAnimationToEnd:
+    timeout: 1000
+- assertVisible: "Home" 

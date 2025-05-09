@@ -1,0 +1,48 @@
+
+// Init script to fix Gradle compatibility issues
+initscript {
+    repositories {
+        mavenCentral()
+        google()
+    }
+}
+
+allprojects {
+    buildscript {
+        repositories {
+            google()
+            mavenCentral()
+        }
+    }
+    
+    // Fix for expo-battery
+    afterEvaluate { project ->
+        if (project.name == 'expo-battery') {
+            project.tasks.withType(Jar) { jarTask ->
+                if (jarTask.name == 'androidSourcesJar') {
+                    // Replace classifier with archiveClassifier
+                    jarTask.archiveClassifier.set('sources')
+                }
+            }
+        }
+    }
+    
+    // General fixes for all projects
+    project.plugins.whenPluginAdded { plugin ->
+        if (plugin.class.name.contains('com.android.build.gradle.AppPlugin') || 
+            plugin.class.name.contains('com.android.build.gradle.LibraryPlugin')) {
+            
+            // Fix for component.release issues
+            project.android.buildTypes.all { buildType ->
+                if (buildType.name == "release") {
+                    // Make sure release variant is properly configured
+                    project.tasks.withType(Jar) { task ->
+                        if (task.name.contains('Release')) {
+                            task.from(project.android.sourceSets.main.java.srcDirs)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

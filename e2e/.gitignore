@@ -1,0 +1,21 @@
+# Detox artifacts
+artifacts/
+.tmp/
+
+# Maestro artifacts
+maestro-logs/
+maestro-output/
+
+# iOS specific
+ios/build/
+ios/DerivedData/
+*.ipa
+
+# Android specific
+android/build/
+android/app/build/
+*.apk
+*.aab
+
+# Logs
+*.log 

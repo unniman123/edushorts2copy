@@ -1,0 +1,26 @@
+
+allprojects {
+    buildscript {
+        repositories {
+            // Build script repositories
+            google()
+            mavenCentral()
+        }
+    }
+    repositories {
+        // Module repositories
+        google()
+        mavenCentral()
+    }
+    
+    // Apply global build script fixes
+    afterEvaluate { project ->
+        if (project.name == "expo-battery") {
+            project.tasks.withType(Jar) { jarTask ->
+                if (jarTask.name == 'androidSourcesJar') {
+                    jarTask.archiveClassifier.set('sources')
+                }
+            }
+        }
+    }
+}

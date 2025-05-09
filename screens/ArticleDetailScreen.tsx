@@ -12,7 +12,9 @@ import {
   Linking,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Dimensions,
 } from 'react-native';
+import PagerView from 'react-native-pager-view';
 import { analyticsService } from '../services/AnalyticsService';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, Ionicons } from '@expo/vector-icons';
@@ -42,6 +44,45 @@ export default function ArticleDetailScreen() {
   const { savedArticles, addBookmark, removeBookmark, isLoading } = useSavedArticles();
   const [bookmarked, setBookmarked] = useState(false);
   const { config } = useRemoteConfig();
+  const [currentPage, setCurrentPage] = useState(0);
+  const [loadedArticles, setLoadedArticles] = useState<{[key: string]: Article}>({});
+  const pagerRef = useRef<PagerView>(null);
+
+  // Fetch full article data when page changes
+  const fetchArticleData = async (articleId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('news')
+        .select(`
+          *,
+          category:category_id (
+            id,
+            name
+          )
+        `)
+        .eq('id', articleId)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setLoadedArticles(prev => ({
+          ...prev,
+          [articleId]: data as Article
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching article:', error);
+    }
+  };
+
+  // Pre-fetch articles data when component mounts
+  useEffect(() => {
+    savedArticles.forEach(article => {
+      if (!loadedArticles[article.id]) {
+        fetchArticleData(article.id);
+      }
+    });
+  }, [savedArticles]);
 
   // Get layout configuration from remote config
   const layout = config.article_layout;
@@ -247,79 +288,113 @@ export default function ArticleDetailScreen() {
         </View>
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={16} // Throttle scroll events to ~60fps
+      <PagerView
+        ref={pagerRef}
+        style={styles.pagerView}
+        initialPage={savedArticles.findIndex(a => a.id === articleId)}
+        orientation="vertical"
+        overdrag={false}
+        onPageSelected={(e) => {
+          const newIndex = e.nativeEvent.position;
+          setCurrentPage(newIndex);
+          // Update article and URL when page changes
+          const newArticle = savedArticles[newIndex];
+          if (newArticle && newArticle.id !== articleId) {
+            navigation.setParams({ articleId: newArticle.id });
+            if (!loadedArticles[newArticle.id]) {
+              fetchArticleData(newArticle.id);
+            }
+          }
+        }}
       >
-        <View style={styles.heroContainer}>
-          {article.image_path ? (
-            <Image source={{ uri: article.image_path }} style={styles.heroImage} />
-          ) : (
-            <View style={[styles.heroImage, styles.noHeroImage]}>
-              <Feather name="image" size={48} color="#ccc" />
-              <Text style={styles.noImageText}>No image available</Text>
-            </View>
-          )}
-          <View style={styles.categoryBadge}>
-            <Text style={styles.categoryText}>{article.category?.name || 'Uncategorized'}</Text>
-          </View>
+        {savedArticles.map((savedArticle, index) => {
+          const articleData = loadedArticles[savedArticle.id] || savedArticle;
+          return (
+          <View key={savedArticle.id} style={styles.pageContainer}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              onScroll={handleScroll}
+              scrollEventThrottle={16}
+            >
+              <View style={styles.heroContainer}>
+                {articleData.image_path ? (
+                  <Image source={{ uri: articleData.image_path }} style={styles.heroImage} />
+                ) : (
+                  <View style={[styles.heroImage, styles.noHeroImage]}>
+                    <Feather name="image" size={48} color="#ccc" />
+                    <Text style={styles.noImageText}>No image available</Text>
+                  </View>
+                )}
+                <View style={styles.categoryBadge}>
+                  <Text style={styles.categoryText}>{articleData.category?.name || 'Uncategorized'}</Text>
+                </View>
         </View>
 
         <View style={styles.contentContainer}>
-          <Text style={[
-            styles.title,
-            layout === 'compact' && styles.compactTitle
-          ]}>{article.title}</Text>
+                <Text style={[
+                  styles.title,
+                  layout === 'compact' && styles.compactTitle
+                ]}>{articleData.title}</Text>
 
-          <View style={styles.publisherContainer}>
-            {showSourceIcon && (
-              article.source_icon ? (
-                <Image source={{ uri: article.source_icon }} style={styles.publisherIcon} />
-              ) : (
-                <View style={[styles.publisherIcon, styles.noSourceIcon]} />
-              )
-            )}
-            <View style={styles.publisherInfo}>
-              <Text style={styles.publisherName}>{article.source_name || 'Unknown Source'}</Text>
-              <Text style={styles.publishDate}>{article.timeAgo || new Date(article.created_at).toLocaleDateString()}</Text>
-            </View>
+                <View style={styles.publisherContainer}>
+                  {showSourceIcon && (
+                    articleData.source_icon ? (
+                      <Image source={{ uri: articleData.source_icon }} style={styles.publisherIcon} />
+                    ) : (
+                      <View style={[styles.publisherIcon, styles.noSourceIcon]} />
+                    )
+                  )}
+                  <View style={styles.publisherInfo}>
+                    <Text style={styles.publisherName}>{articleData.source_name || 'Unknown Source'}</Text>
+                    <Text style={styles.publishDate}>{articleData.timeAgo || new Date(articleData.created_at).toLocaleDateString()}</Text>
+                  </View>
+                </View>
+
+                <Text style={[
+                  styles.summary,
+                  layout === 'compact' && styles.compactSummary
+                ]}>
+                  {articleData.summary.length > maxSummaryLength
+                    ? `${articleData.summary.substring(0, maxSummaryLength)}...`
+                    : articleData.summary}
+                </Text>
+
+                <View style={styles.divider} />
+
+                {articleData.content && (
+                  <Text style={[
+                    styles.content,
+                    layout === 'compact' && styles.compactContent
+                  ]}>{articleData.content}</Text>
+                )}
+
+                {articleData.source_url && (
+                  <TouchableOpacity
+                    style={styles.sourceLink}
+                    onPress={() => Linking.openURL(articleData.source_url || '')}
+                  >
+                    <Text style={styles.sourceLinkText}>Read full article on {articleData.source_name || 'source'}</Text>
+                    <Feather name="external-link" size={16} color="#0066cc" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </ScrollView>
           </View>
-
-          <Text style={[
-            styles.summary,
-            layout === 'compact' && styles.compactSummary
-          ]}>
-            {article.summary.length > maxSummaryLength
-              ? `${article.summary.substring(0, maxSummaryLength)}...`
-              : article.summary}
-          </Text>
-
-          <View style={styles.divider} />
-
-          {article.content && (
-            <Text style={[
-              styles.content,
-              layout === 'compact' && styles.compactContent
-            ]}>{article.content}</Text>
-          )}
-
-          {article.source_url && (
-            <TouchableOpacity
-              style={styles.sourceLink}
-              onPress={() => Linking.openURL(article.source_url || '')}
-            >
-              <Text style={styles.sourceLinkText}>Read full article on {article.source_name || 'source'}</Text>
-              <Feather name="external-link" size={16} color="#0066cc" />
-            </TouchableOpacity>
-          )}
-        </View>
-      </ScrollView>
+          );
+        })}
+      </PagerView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  pageContainer: {
+    flex: 1,
+    backgroundColor: 'white',
+  },
+  pagerView: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
@@ -378,53 +453,63 @@ const styles = StyleSheet.create({
   },
   heroContainer: {
     position: 'relative',
+    width: '100%',
+    height: '35%',
+    backgroundColor: '#f0f0f0',
   },
   heroImage: {
     width: '100%',
-    height: 250,
+    height: '100%',
+    resizeMode: 'cover',
   },
   noHeroImage: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#e0e0e0',
     justifyContent: 'center',
     alignItems: 'center',
   },
   noImageText: {
     fontSize: 16,
-    color: '#999',
+    color: '#888',
     marginTop: 8,
-  }, categoryBadge: {
-    position: 'absolute',
-    bottom: 16,
-    left: 16,
+  },
+  categoryBadge: {
     backgroundColor: '#ff0000',
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginBottom: 15,
   },
   categoryText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '500',
   },
   contentContainer: {
-    padding: 16,
+    flex: 1.5,
+    marginTop: -20,
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
   },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 16,
+    color: '#333333',
+    marginBottom: 12,
+    lineHeight: 30,
   },
   publisherContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 15,
   },
   publisherIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    marginRight: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 8,
   },
   publisherInfo: {
     flex: 1,
@@ -432,39 +517,44 @@ const styles = StyleSheet.create({
   publisherName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: '#333333',
   },
   publishDate: {
-    fontSize: 12,
-    color: '#888',
+    fontSize: 11,
+    color: '#666666',
+    marginTop: 4,
   },
   summary: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#444',
+    color: '#666666',
     lineHeight: 24,
     marginBottom: 16,
+    marginTop: 4,
   },
   divider: {
     height: 1,
-    backgroundColor: '#eee',
+    backgroundColor: '#eeeeee',
     marginVertical: 16,
   },
   content: {
-    fontSize: 16,
-    color: '#333',
-    lineHeight: 24,
-    marginBottom: 24,
+    fontSize: 15,
+    color: '#666666',
+    lineHeight: 22,
+    marginBottom: 16,
   },
   sourceLink: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  }, sourceLinkText: {
+    marginTop: 10,
+    marginBottom: 12,
+    paddingVertical: 4,
+  },
+  sourceLinkText: {
     fontSize: 14,
     color: '#ff0000',
-    marginRight: 4,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+    marginRight: 8,
   },
   relatedSection: {
     padding: 16,

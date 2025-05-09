@@ -1,16 +1,19 @@
-import React, { useState, memo, useCallback, useEffect } from 'react';
+import React, { useState, memo, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Image,
   TouchableOpacity,
-  Dimensions, // Import Dimensions
-  ScrollView, // Import ScrollView
-  Linking, // Import Linking for source URL
-  Share, // Import Share API
-  useWindowDimensions, // For responsive design
+  Dimensions,
+  ScrollView,
+  Linking,
+  Share,
+  useWindowDimensions,
+  InteractionManager,
 } from 'react-native';
+import ImageOptimizer from '../utils/ImageOptimizer';
+import PerformanceMonitoringService from '../services/PerformanceMonitoringService';
 // Removed useNavigation as it's not used in Phase 1 card directly
 // import { useNavigation } from '@react-navigation/native';
 // import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -25,17 +28,47 @@ interface NewsCardProps {
 }
 
 const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
-  // Use window dimensions for responsive layout that updates on orientation change
   const { width: windowWidth } = useWindowDimensions();
   const [isSmallDevice, setIsSmallDevice] = useState(windowWidth < 375);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const imageOptimizer = useRef(ImageOptimizer.getInstance());
+  const performanceMonitor = useRef(PerformanceMonitoringService.getInstance());
+  const imageLoadStartTime = useRef(0);
 
-  // Create styles based on current device size
   const styles = React.useMemo(() => createStyleSheet(isSmallDevice), [isSmallDevice]);
 
-  // Update responsive values when dimensions change (e.g., rotation)
   useEffect(() => {
     setIsSmallDevice(windowWidth < 375);
   }, [windowWidth]);
+
+  // Preload and optimize image
+  useEffect(() => {
+    if (article.image_path && typeof article.image_path === 'string') {
+      const loadImage = async () => {
+        try {
+          imageLoadStartTime.current = Date.now();
+          await imageOptimizer.current.preloadImage(article.image_path!);
+          
+          // Delay setting imageLoaded to ensure smooth transition
+          InteractionManager.runAfterInteractions(() => {
+            setImageLoaded(true);
+              const loadTime = Date.now() - imageLoadStartTime.current;
+              performanceMonitor.current.recordImageLoad(article.image_path!, loadTime, 0);
+          });
+        } catch (error) {
+          console.error('Failed to preload image:', error);
+          setImageLoaded(true); // Show image anyway on error
+        }
+      };
+
+      loadImage();
+    }
+
+    return () => {
+      // Cleanup if component unmounts during image load
+      setImageLoaded(false);
+    };
+  }, [article.image_path]);
   // const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(); // Not needed for Phase 1
   const [showIcons, setShowIcons] = useState(false); // State for icon visibility
   // Get correct functions and state from context
@@ -114,9 +147,20 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
         {article.image_path ? (
           <Image
             source={{ uri: article.image_path }}
-            style={styles.cardImage}
-            resizeMethod="resize" // More efficient resize method
-            progressiveRenderingEnabled={true} // Enable progressive loading
+            style={[styles.cardImage, !imageLoaded && styles.imageLoading]}
+            resizeMethod="resize"
+            progressiveRenderingEnabled={true}
+            onLoadStart={() => {
+              imageLoadStartTime.current = Date.now();
+            }}
+            onLoad={() => {
+              const loadTime = Date.now() - imageLoadStartTime.current;
+              performanceMonitor.current.recordImageLoad(article.image_path!, loadTime, 0);
+              setImageLoaded(true);
+            }}
+            onError={() => {
+              setImageLoaded(true); // Show placeholder on error
+            }}
           />
         ) : (
           <View style={[styles.cardImage, styles.noImage]}>
@@ -211,8 +255,12 @@ const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
     resizeMode: 'cover', // Ensure image covers the area
   },
   imageContainer: {
-    position: 'relative', // For absolute positioning of children
+    position: 'relative',
     width: '100%',
+    backgroundColor: '#f0f0f0', // Placeholder background
+  },
+  imageLoading: {
+    opacity: 0.7,
   },
   logoOverlay: {
     position: 'absolute',

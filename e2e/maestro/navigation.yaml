@@ -1,0 +1,63 @@
+appId: com.ajilkojilgokulravi.unniman
+---
+# Maestro flow for navigation testing
+- launchApp
+
+# Log in with test user
+- tapOn: "Email Address"
+- inputText: "test-user@example.com"
+- tapOn: "Password"
+- inputText: "Test@123456"
+- tapOn: "Login"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Verify home screen loaded
+- assertVisible: "Home"
+
+# Test navigation to Discover tab
+- tapOn: "Discover"
+- waitForAnimationToEnd:
+    timeout: 1000
+- assertVisible: "Trending Topics"
+
+# Test navigation to Bookmarks tab
+- tapOn: "Bookmarks"
+- waitForAnimationToEnd:
+    timeout: 1000
+- assertVisible: "Your Bookmarks"
+
+# Test navigation to Profile tab
+- tapOn: "Profile"
+- waitForAnimationToEnd:
+    timeout: 1000
+- assertVisible: "Profile"
+
+# Test navigation to Settings tab
+- tapOn: "Settings"
+- waitForAnimationToEnd:
+    timeout: 1000
+- assertVisible: "Settings"
+
+# Open Notification Settings
+- tapOn: "Notification Settings"
+- waitForAnimationToEnd:
+    timeout: 1000
+- assertVisible: "Push Notifications"
+
+# Navigate back to Settings
+- tapOn: "Back"
+- waitForAnimationToEnd:
+    timeout: 1000
+- assertVisible: "Settings"
+
+# Log out
+- scrollUntilVisible:
+    element: "Logout"
+- tapOn: "Logout"
+- tapOn: "Confirm"
+
+# Verify we're back at login screen
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible: "Login"

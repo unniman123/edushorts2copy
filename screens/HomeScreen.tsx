@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
+import debounce from 'lodash/debounce';
 import {
   View,
   Text,
@@ -28,50 +29,42 @@ const isNewsItem = (item: ContentItem): item is NewsItem => {
 };
 
 const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
-  const pagerRef = React.useRef<PagerView>(null);
+  const pagerRef = useRef<PagerView>(null);
   const { news, loading: newsLoading, error: newsError, refreshNews, loadMoreNews } = useNews();
   const { advertisements } = useAdvertisements();
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Function to merge news and ads
   const getMergedContent = useCallback((): ContentItem[] => {
-    console.log('Debug - News count:', news.length);
-    console.log('Debug - Advertisements:', advertisements);
-
-    if (!advertisements || advertisements.length === 0) {
-      console.log('Debug - No advertisements available');
-      return [...news] as ContentItem[];
+    // Remove debug logs for production
+    if (!advertisements?.length) {
+      return news as ContentItem[];
     }
 
-    // Initialize merged array
-    const merged: ContentItem[] = [];
-    const frequency = advertisements[0]?.display_frequency || 5;
-    let adIndex = 0;
-
-    console.log('Debug - Ad frequency:', frequency);
-
-    // Insert news items and ads in sequence
-    news.forEach((newsItem, index) => {
-      merged.push(newsItem as ContentItem);
+    // Use reduce for better performance
+    return news.reduce((acc: ContentItem[], newsItem, index) => {
+      acc.push(newsItem as ContentItem);
       
-      // If we've reached the frequency point, insert an ad
-      if ((index + 1) % frequency === 0 && adIndex < advertisements.length) {
+      const frequency = advertisements[0]?.display_frequency || 5;
+      if ((index + 1) % frequency === 0) {
+        const adIndex = Math.floor(index / frequency) % advertisements.length;
         const ad = advertisements[adIndex];
-        console.log('Debug - Inserting ad after news index:', index);
-        merged.push({
-          type: 'ad',
-          id: ad.id || `ad-${adIndex}`,
-          content: ad
-        });
-        adIndex = (adIndex + 1) % advertisements.length;
+        if (ad) {
+          acc.push({
+            type: 'ad',
+            id: ad.id || `ad-${adIndex}`,
+            content: ad
+          });
+        }
       }
-    });
-
-    console.log('Debug - Final merged content:', merged);
-    return merged;
+      
+      return acc;
+    }, []);
   }, [news, advertisements]);
 
-  const content = getMergedContent();
+
+  // Memoize content to prevent unnecessary recalculations
+  const content = React.useMemo(() => getMergedContent(), [getMergedContent]);
 
   React.useImperativeHandle(ref, () => ({
     scrollToTop: () => {
@@ -79,18 +72,35 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
     }
   }));
 
-  const handleLoadMore = useCallback(async () => {
+  // Use ref for debounced function
+  const debouncedLoadRef = useRef(
+    debounce((loadMore: () => Promise<void>) => {
+      loadMore();
+    }, 500)
+  );
+
+  // Memoized load more handler
+  const handleLoadMore = useCallback(() => {
     if (newsLoading || isLoadingMore || news.length === 0) return;
 
     setIsLoadingMore(true);
-    try {
-      await loadMoreNews();
-    } catch (error) {
-      console.error('Error loading more news:', error);
-    } finally {
-      setIsLoadingMore(false);
-    }
+    debouncedLoadRef.current(() => 
+      loadMoreNews()
+        .catch(error => {
+          console.error('Error loading more news:', error);
+        })
+        .finally(() => {
+          setIsLoadingMore(false);
+        })
+    );
   }, [newsLoading, isLoadingMore, news.length, loadMoreNews]);
+
+  // Cleanup debounced function on unmount
+  React.useEffect(() => {
+    return () => {
+      debouncedLoadRef.current.cancel();
+    };
+  }, []);
 
   if (newsError) {
     return (

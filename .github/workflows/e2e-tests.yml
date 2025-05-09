@@ -1,0 +1,192 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  # Allow manual triggering
+  workflow_dispatch:
+
+jobs:
+  e2e-ios:
+    name: E2E Tests (iOS)
+    runs-on: macos-latest
+    timeout-minutes: 45
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Install Detox CLI
+        run: npm install -g detox-cli
+        
+      - name: Install iOS dependencies
+        run: |
+          brew tap wix/brew
+          brew install applesimutils
+          
+      - name: Install pods
+        run: |
+          cd ios
+          pod install
+          
+      - name: Build app for testing
+        run: npm run test:e2e:build
+        
+      - name: Run E2E tests
+        run: npm run test:e2e
+        
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: e2e-ios-artifacts
+          path: artifacts
+          
+  e2e-android:
+    name: E2E Tests (Android)
+    runs-on: macos-latest # Using macOS for better emulator performance
+    timeout-minutes: 45
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Install Detox CLI
+        run: npm install -g detox-cli
+        
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+          
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+          
+      - name: Build Android app for testing
+        run: npm run test:e2e:build:android
+        
+      - name: Start Android Emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: Pixel 4
+          script: echo "Emulator started"
+          
+      - name: Run E2E tests on Android
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: Pixel 4
+          script: npm run test:e2e:android
+          
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: e2e-android-artifacts
+          path: artifacts
+          
+  e2e-maestro:
+    name: Maestro E2E Tests
+    runs-on: macos-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+          
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+        
+      - name: Install Maestro CLI
+        run: |
+          # Download and install Maestro
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          
+          # Add Maestro to PATH
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+          
+          # Verify Maestro installation
+          maestro --version || { echo "Maestro installation failed"; exit 1; }
+          
+      - name: Build Android app
+        run: |
+          cd android
+          ./gradlew assembleDebug
+          
+      - name: Start Android Emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: Pixel 4
+          script: echo "Emulator started"
+          
+      - name: Install app on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: Pixel 4
+          script: |
+            adb install android/app/build/outputs/apk/debug/app-debug.apk
+          
+      - name: Run Maestro tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: Pixel 4
+          script: |
+            # Run Maestro tests
+            maestro test e2e/maestro/
+          
+      - name: Upload Maestro logs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: maestro-logs
+          path: maestro-logs 

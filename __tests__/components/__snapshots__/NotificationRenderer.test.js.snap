@@ -1,0 +1,966 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`NotificationRenderer Component renders NotificationGroup correctly 1`] = `
+<View
+  style={
+    {
+      "marginBottom": 16,
+    }
+  }
+>
+  <Text
+    style={
+      {
+        "color": "#666",
+        "fontSize": 14,
+        "fontWeight": "600",
+        "marginBottom": 8,
+        "marginLeft": 16,
+      }
+    }
+  >
+    Today
+  </Text>
+  <TouchableOpacity
+    activeOpacity={0.7}
+    onPress={[Function]}
+    style={
+      [
+        {
+          "backgroundColor": "#fff",
+          "borderRadius": 8,
+          "flexDirection": "row",
+          "marginHorizontal": 16,
+          "marginVertical": 4,
+          "padding": 12,
+          "shadowColor": "#000",
+          "shadowOffset": {
+            "height": 1,
+            "width": 0,
+          },
+          "shadowOpacity": 0.2,
+          "shadowRadius": 2,
+        },
+        {
+          "backgroundColor": "#f0f9ff",
+        },
+        undefined,
+      ]
+    }
+    testID="notification-container"
+  >
+    <View
+      style={
+        {
+          "alignItems": "center",
+          "backgroundColor": "#e6f3ff",
+          "borderRadius": 20,
+          "height": 40,
+          "justifyContent": "center",
+          "marginRight": 12,
+          "width": 40,
+        }
+      }
+    >
+      <Ionicons
+        color="#007AFF"
+        name="notifications"
+        size={24}
+        testID="notification-icon"
+      />
+    </View>
+    <View
+      style={
+        {
+          "flex": 1,
+          "marginRight": 8,
+        }
+      }
+    >
+      <Text
+        style={
+          [
+            {
+              "color": "#1a1a1a",
+              "fontSize": 16,
+              "fontWeight": "500",
+              "marginBottom": 4,
+            },
+            {
+              "color": "#000",
+              "fontWeight": "600",
+            },
+          ]
+        }
+      >
+        Test Notification
+      </Text>
+      <Text
+        numberOfLines={2}
+        style={
+          {
+            "color": "#666",
+            "fontSize": 14,
+            "marginBottom": 4,
+          }
+        }
+      >
+        This is a test notification body
+      </Text>
+      <Text
+        style={
+          {
+            "color": "#999",
+            "fontSize": 12,
+          }
+        }
+        testID="notification-timestamp"
+      >
+        5 minutes ago
+      </Text>
+    </View>
+    <TouchableOpacity
+      onPress={[Function]}
+      style={
+        {
+          "alignItems": "center",
+          "justifyContent": "center",
+          "padding": 4,
+        }
+      }
+      testID="dismiss-button"
+    >
+      <Ionicons
+        color="#999"
+        name="close"
+        size={20}
+      />
+    </TouchableOpacity>
+  </TouchableOpacity>
+  <TouchableOpacity
+    activeOpacity={0.7}
+    onPress={[Function]}
+    style={
+      [
+        {
+          "backgroundColor": "#fff",
+          "borderRadius": 8,
+          "flexDirection": "row",
+          "marginHorizontal": 16,
+          "marginVertical": 4,
+          "padding": 12,
+          "shadowColor": "#000",
+          "shadowOffset": {
+            "height": 1,
+            "width": 0,
+          },
+          "shadowOpacity": 0.2,
+          "shadowRadius": 2,
+        },
+        {
+          "backgroundColor": "#f0f9ff",
+        },
+        undefined,
+      ]
+    }
+    testID="notification-container"
+  >
+    <View
+      style={
+        {
+          "alignItems": "center",
+          "backgroundColor": "#e6f3ff",
+          "borderRadius": 20,
+          "height": 40,
+          "justifyContent": "center",
+          "marginRight": 12,
+          "width": 40,
+        }
+      }
+    >
+      <Ionicons
+        color="#007AFF"
+        name="notifications"
+        size={24}
+        testID="notification-icon"
+      />
+    </View>
+    <View
+      style={
+        {
+          "flex": 1,
+          "marginRight": 8,
+        }
+      }
+    >
+      <Text
+        style={
+          [
+            {
+              "color": "#1a1a1a",
+              "fontSize": 16,
+              "fontWeight": "500",
+              "marginBottom": 4,
+            },
+            {
+              "color": "#000",
+              "fontWeight": "600",
+            },
+          ]
+        }
+      >
+        Another Notification
+      </Text>
+      <Text
+        numberOfLines={2}
+        style={
+          {
+            "color": "#666",
+            "fontSize": 14,
+            "marginBottom": 4,
+          }
+        }
+      >
+        This is a test notification body
+      </Text>
+      <Text
+        style={
+          {
+            "color": "#999",
+            "fontSize": 12,
+          }
+        }
+        testID="notification-timestamp"
+      >
+        5 minutes ago
+      </Text>
+    </View>
+    <TouchableOpacity
+      onPress={[Function]}
+      style={
+        {
+          "alignItems": "center",
+          "justifyContent": "center",
+          "padding": 4,
+        }
+      }
+      testID="dismiss-button"
+    >
+      <Ionicons
+        color="#999"
+        name="close"
+        size={20}
+      />
+    </TouchableOpacity>
+  </TouchableOpacity>
+</View>
+`;
+
+exports[`NotificationRenderer Component renders correctly when notification is read 1`] = `
+<TouchableOpacity
+  activeOpacity={0.7}
+  onPress={[Function]}
+  style={
+    [
+      {
+        "backgroundColor": "#fff",
+        "borderRadius": 8,
+        "flexDirection": "row",
+        "marginHorizontal": 16,
+        "marginVertical": 4,
+        "padding": 12,
+        "shadowColor": "#000",
+        "shadowOffset": {
+          "height": 1,
+          "width": 0,
+        },
+        "shadowOpacity": 0.2,
+        "shadowRadius": 2,
+      },
+      false,
+      undefined,
+    ]
+  }
+  testID="notification-container"
+>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "backgroundColor": "#e6f3ff",
+        "borderRadius": 20,
+        "height": 40,
+        "justifyContent": "center",
+        "marginRight": 12,
+        "width": 40,
+      }
+    }
+  >
+    <Ionicons
+      color="#007AFF"
+      name="notifications"
+      size={24}
+      testID="notification-icon"
+    />
+  </View>
+  <View
+    style={
+      {
+        "flex": 1,
+        "marginRight": 8,
+      }
+    }
+  >
+    <Text
+      style={
+        [
+          {
+            "color": "#1a1a1a",
+            "fontSize": 16,
+            "fontWeight": "500",
+            "marginBottom": 4,
+          },
+          false,
+        ]
+      }
+    >
+      Test Notification
+    </Text>
+    <Text
+      numberOfLines={2}
+      style={
+        {
+          "color": "#666",
+          "fontSize": 14,
+          "marginBottom": 4,
+        }
+      }
+    >
+      This is a test notification body
+    </Text>
+    <Text
+      style={
+        {
+          "color": "#999",
+          "fontSize": 12,
+        }
+      }
+      testID="notification-timestamp"
+    >
+      5 minutes ago
+    </Text>
+  </View>
+  <TouchableOpacity
+    onPress={[Function]}
+    style={
+      {
+        "alignItems": "center",
+        "justifyContent": "center",
+        "padding": 4,
+      }
+    }
+    testID="dismiss-button"
+  >
+    <Ionicons
+      color="#999"
+      name="close"
+      size={20}
+    />
+  </TouchableOpacity>
+</TouchableOpacity>
+`;
+
+exports[`NotificationRenderer Component renders correctly with all props 1`] = `
+<TouchableOpacity
+  activeOpacity={0.7}
+  onPress={[Function]}
+  style={
+    [
+      {
+        "backgroundColor": "#fff",
+        "borderRadius": 8,
+        "flexDirection": "row",
+        "marginHorizontal": 16,
+        "marginVertical": 4,
+        "padding": 12,
+        "shadowColor": "#000",
+        "shadowOffset": {
+          "height": 1,
+          "width": 0,
+        },
+        "shadowOpacity": 0.2,
+        "shadowRadius": 2,
+      },
+      {
+        "backgroundColor": "#f0f9ff",
+      },
+      undefined,
+    ]
+  }
+  testID="notification-container"
+>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "backgroundColor": "#e6f3ff",
+        "borderRadius": 20,
+        "height": 40,
+        "justifyContent": "center",
+        "marginRight": 12,
+        "width": 40,
+      }
+    }
+  >
+    <Ionicons
+      color="#007AFF"
+      name="notifications"
+      size={24}
+      testID="notification-icon"
+    />
+  </View>
+  <View
+    style={
+      {
+        "flex": 1,
+        "marginRight": 8,
+      }
+    }
+  >
+    <Text
+      style={
+        [
+          {
+            "color": "#1a1a1a",
+            "fontSize": 16,
+            "fontWeight": "500",
+            "marginBottom": 4,
+          },
+          {
+            "color": "#000",
+            "fontWeight": "600",
+          },
+        ]
+      }
+    >
+      Test Notification
+    </Text>
+    <Text
+      numberOfLines={2}
+      style={
+        {
+          "color": "#666",
+          "fontSize": 14,
+          "marginBottom": 4,
+        }
+      }
+    >
+      This is a test notification body
+    </Text>
+    <Text
+      style={
+        {
+          "color": "#999",
+          "fontSize": 12,
+        }
+      }
+      testID="notification-timestamp"
+    >
+      5 minutes ago
+    </Text>
+  </View>
+  <TouchableOpacity
+    onPress={[Function]}
+    style={
+      {
+        "alignItems": "center",
+        "justifyContent": "center",
+        "padding": 4,
+      }
+    }
+    testID="dismiss-button"
+  >
+    <Ionicons
+      color="#999"
+      name="close"
+      size={20}
+    />
+  </TouchableOpacity>
+</TouchableOpacity>
+`;
+
+exports[`NotificationRenderer Component renders correctly with different notification types 1`] = `
+<TouchableOpacity
+  activeOpacity={0.7}
+  onPress={[Function]}
+  style={
+    [
+      {
+        "backgroundColor": "#fff",
+        "borderRadius": 8,
+        "flexDirection": "row",
+        "marginHorizontal": 16,
+        "marginVertical": 4,
+        "padding": 12,
+        "shadowColor": "#000",
+        "shadowOffset": {
+          "height": 1,
+          "width": 0,
+        },
+        "shadowOpacity": 0.2,
+        "shadowRadius": 2,
+      },
+      {
+        "backgroundColor": "#f0f9ff",
+      },
+      undefined,
+    ]
+  }
+  testID="notification-container"
+>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "backgroundColor": "#e6f3ff",
+        "borderRadius": 20,
+        "height": 40,
+        "justifyContent": "center",
+        "marginRight": 12,
+        "width": 40,
+      }
+    }
+  >
+    <Ionicons
+      color="#007AFF"
+      name="document-text"
+      size={24}
+      testID="notification-icon"
+    />
+  </View>
+  <View
+    style={
+      {
+        "flex": 1,
+        "marginRight": 8,
+      }
+    }
+  >
+    <Text
+      style={
+        [
+          {
+            "color": "#1a1a1a",
+            "fontSize": 16,
+            "fontWeight": "500",
+            "marginBottom": 4,
+          },
+          {
+            "color": "#000",
+            "fontWeight": "600",
+          },
+        ]
+      }
+    >
+      Test Notification
+    </Text>
+    <Text
+      numberOfLines={2}
+      style={
+        {
+          "color": "#666",
+          "fontSize": 14,
+          "marginBottom": 4,
+        }
+      }
+    >
+      This is a test notification body
+    </Text>
+    <Text
+      style={
+        {
+          "color": "#999",
+          "fontSize": 12,
+        }
+      }
+      testID="notification-timestamp"
+    >
+      5 minutes ago
+    </Text>
+  </View>
+  <TouchableOpacity
+    onPress={[Function]}
+    style={
+      {
+        "alignItems": "center",
+        "justifyContent": "center",
+        "padding": 4,
+      }
+    }
+    testID="dismiss-button"
+  >
+    <Ionicons
+      color="#999"
+      name="close"
+      size={20}
+    />
+  </TouchableOpacity>
+</TouchableOpacity>
+`;
+
+exports[`NotificationRenderer Component renders correctly with different notification types 2`] = `
+<TouchableOpacity
+  activeOpacity={0.7}
+  onPress={[Function]}
+  style={
+    [
+      {
+        "backgroundColor": "#fff",
+        "borderRadius": 8,
+        "flexDirection": "row",
+        "marginHorizontal": 16,
+        "marginVertical": 4,
+        "padding": 12,
+        "shadowColor": "#000",
+        "shadowOffset": {
+          "height": 1,
+          "width": 0,
+        },
+        "shadowOpacity": 0.2,
+        "shadowRadius": 2,
+      },
+      {
+        "backgroundColor": "#f0f9ff",
+      },
+      undefined,
+    ]
+  }
+  testID="notification-container"
+>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "backgroundColor": "#e6f3ff",
+        "borderRadius": 20,
+        "height": 40,
+        "justifyContent": "center",
+        "marginRight": 12,
+        "width": 40,
+      }
+    }
+  >
+    <Ionicons
+      color="#007AFF"
+      name="time"
+      size={24}
+      testID="notification-icon"
+    />
+  </View>
+  <View
+    style={
+      {
+        "flex": 1,
+        "marginRight": 8,
+      }
+    }
+  >
+    <Text
+      style={
+        [
+          {
+            "color": "#1a1a1a",
+            "fontSize": 16,
+            "fontWeight": "500",
+            "marginBottom": 4,
+          },
+          {
+            "color": "#000",
+            "fontWeight": "600",
+          },
+        ]
+      }
+    >
+      Test Notification
+    </Text>
+    <Text
+      numberOfLines={2}
+      style={
+        {
+          "color": "#666",
+          "fontSize": 14,
+          "marginBottom": 4,
+        }
+      }
+    >
+      This is a test notification body
+    </Text>
+    <Text
+      style={
+        {
+          "color": "#999",
+          "fontSize": 12,
+        }
+      }
+      testID="notification-timestamp"
+    >
+      5 minutes ago
+    </Text>
+  </View>
+  <TouchableOpacity
+    onPress={[Function]}
+    style={
+      {
+        "alignItems": "center",
+        "justifyContent": "center",
+        "padding": 4,
+      }
+    }
+    testID="dismiss-button"
+  >
+    <Ionicons
+      color="#999"
+      name="close"
+      size={20}
+    />
+  </TouchableOpacity>
+</TouchableOpacity>
+`;
+
+exports[`NotificationRenderer Component renders correctly with different notification types 3`] = `
+<TouchableOpacity
+  activeOpacity={0.7}
+  onPress={[Function]}
+  style={
+    [
+      {
+        "backgroundColor": "#fff",
+        "borderRadius": 8,
+        "flexDirection": "row",
+        "marginHorizontal": 16,
+        "marginVertical": 4,
+        "padding": 12,
+        "shadowColor": "#000",
+        "shadowOffset": {
+          "height": 1,
+          "width": 0,
+        },
+        "shadowOpacity": 0.2,
+        "shadowRadius": 2,
+      },
+      {
+        "backgroundColor": "#f0f9ff",
+      },
+      undefined,
+    ]
+  }
+  testID="notification-container"
+>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "backgroundColor": "#e6f3ff",
+        "borderRadius": 20,
+        "height": 40,
+        "justifyContent": "center",
+        "marginRight": 12,
+        "width": 40,
+      }
+    }
+  >
+    <Ionicons
+      color="#007AFF"
+      name="globe"
+      size={24}
+      testID="notification-icon"
+    />
+  </View>
+  <View
+    style={
+      {
+        "flex": 1,
+        "marginRight": 8,
+      }
+    }
+  >
+    <Text
+      style={
+        [
+          {
+            "color": "#1a1a1a",
+            "fontSize": 16,
+            "fontWeight": "500",
+            "marginBottom": 4,
+          },
+          {
+            "color": "#000",
+            "fontWeight": "600",
+          },
+        ]
+      }
+    >
+      Test Notification
+    </Text>
+    <Text
+      numberOfLines={2}
+      style={
+        {
+          "color": "#666",
+          "fontSize": 14,
+          "marginBottom": 4,
+        }
+      }
+    >
+      This is a test notification body
+    </Text>
+    <Text
+      style={
+        {
+          "color": "#999",
+          "fontSize": 12,
+        }
+      }
+      testID="notification-timestamp"
+    >
+      5 minutes ago
+    </Text>
+  </View>
+  <TouchableOpacity
+    onPress={[Function]}
+    style={
+      {
+        "alignItems": "center",
+        "justifyContent": "center",
+        "padding": 4,
+      }
+    }
+    testID="dismiss-button"
+  >
+    <Ionicons
+      color="#999"
+      name="close"
+      size={20}
+    />
+  </TouchableOpacity>
+</TouchableOpacity>
+`;
+
+exports[`NotificationRenderer Component renders correctly with different notification types 4`] = `
+<TouchableOpacity
+  activeOpacity={0.7}
+  onPress={[Function]}
+  style={
+    [
+      {
+        "backgroundColor": "#fff",
+        "borderRadius": 8,
+        "flexDirection": "row",
+        "marginHorizontal": 16,
+        "marginVertical": 4,
+        "padding": 12,
+        "shadowColor": "#000",
+        "shadowOffset": {
+          "height": 1,
+          "width": 0,
+        },
+        "shadowOpacity": 0.2,
+        "shadowRadius": 2,
+      },
+      {
+        "backgroundColor": "#f0f9ff",
+      },
+      undefined,
+    ]
+  }
+  testID="notification-container"
+>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "backgroundColor": "#e6f3ff",
+        "borderRadius": 20,
+        "height": 40,
+        "justifyContent": "center",
+        "marginRight": 12,
+        "width": 40,
+      }
+    }
+  >
+    <Ionicons
+      color="#007AFF"
+      name="notifications"
+      size={24}
+      testID="notification-icon"
+    />
+  </View>
+  <View
+    style={
+      {
+        "flex": 1,
+        "marginRight": 8,
+      }
+    }
+  >
+    <Text
+      style={
+        [
+          {
+            "color": "#1a1a1a",
+            "fontSize": 16,
+            "fontWeight": "500",
+            "marginBottom": 4,
+          },
+          {
+            "color": "#000",
+            "fontWeight": "600",
+          },
+        ]
+      }
+    >
+      Test Notification
+    </Text>
+    <Text
+      numberOfLines={2}
+      style={
+        {
+          "color": "#666",
+          "fontSize": 14,
+          "marginBottom": 4,
+        }
+      }
+    >
+      This is a test notification body
+    </Text>
+    <Text
+      style={
+        {
+          "color": "#999",
+          "fontSize": 12,
+        }
+      }
+      testID="notification-timestamp"
+    >
+      5 minutes ago
+    </Text>
+  </View>
+  <TouchableOpacity
+    onPress={[Function]}
+    style={
+      {
+        "alignItems": "center",
+        "justifyContent": "center",
+        "padding": 4,
+      }
+    }
+    testID="dismiss-button"
+  >
+    <Ionicons
+      color="#999"
+      name="close"
+      size={20}
+    />
+  </TouchableOpacity>
+</TouchableOpacity>
+`;

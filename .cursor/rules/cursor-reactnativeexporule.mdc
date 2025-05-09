@@ -1,0 +1,25 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# React Native Expo CursorRules (project-specific)
+
+Use these guidelines in a React Native + Expo project:
+
+- Prefer **functional components** with React Hooks (use `useState`, `useEffect`, etc.).
+- Use Expo SDK modules for device features (Camera, Notifications, Sensors, SecureStore, etc.).
+- Set up navigation with **React Navigation** (StackNavigator, TabNavigator, etc.).
+- Maintain a clear folder structure (`components/`, `screens/`, `navigation/`, `hooks/`, `utils/`).
+- Use Expo’s asset system for images and fonts (add assets under `assets/` and load them via `Asset.loadAsync`).
+- Style components with `StyleSheet` and design UIs using mobile-friendly patterns.
+- Employ TypeScript for type safety (define interfaces/types for props and state).
+- Follow naming conventions: components in PascalCase, variables/functions in camelCase.
+- Prefer `const` for variables unless reassignment is needed (avoid unnecessary `let`).
+- Include **error handling** (try/catch blocks, error boundaries) and logging for runtime issues.
+- Support offline mode and use Expo’s OTA (over-the-air) updates for quick deployments.
+- Optimize performance (use `React.memo`, `useCallback`, and lazy-load screens).
+- Test components with **Jest** and React Testing Library (aim for high coverage, e.g. >80%).
+- Document major components (prop types or interfaces, and usage notes) in the code or README.
+
+

@@ -1,0 +1,35 @@
+appId: com.ajilkojilgokulravi.unniman # Update this with your actual app ID
+---
+# Maestro flow for login test
+- launchApp
+
+# Wait for login screen to load
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Verify login screen elements
+- assertVisible: "Your Daily Briefing on Foreign Education & Immigration."
+
+# Enter invalid credentials and check error
+- tapOn: "Email Address"
+- inputText: "invalid@example.com"
+- tapOn: "Password"
+- inputText: "wrongpassword"
+- tapOn: "Login"
+- assertVisible: "Invalid login credentials"
+
+# Enter valid credentials
+- tapOn: "Email Address"
+- clearText
+- inputText: "test-user@example.com"
+- tapOn: "Password"
+- clearText
+- inputText: "Test@123456"
+- tapOn: "Login"
+
+# Wait for home screen to load
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Verify successful login by checking home screen element
+- assertVisible: "Home" 
