@@ -21,6 +21,11 @@ module.exports = {
     associatedDomains: ['applinks:edushorts.app'], // Keep associatedDomains for now
     entitlements: {
       "aps-environment": "production"
+    },
+    config: {
+      branch: {
+        apiKey: "key_live_lsvfoHjZGCGcuEseqCIYAompzweTIc13"
+      }
     }
   },
   android: {
@@ -34,18 +39,6 @@ module.exports = {
     intentFilters: [
       {
         action: "VIEW",
-        autoVerify: true,
-        data: [
-          {
-            scheme: "https",
-            host: "edushortlinks.netlify.app",
-            pathPattern: "/article/*"
-          }
-        ],
-        category: ["BROWSABLE", "DEFAULT"]
-      },
-      {
-        action: "VIEW",
         data: [
           {
             scheme: "edushorts",
@@ -55,7 +48,12 @@ module.exports = {
         ],
         category: ["BROWSABLE", "DEFAULT"]
       }
-    ]
+    ],
+    config: {
+      branch: {
+        apiKey: "key_live_lsvfoHjZGCGcuEseqCIYAompzweTIc13"
+      }
+    }
   },
   web: {
     favicon: './assets/favicon for apk .png' // Updated favicon again
@@ -76,6 +74,13 @@ module.exports = {
     'expo-secure-store',
     '@react-native-firebase/app',
     '@react-native-firebase/messaging',
+    [
+      "@config-plugins/react-native-branch",
+      {
+        "apiKey": "key_live_lsvfoHjZGCGcuEseqCIYAompzweTIc13",
+        "iosAppDomain": "xbwk1.app.link" // Your Branch app domain
+      }
+    ],
     [
       'expo-build-properties',
       {

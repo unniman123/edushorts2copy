@@ -1,4 +1,4 @@
-package com.ajilkojilgokulravi.unniman
+package com.edushorts
 
 import android.os.Build
 import android.os.Bundle

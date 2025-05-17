@@ -68,6 +68,7 @@
     "expo-notifications": "~0.29.14",
     "expo-secure-store": "^14.0.1",
     "expo-status-bar": "~2.0.1",
+    "expo-updates": "~0.27.4",
     "expo-web-browser": "^14.0.2",
     "react": "18.3.1",
     "react-native": "0.76.7",
@@ -78,12 +79,12 @@
     "react-native-screens": "~4.4.0",
     "react-native-svg": "15.8.0",
     "react-native-url-polyfill": "^2.0.0",
-    "sonner-native": "^0.17.0",
-    "expo-updates": "~0.27.4"
+    "sonner-native": "^0.17.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@babel/plugin-transform-runtime": "^7.27.1",
+    "@config-plugins/react-native-branch": "^9.0.0",
     "@testing-library/jest-native": "^5.4.3",
     "@testing-library/react-native": "^13.2.0",
     "@types/jest": "^29.5.14",
@@ -101,6 +102,7 @@
     "jest": "^29.7.0",
     "jest-expo": "^53.0.5",
     "jest-fetch-mock": "^3.0.3",
+    "react-native-branch": "^6.4.0",
     "react-native-performance": "^2.1.0",
     "react-native-svg-transformer": "^1.5.0",
     "react-test-renderer": "^18.3.0",

@@ -11,7 +11,11 @@ import {
   Share,
   useWindowDimensions,
   InteractionManager,
+  Platform,
 } from 'react-native';
+import * as ExpoLinking from 'expo-linking'; // Aliased import for expo-linking
+import DeepLinkHandler from '../services/DeepLinkHandler'; // Import DeepLinkHandler
+import branch, { BranchLinkProperties } from 'react-native-branch'; // Import Branch
 import ImageOptimizer from '../utils/ImageOptimizer';
 import PerformanceMonitoringService from '../services/PerformanceMonitoringService';
 // Removed useNavigation as it's not used in Phase 1 card directly
@@ -31,6 +35,9 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
   const { width: windowWidth } = useWindowDimensions();
   const [isSmallDevice, setIsSmallDevice] = useState(windowWidth < 375);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [showIcons, setShowIcons] = useState(false); // State for icon visibility
+  const [isSharing, setIsSharing] = useState(false); // State for tracking share operation
+  
   const imageOptimizer = useRef(ImageOptimizer.getInstance());
   const performanceMonitor = useRef(PerformanceMonitoringService.getInstance());
   const imageLoadStartTime = useRef(0);
@@ -70,7 +77,6 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
     };
   }, [article.image_path]);
   // const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(); // Not needed for Phase 1
-  const [showIcons, setShowIcons] = useState(false); // State for icon visibility
   // Get correct functions and state from context
   const { savedArticles, addBookmark, removeBookmark } = useSavedArticles();
 
@@ -95,25 +101,64 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
     }
   }, [article.source_url]);
 
-  // Handle Share action
+  // Handle Share action with enhanced error handling and analytics
   const handleShare = useCallback(async () => {
-    try {
-      // Use the microsite URL for sharing
-      const webUrl = `https://edushortlinks.netlify.app/article/${article.id}`;
-      // Updated message to reflect sharing the article
-      const message = `Check out this article in Edushorts: ${article.title}\n\n${webUrl}`;
-
-      await Share.share({
-        message: message,
-        // Use the web URL for sharing
-        url: webUrl,
-        title: article.title, // Optional title
-      });
-    } catch (error: any) {
-      console.error('Error sharing article:', error.message);
-      showToast('error', 'Error sharing article'); // Swapped arguments
+    if (!article) {
+      console.warn('[NewsCard] Cannot share: article is undefined');
+      return;
     }
-  }, [article.id, article.title]);
+    
+    try {
+      setIsSharing(true);
+      
+      // 1. Create Branch Universal Object
+      const buo = await branch.createBranchUniversalObject(`article/${article.id}`, {
+        locallyIndex: true,
+        title: article.title,
+        contentDescription: article.summary || article.title,
+        contentImageUrl: article.image_path || undefined,
+        contentMetadata: {
+          customMetadata: {
+            id: article.id // Consistent with DeepLinkHandler and ArticleDetailScreen
+          }
+        }
+      });
+
+      // 2. Define Link Properties
+      const linkProperties: BranchLinkProperties = {
+        feature: 'share',
+        channel: 'news_card_share' // Specific channel for news card shares
+      };
+
+      // 3. Define Control Parameters (optional)
+      const controlParams = {};
+
+      // 4. Generate Short Link
+      const { url: branchLink } = await buo.generateShortUrl(linkProperties, controlParams);
+      
+      // 5. Share the Branch Link
+      const shareMessage = `${article.title}\n\nRead on Edushorts: ${branchLink}`;
+      const shareOptions = {
+        message: shareMessage,
+        ...(Platform.OS === 'ios' ? { url: branchLink } : {})
+      };
+      
+      const result = await Share.share(shareOptions);
+      
+      if (result.action === Share.sharedAction) {
+        console.log('[NewsCard] Content shared successfully via Branch');
+        showToast('success', 'Article shared successfully');
+        // Consider adding analytics for Branch share here if different from general share
+      } else if (result.action === Share.dismissedAction) {
+        console.log('[NewsCard] Share dismissed');
+      }
+    } catch (error: any) {
+      console.error('[NewsCard] Error sharing article with Branch:', error.message);
+      showToast('error', 'Error sharing article');
+    } finally {
+      setIsSharing(false);
+    }
+  }, [article, showToast]);
 
   // Handle Save/Unsave action
   const handleSaveToggle = useCallback(() => {
@@ -228,9 +273,17 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
             <Feather name={isSaved ? "bookmark" : "bookmark"} size={28} color={isSaved ? "#ff0000" : "#333"} />
             {/* Using same icon but changing color. Could use different icons if available */}
           </TouchableOpacity>
-          {/* Share Icon */}
-          <TouchableOpacity onPress={handleShare} style={styles.iconButton}>
-            <Feather name="share-2" size={28} color="#333" />
+          {/* Share Icon with Loading State */}
+          <TouchableOpacity 
+            onPress={handleShare} 
+            style={[styles.iconButton, isSharing && styles.iconButtonDisabled]}
+            disabled={isSharing}
+          >
+            <Feather 
+              name={isSharing ? "loader" : "share-2"} 
+              size={28} 
+              color={isSharing ? "#999" : "#333"} 
+            />
           </TouchableOpacity>
         </View>
       )}
@@ -365,19 +418,20 @@ const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
     alignItems: 'center',
   },
   iconButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.85)', // Slightly less transparent background
-    padding: 12,          // Padding around the icon
-    borderRadius: 30,     // Make it circular (increased size)
-    // If icons are vertical:
-    marginBottom: 15,     // Space between vertical icons
-    // If icons are horizontal:
-    // marginLeft: 15,    // Space between horizontal icons
-    // Adding some shadow for depth
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    padding: 12,
+    borderRadius: 30,
+    marginBottom: 15,
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3,
+  },
+  iconButtonDisabled: {
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    elevation: 2,
+    shadowOpacity: 0.15,
   },
 });
 

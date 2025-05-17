@@ -24,6 +24,7 @@ import { useRemoteConfig } from '../hooks/useRemoteConfig';
 import { RootStackParamList } from '../types/navigation';
 import { supabase } from '../utils/supabase';
 import { Article } from '../types/supabase';
+import branch, { BranchLinkProperties } from 'react-native-branch';
 
 type ArticleDetailScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -193,23 +194,46 @@ export default function ArticleDetailScreen() {
   const handleShare = async () => {
     if (!article) return;
     try {
-      // Use the microsite URL for sharing
-      const webUrl = `https://edushortlinks.netlify.app/article/${articleId}`;
-      await Share.share({
-        message: `Check out this article in Edushorts: ${article.title}\n\n${webUrl}`,
-        url: webUrl // Use the web URL for sharing
+      // 1. Create Branch Universal Object
+      const buo = await branch.createBranchUniversalObject(`article/${article.id}`, {
+        locallyIndex: true,
+        title: article.title,
+        contentDescription: article.summary || article.title, 
+        contentImageUrl: article.image_path || undefined, // Use image_path, provide undefined if null
+        contentMetadata: {
+          customMetadata: {
+            id: article.id 
+          }
+        }
       });
 
-      // Log share event using standard method
+      // 2. Define Link Properties
+      const linkProperties: BranchLinkProperties = {
+        feature: 'share',
+        channel: 'user_app_share'
+      };
+
+      // 3. Define Control Parameters (optional)
+      const controlParams = {};
+
+      // 4. Generate Short Link
+      const { url: branchLink } = await buo.generateShortUrl(linkProperties, controlParams);
+
+      // 5. Share the Branch Link
+      await Share.share({
+        message: `Check out this article in Edushorts: ${article.title}\n${branchLink}`,
+        url: branchLink 
+      });
+
       analyticsService.logArticleShare({
         article_id: article.id,
         category: article.category?.name || 'Uncategorized',
-        platform: 'native_share',
+        platform: 'branch_link_share', 
         source: article.source_name || 'Unknown',
         author: article.source_name || 'Unknown'
       });
     } catch (error) {
-      console.error('Error sharing:', error);
+      console.error('Error sharing with Branch link:', error);
     }
   };
 

@@ -240,9 +240,11 @@ function AppContent() {
     return () => {
       const notificationBridge = NotificationBridge.getInstance();
       const monitoringService = MonitoringService.getInstance();
+      const deepLinkHandler = DeepLinkHandler.getInstance();
       
       notificationBridge.cleanup();
       monitoringService.cleanup();
+      deepLinkHandler.cleanupBranchListeners();
     };
   }, [navigationRef]);
 

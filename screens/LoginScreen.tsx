@@ -180,7 +180,7 @@ export default function LoginScreen() {
               source={require('../assets/app-logo.png')}
               style={styles.logo}
             />
-            <Text style={styles.logoText}>Edushort</Text>
+            <Text style={styles.logoText}>Edushorts</Text>
             <Animated.View style={{ opacity: fadeAnim, alignItems: 'center' }}>
               <Text style={styles.subtitle}>"Your Daily Briefing on Foreign Education & Immigration."</Text>
             </Animated.View>
