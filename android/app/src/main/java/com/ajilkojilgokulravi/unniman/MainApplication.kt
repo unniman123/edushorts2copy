@@ -16,6 +16,9 @@ import com.facebook.soloader.SoLoader
 import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ReactNativeHostWrapper
 
+// Import Branch
+import io.branch.referral.Branch
+
 class MainApplication : Application(), ReactApplication {
 
   override val reactNativeHost: ReactNativeHost = ReactNativeHostWrapper(
@@ -48,6 +51,9 @@ class MainApplication : Application(), ReactApplication {
       load()
     }
     ApplicationLifecycleDispatcher.onApplicationCreate(this)
+    
+    // Initialize Branch
+    Branch.getAutoInstance(this)
   }
 
   override fun onConfigurationChanged(newConfig: Configuration) {

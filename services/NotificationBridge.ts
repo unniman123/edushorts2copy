@@ -2,6 +2,8 @@ import { NOTIFICATION_CONFIG, NOTIFICATION_TYPES, DELIVERY_STATUS } from '../con
 import type { NotificationType, DeliveryStatus } from '../constants/config';
 import { supabase } from '../utils/supabase';
 import MonitoringService from './MonitoringService';
+import DeepLinkHandler from './DeepLinkHandler';
+import branch from 'react-native-branch';
 
 interface NotificationPayload {
   type: NotificationType;
@@ -109,6 +111,11 @@ class NotificationBridge {
 
   private async handlePushNotification(notification: NotificationPayload): Promise<void> {
     try {
+      // Process deep link if present
+      if (notification.payload.deep_link) {
+        this.handleDeepLink(notification.payload.deep_link);
+      }
+      
       const response = await fetch(NOTIFICATION_CONFIG.expo.apiUrl, {
         method: 'POST',
         headers: {
@@ -119,7 +126,11 @@ class NotificationBridge {
           to: await this.getExpoToken(),
           title: notification.payload.title,
           body: notification.payload.body,
-          data: notification.payload.data
+          data: {
+            ...notification.payload.data,
+            // Include the deep link in the data payload for FCM
+            ...(notification.payload.deep_link ? { deep_link: notification.payload.deep_link } : {})
+          }
         })
       });
 
@@ -134,6 +145,25 @@ class NotificationBridge {
       });
     } catch (error: unknown) {
       throw new Error(`Push notification delivery failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  // Helper method to handle deep links
+  private handleDeepLink(deepLink: string): void {
+    try {
+      // If it's a Branch link (starts with the Branch domain)
+      if (deepLink.includes('xbwk1.app.link') || deepLink.includes('xbwk1-alternate.app.link')) {
+        // Use Branch SDK directly to open URL
+        branch.openURL(deepLink);
+      } else if (deepLink.startsWith('edushorts://')) {
+        // Handle standard deep links using our DeepLinkHandler
+        DeepLinkHandler.getInstance().handleDeepLink(deepLink);
+      } else {
+        // For any other URL, attempt to open it
+        DeepLinkHandler.getInstance().handleDeepLink(deepLink);
+      }
+    } catch (error) {
+      console.error('Error handling deep link from notification:', error);
     }
   }
 

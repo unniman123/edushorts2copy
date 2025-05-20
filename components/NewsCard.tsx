@@ -22,6 +22,7 @@ import { Article } from '../types/supabase';
 import { Feather } from '@expo/vector-icons'; // Import icons
 import { useSavedArticles } from '../context/SavedArticlesContext'; // Import saved articles context
 import { showToast } from '../utils/toast'; // Import showToast directly
+import DeepLinkHandler from '../services/DeepLinkHandler'; // Import DeepLinkHandler for Branch.io links
 
 interface NewsCardProps {
   article: Article;
@@ -98,22 +99,34 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
   // Handle Share action
   const handleShare = useCallback(async () => {
     try {
-      // Use the microsite URL for sharing
-      const webUrl = `https://edushortlinks.netlify.app/article/${article.id}`;
-      // Updated message to reflect sharing the article
-      const message = `Check out this article in Edushorts: ${article.title}\n\n${webUrl}`;
+      // Get the deep link handler instance
+      const deepLinkHandler = DeepLinkHandler.getInstance();
+      
+      // Create a Branch link using the deep link handler
+      const branchUrl = await deepLinkHandler.createBranchLink(
+        article.id,
+        article.title,
+        article.summary,
+        article.image_path || undefined
+      );
+
+      // Updated message to reflect sharing the article with Branch link
+      const message = `Check out this article in Edushorts: ${article.title}\n\n${branchUrl}`;
 
       await Share.share({
         message: message,
-        // Use the web URL for sharing
-        url: webUrl,
+        url: branchUrl,
         title: article.title, // Optional title
       });
+      
+      // Track the share with Branch analytics
+      deepLinkHandler.trackArticleShare(article.id, 'news_card');
+      
     } catch (error: any) {
       console.error('Error sharing article:', error.message);
-      showToast('error', 'Error sharing article'); // Swapped arguments
+      showToast('error', 'Error sharing article');
     }
-  }, [article.id, article.title]);
+  }, [article.id, article.title, article.summary, article.image_path]);
 
   // Handle Save/Unsave action
   const handleSaveToggle = useCallback(() => {

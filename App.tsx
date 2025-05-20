@@ -22,6 +22,7 @@ import { NotificationBridge, MonitoringService, DeepLinkHandler } from './servic
 import { useScreenTracking } from './hooks/useAnalytics';
 import { remoteConfigService } from './services/RemoteConfigService';
 import { RemoteConfigProvider } from './context/RemoteConfigContext';
+import branch from 'react-native-branch';
 
 import LoadingScreen from './screens/LoadingScreen';
 import HomeScreen from './screens/HomeScreen';
@@ -201,6 +202,18 @@ function AppContent() {
         // Initialize FCM background handler
         messaging().setBackgroundMessageHandler(async remoteMessage => {
           console.log('Message handled in the background!', remoteMessage);
+          
+          // Process Branch deep link if present
+          const branchLink = remoteMessage.data?.branch_link || remoteMessage.data?.deep_link;
+          if (branchLink && typeof branchLink === 'string') {
+            try {
+              // Branch links are handled when the app is opened by the notification click
+              console.log('FCM message contains Branch link:', branchLink);
+            } catch (error) {
+              console.error('Error processing Branch link from FCM:', error);
+            }
+          }
+          
           // Store the notification using existing service
           await NotificationBridge.getInstance().processNotification({
             type: 'push',
@@ -208,7 +221,11 @@ function AppContent() {
               title: remoteMessage.notification?.title || '',
               body: remoteMessage.notification?.body || '',
               data: remoteMessage.data || {},
-              deep_link: typeof remoteMessage.data?.deep_link === 'string' ? remoteMessage.data.deep_link : undefined
+              deep_link: typeof remoteMessage.data?.deep_link === 'string' 
+                ? remoteMessage.data.deep_link 
+                : typeof remoteMessage.data?.branch_link === 'string'
+                  ? remoteMessage.data.branch_link
+                  : undefined
             }
           });
         });
@@ -223,6 +240,7 @@ function AppContent() {
         // Initialize deep link handler with navigation ref
         const deepLinkHandler = DeepLinkHandler.getInstance();
         deepLinkHandler.setNavigationRef(navigationRef);
+        deepLinkHandler.setupDeepLinkListeners();
 
         // Initialize remote config
         await remoteConfigService.initialize();
@@ -240,9 +258,11 @@ function AppContent() {
     return () => {
       const notificationBridge = NotificationBridge.getInstance();
       const monitoringService = MonitoringService.getInstance();
+      const deepLinkHandler = DeepLinkHandler.getInstance();
       
       notificationBridge.cleanup();
       monitoringService.cleanup();
+      deepLinkHandler.cleanupBranchListeners();
     };
   }, [navigationRef]);
 
@@ -251,7 +271,7 @@ function AppContent() {
   }
 
   const linking: LinkingOptions<any> = {
-    prefixes: ['edushort://', 'https://edushortlinks.netlify.app', 'exp://localhost:19000'],
+    prefixes: ['edushorts://', 'https://xbwk1.app.link', 'https://xbwk1-alternate.app.link', 'exp://localhost:19000'],
     config: {
       screens: {
         Login: {

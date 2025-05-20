@@ -12,6 +12,7 @@ web-build/
 .env
 .env.*
 !.env.example
+branch.json
 
 # macOS
 .DS_Store

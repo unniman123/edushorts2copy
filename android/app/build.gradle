@@ -5,6 +5,14 @@ apply plugin: "com.facebook.react"
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
+// Add repositories section to ensure Branch SDK is available
+repositories {
+    google()
+    mavenCentral()
+    maven { url 'https://www.jitpack.io' }
+    mavenLocal()
+}
+
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.

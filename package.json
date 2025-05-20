@@ -38,6 +38,7 @@
     "deploy:production": "expo deploy --production"
   },
   "dependencies": {
+    "@config-plugins/react-native-branch": "^9.0.0",
     "@expo/vector-icons": "^14.0.0",
     "@modelcontextprotocol/server-puppeteer": "^0.6.2",
     "@react-native-async-storage/async-storage": "1.23.1",
@@ -68,9 +69,11 @@
     "expo-notifications": "~0.29.14",
     "expo-secure-store": "^14.0.1",
     "expo-status-bar": "~2.0.1",
+    "expo-updates": "~0.27.4",
     "expo-web-browser": "^14.0.2",
     "react": "18.3.1",
     "react-native": "0.76.7",
+    "react-native-branch": "^6.4.0",
     "react-native-gesture-handler": "~2.20.2",
     "react-native-pager-view": "^6.7.0",
     "react-native-reanimated": "~3.16.1",
@@ -78,8 +81,7 @@
     "react-native-screens": "~4.4.0",
     "react-native-svg": "15.8.0",
     "react-native-url-polyfill": "^2.0.0",
-    "sonner-native": "^0.17.0",
-    "expo-updates": "~0.27.4"
+    "sonner-native": "^0.17.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

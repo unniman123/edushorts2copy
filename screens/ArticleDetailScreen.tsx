@@ -24,6 +24,8 @@ import { useRemoteConfig } from '../hooks/useRemoteConfig';
 import { RootStackParamList } from '../types/navigation';
 import { supabase } from '../utils/supabase';
 import { Article } from '../types/supabase';
+import branch from 'react-native-branch';
+import DeepLinkHandler from '../services/DeepLinkHandler';
 
 type ArticleDetailScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -38,7 +40,12 @@ type ArticleDetailScreenRouteProp = RouteProp<
 export default function ArticleDetailScreen() {
   const navigation = useNavigation<ArticleDetailScreenNavigationProp>();
   const route = useRoute<ArticleDetailScreenRouteProp>();
-  const { articleId } = route.params;
+  // Handle both parameter formats for backwards compatibility
+  const articleId = 'articleId' in route.params 
+    ? route.params.articleId 
+    : 'id' in route.params 
+      ? route.params.id 
+      : '';
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
   const { savedArticles, addBookmark, removeBookmark, isLoading } = useSavedArticles();
@@ -177,6 +184,17 @@ export default function ArticleDetailScreen() {
               scroll_depth: 0
             };
             analyticsService.logArticleView(viewParams);
+            
+            // Also track with Branch analytics
+            const deepLinkHandler = DeepLinkHandler.getInstance();
+            // Extract source from URL parameters if present
+            const source = 'branch' in route.params 
+              ? 'branch_link' 
+              : 'notification' in route.params 
+                ? 'notification' 
+                : 'app';
+            deepLinkHandler.trackArticleView(data.id, source);
+            
             hasLoggedView.current = true;
           }
         }
@@ -193,12 +211,24 @@ export default function ArticleDetailScreen() {
   const handleShare = async () => {
     if (!article) return;
     try {
-      // Use the microsite URL for sharing
-      const webUrl = `https://edushortlinks.netlify.app/article/${articleId}`;
+      // Get the deep link handler instance
+      const deepLinkHandler = DeepLinkHandler.getInstance();
+      
+      // Create a Branch link using the deep link handler
+      const branchUrl = await deepLinkHandler.createBranchLink(
+        article.id,
+        article.title,
+        article.summary,
+        article.image_path || undefined
+      );
+
       await Share.share({
-        message: `Check out this article in Edushorts: ${article.title}\n\n${webUrl}`,
-        url: webUrl // Use the web URL for sharing
+        message: `Check out this article in Edushorts: ${article.title}\n\n${branchUrl}`,
+        url: branchUrl
       });
+
+      // Track the share with Branch analytics
+      deepLinkHandler.trackArticleShare(article.id, 'native_share');
 
       // Log share event using standard method
       analyticsService.logArticleShare({

@@ -1,6 +1,6 @@
 export type RootStackParamList = {
   Main: { screen: keyof MainTabParamList } | undefined;
-  ArticleDetail: { articleId: string };
+  ArticleDetail: { articleId: string } | { id: string };
   Discover: undefined;
   Bookmarks: undefined;
   Profile: undefined;
@@ -29,9 +29,12 @@ export type MainTabParamList = {
 };
 
 // Define route params for easier type checking
-// Define route params for easier type checking
 export interface ArticleDetailParams {
-  articleId: string;
+  articleId?: string;
+  id?: string;
+  branch?: boolean;        // Indicates the article was opened from a Branch link
+  notification?: boolean;  // Indicates the article was opened from a notification
+  source?: string;         // General source parameter indicating where the link was opened from
 }
 
 export interface LoginScreenParams {

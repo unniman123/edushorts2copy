@@ -2,6 +2,7 @@ package com.ajilkojilgokulravi.unniman
 
 import android.os.Build
 import android.os.Bundle
+import android.content.Intent
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
@@ -10,6 +11,9 @@ import com.facebook.react.defaults.DefaultReactActivityDelegate
 
 import expo.modules.ReactActivityDelegateWrapper
 
+// Import Branch
+import io.branch.referral.Branch
+
 class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     // Set the theme to AppTheme BEFORE onCreate to support
@@ -17,6 +21,27 @@ class MainActivity : ReactActivity() {
     // This is required for expo-splash-screen.
     setTheme(R.style.AppTheme);
     super.onCreate(null)
+  }
+
+  // Handle Branch links when the app opens from a link
+  override fun onStart() {
+    super.onStart()
+    Branch.sessionBuilder(this).withCallback { branchUniversalObject, linkProperties, error ->
+      if (error != null) {
+        // Log error
+        return@withCallback
+      }
+    }.withData(this.intent.data).init()
+  }
+
+  // Forward deep link data to Branch SDK if activity is launched from a deep link
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    intent.putExtra("branch_force_new_session", true)
+    setIntent(intent)
+    Branch.sessionBuilder(this).withCallback { branchUniversalObject, linkProperties, error ->
+      // Branch link handling
+    }.reInit()
   }
 
   /**
