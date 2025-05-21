@@ -200,55 +200,90 @@ function AppContent() {
         const authCleanup = initializeAuth();
 
         // Initialize FCM background handler
-        messaging().setBackgroundMessageHandler(async remoteMessage => {
-          console.log('Message handled in the background!', remoteMessage);
-          
-          // Process Branch deep link if present
-          const branchLink = remoteMessage.data?.branch_link || remoteMessage.data?.deep_link;
-          if (branchLink && typeof branchLink === 'string') {
-            try {
-              // Branch links are handled when the app is opened by the notification click
-              console.log('FCM message contains Branch link:', branchLink);
-            } catch (error) {
-              console.error('Error processing Branch link from FCM:', error);
+        try {
+          messaging().setBackgroundMessageHandler(async remoteMessage => {
+            console.log('Message handled in the background!', remoteMessage);
+            
+            // Process Branch deep link if present
+            const branchLink = remoteMessage.data?.branch_link || remoteMessage.data?.deep_link;
+            if (branchLink && typeof branchLink === 'string') {
+              try {
+                // Branch links are handled when the app is opened by the notification click
+                console.log('FCM message contains Branch link:', branchLink);
+              } catch (error) {
+                console.error('Error processing Branch link from FCM:', error);
+              }
             }
-          }
-          
-          // Store the notification using existing service
-          await NotificationBridge.getInstance().processNotification({
-            type: 'push',
-            payload: {
-              title: remoteMessage.notification?.title || '',
-              body: remoteMessage.notification?.body || '',
-              data: remoteMessage.data || {},
-              deep_link: typeof remoteMessage.data?.deep_link === 'string' 
-                ? remoteMessage.data.deep_link 
-                : typeof remoteMessage.data?.branch_link === 'string'
-                  ? remoteMessage.data.branch_link
-                  : undefined
+            
+            // Store the notification using existing service
+            try {
+              await NotificationBridge.getInstance().processNotification({
+                type: 'push',
+                payload: {
+                  title: remoteMessage.notification?.title || '',
+                  body: remoteMessage.notification?.body || '',
+                  data: remoteMessage.data || {},
+                  deep_link: typeof remoteMessage.data?.deep_link === 'string' 
+                    ? remoteMessage.data.deep_link 
+                    : typeof remoteMessage.data?.branch_link === 'string'
+                      ? remoteMessage.data.branch_link
+                      : undefined
+                }
+              });
+            } catch (processError) {
+              console.error('Error processing notification:', processError);
             }
           });
-        });
+        } catch (messagingError) {
+          console.error('Error setting up messaging background handler:', messagingError);
+          // Continue initialization - this is non-critical
+        }
 
-        // Initialize notification services
-        const notificationBridge = NotificationBridge.getInstance();
-        await notificationBridge.initialize();
+        // Initialize each service independently to avoid one failure affecting others
+        try {
+          // Initialize notification services
+          const notificationBridge = NotificationBridge.getInstance();
+          await notificationBridge.initialize();
+        } catch (notificationError) {
+          console.error('Error initializing notification service:', notificationError);
+          // Continue initialization - this is somewhat recoverable
+        }
 
-        const monitoringService = MonitoringService.getInstance();
-        await monitoringService.initialize();
+        try {
+          const monitoringService = MonitoringService.getInstance();
+          await monitoringService.initialize();
+        } catch (monitoringError) {
+          console.error('Error initializing monitoring service:', monitoringError);
+          // Continue initialization - this is somewhat recoverable
+        }
 
         // Initialize deep link handler with navigation ref
-        const deepLinkHandler = DeepLinkHandler.getInstance();
-        deepLinkHandler.setNavigationRef(navigationRef);
-        deepLinkHandler.setupDeepLinkListeners();
+        try {
+          const deepLinkHandler = DeepLinkHandler.getInstance();
+          if (navigationRef) {
+            deepLinkHandler.setNavigationRef(navigationRef);
+            deepLinkHandler.setupDeepLinkListeners();
+          } else {
+            console.error('Navigation reference not available for deep link handler');
+          }
+        } catch (deepLinkError) {
+          console.error('Error initializing deep link handler:', deepLinkError);
+          // Continue initialization - deep linking is non-critical for app basic function
+        }
 
         // Initialize remote config
-        await remoteConfigService.initialize();
+        try {
+          await remoteConfigService.initialize();
+        } catch (configError) {
+          console.error('Error initializing remote config:', configError);
+          // Continue initialization - this is non-critical
+        }
 
         setIsReady(true);
       } catch (error) {
         console.error('Failed to initialize services:', error);
-        // You might want to show an error state here
+        // Still set isReady to true to avoid getting stuck on loading screen
+        setIsReady(true);
       }
     };
 

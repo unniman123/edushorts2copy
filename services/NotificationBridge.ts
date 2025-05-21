@@ -3,7 +3,21 @@ import type { NotificationType, DeliveryStatus } from '../constants/config';
 import { supabase } from '../utils/supabase';
 import MonitoringService from './MonitoringService';
 import DeepLinkHandler from './DeepLinkHandler';
-import branch from 'react-native-branch';
+
+// Import Branch with a fallback in case of errors
+let branch: any;
+try {
+  branch = require('react-native-branch').default;
+} catch (error) {
+  console.error('Error importing Branch SDK in NotificationBridge:', error);
+  // Create a minimal fallback
+  branch = {
+    openURL: (url: string) => {
+      console.warn('Branch SDK not available, cannot open URL:', url);
+      return Promise.resolve(false);
+    }
+  };
+}
 
 interface NotificationPayload {
   type: NotificationType;

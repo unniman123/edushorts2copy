@@ -1,39 +1,6 @@
 import * as Linking from 'expo-linking';
 import { createURL } from 'expo-linking';
-import { Platform } from 'react-native';
-
-// Import Branch with a fallback default object in case import fails
-let branch: any;
-try {
-  branch = require('react-native-branch').default;
-} catch (error) {
-  console.error('Error importing Branch SDK:', error);
-  // Create a fallback object that won't crash the app
-  branch = {
-    init: () => console.warn('Branch SDK not available - using fallback'),
-    debug: () => {},
-    subscribe: () => () => {}, // Returns a no-op unsubscribe function
-    createBranchUniversalObject: async () => ({
-      generateShortUrl: async () => ({ url: 'https://play.google.com/store/apps/details?id=com.ajilkojilgokulravi.unniman' })
-    }),
-    userCompletedAction: () => {}
-  };
-}
-
-// Create a safer version of the Branch SDK with fallbacks for all methods
-const branchSDK = {
-  init: typeof branch.init === 'function' ? branch.init.bind(branch) : () => console.warn('Branch init not available'),
-  debug: typeof branch.debug === 'function' ? branch.debug.bind(branch) : () => {},
-  subscribe: typeof branch.subscribe === 'function' ? branch.subscribe.bind(branch) : () => () => {},
-  createBranchUniversalObject: typeof branch.createBranchUniversalObject === 'function' 
-    ? branch.createBranchUniversalObject.bind(branch) 
-    : async () => ({
-        generateShortUrl: async () => ({ url: 'https://play.google.com/store/apps/details?id=com.ajilkojilgokulravi.unniman' })
-      }),
-  userCompletedAction: typeof branch.userCompletedAction === 'function' 
-    ? branch.userCompletedAction.bind(branch) 
-    : () => {}
-};
+import { Platform } from 'react-native';import branch from 'react-native-branch';// Use any type for Branch SDK since types are incomplete or missingconst branchSDK = branch as any;
 
 class DeepLinkHandler {
   private static instance: DeepLinkHandler;
@@ -45,16 +12,10 @@ class DeepLinkHandler {
   }
 
   static getInstance(): DeepLinkHandler {
-    try {
-      if (!DeepLinkHandler.instance) {
-        DeepLinkHandler.instance = new DeepLinkHandler();
-      }
-      return DeepLinkHandler.instance;
-    } catch (error) {
-      console.error('Error getting DeepLinkHandler instance:', error);
-      // Return a new instance if the singleton fails
-      return new DeepLinkHandler();
+    if (!DeepLinkHandler.instance) {
+      DeepLinkHandler.instance = new DeepLinkHandler();
     }
+    return DeepLinkHandler.instance;
   }
 
   setNavigationRef(ref: any) {
@@ -105,77 +66,41 @@ class DeepLinkHandler {
   }
 
   setupDeepLinkListeners(): void {
-    try {
-      // Handle deep links when the app is already open
-      Linking.addEventListener('url', ({ url }) => {
+    // Handle deep links when the app is already open
+    Linking.addEventListener('url', ({ url }) => {
+      this.handleDeepLink(url);
+    });
+
+    // Handle deep links when the app is launched from a deep link
+    Linking.getInitialURL().then((url) => {
+      if (url) {
         this.handleDeepLink(url);
-      });
-
-      // Handle deep links when the app is launched from a deep link
-      Linking.getInitialURL().then((url) => {
-        if (url) {
-          this.handleDeepLink(url);
-        }
-      }).catch(error => {
-        console.error('Error getting initial URL:', error);
-      });
-
-      // Branch initialization and deep link handling
-      if (__DEV__) {
-        // Enable debug mode in development for detailed logs
-        if (typeof branchSDK.debug === 'function') {
-          branchSDK.debug(true);
-        }
       }
+    });
 
-      // Safely initialize Branch SDK
-      if (typeof branchSDK.init !== 'function') {
-        console.warn('Branch SDK init method not found. Branch SDK may not be properly initialized.');
+          // Branch initialization and deep link handling      if (__DEV__) {        // Enable debug mode in development for detailed logs        // @ts-ignore: Branch SDK types are incomplete        branch.debug(true);      }        // Initialize Branch SDK      // @ts-ignore: Branch SDK types are incomplete      branch.init();
+
+    // @ts-ignore: Branch SDK types are incomplete
+    this.branchUnsubscribe = branch.subscribe(({ error, params, uri }) => {
+      if (error) {
+        console.error('Branch error:', error);
         return;
       }
       
-      try {
-        branchSDK.init();
-      } catch (initError) {
-        console.error('Error initializing Branch SDK:', initError);
-        return;
+      // Check if params exists and if it's a branch link
+      if (params && params['+clicked_branch_link']) {
+        // Extract article ID from Branch link params
+        const articleId = params.articleId || params.article_id || null;
+        
+        if (articleId && this.navigationRef?.current) {
+          console.log('Navigating to article via Branch deep link:', articleId);
+          this.navigationRef.current.navigate('ArticleDetail', { 
+            articleId,
+            branch: true // Flag to indicate this came from a Branch link
+          });
+        }
       }
-
-      // Safely subscribe to Branch events
-      if (typeof branchSDK.subscribe !== 'function') {
-        console.warn('Branch SDK subscribe method not found. Deep linking may not work correctly.');
-        return;
-      }
-
-      try {
-        this.branchUnsubscribe = branchSDK.subscribe(({ error, params, uri }: { error?: any; params?: any; uri?: string }) => {
-          if (error) {
-            console.error('Branch error:', error);
-            return;
-          }
-          
-          // Check if params exists and if it's a branch link
-          if (params && params['+clicked_branch_link']) {
-            // Extract article ID from Branch link params
-            const articleId = params.articleId || params.article_id || null;
-            
-            if (articleId && this.navigationRef?.current && typeof this.navigationRef.current.navigate === 'function') {
-              console.log('Navigating to article via Branch deep link:', articleId);
-              this.navigationRef.current.navigate('ArticleDetail', { 
-                articleId,
-                branch: true // Flag to indicate this came from a Branch link
-              });
-            } else {
-              console.warn('Cannot navigate to article: Navigation reference not properly set or articleId missing');
-            }
-          }
-        });
-      } catch (subscribeError) {
-        console.error('Error subscribing to Branch events:', subscribeError);
-      }
-    } catch (setupError) {
-      console.error('Error setting up deep link listeners:', setupError);
-    }
+    });
   }
 
   cleanupBranchListeners(): void {
@@ -231,7 +156,8 @@ class DeepLinkHandler {
       const uniqueId = `article-${articleId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
       // Create Branch Universal Object with unique ID
-      const branchUniversalObject = await branchSDK.createBranchUniversalObject(uniqueId, {
+      // @ts-ignore: Branch SDK types are incomplete
+      const branchUniversalObject = await branch.createBranchUniversalObject(uniqueId, {
         locallyIndex: true,
         title,
         contentDescription: description,
@@ -280,6 +206,7 @@ class DeepLinkHandler {
           await new Promise(resolve => setTimeout(resolve, 1000));
           // Generate a new unique ID for retry
           const retryId = `article-${articleId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-retry${attempts}`;
+          // @ts-ignore: Branch SDK types are incomplete
           await branchUniversalObject.setCanonicalIdentifier(retryId);
         }
       }
@@ -305,7 +232,7 @@ class DeepLinkHandler {
   ): Promise<string> {
     try {
       // Create a Branch Universal Object
-      const branchUniversalObject = await branchSDK.createBranchUniversalObject(`article/${articleId}`, {
+      const branchUniversalObject = await extendedBranch.createBranchUniversalObject(`article/${articleId}`, {
         locallyIndex: true,
         title,
         contentMetadata: {
@@ -348,7 +275,8 @@ class DeepLinkHandler {
    */
   trackArticleShare(articleId: string, channel: string = 'unknown'): void {
     try {
-      branchSDK.userCompletedAction('SHARE', {
+      // @ts-ignore: Branch SDK types are incomplete
+      branch.userCompletedAction('SHARE', {
         description: 'Article shared',
         articleId: articleId.toString(),
         channel,
@@ -368,7 +296,8 @@ class DeepLinkHandler {
    */
   trackArticleView(articleId: string, source: string = 'app'): void {
     try {
-      branchSDK.userCompletedAction('VIEW', {
+      // @ts-ignore: Branch SDK types are incomplete
+      branch.userCompletedAction('VIEW', {
         description: 'Article viewed',
         articleId: articleId.toString(),
         source,
