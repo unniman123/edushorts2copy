@@ -1,11 +1,19 @@
 import * as Linking from 'expo-linking';
 import { createURL } from 'expo-linking';
-import { Platform } from 'react-native';
+import { Platform, NativeModules } from 'react-native';
 
 // Import Branch with a fallback default object in case import fails
 let branch: any;
 try {
-  branch = require('react-native-branch').default;
+  // Check if the native module is available
+  const { RNBranch } = NativeModules;
+  if (RNBranch) {
+    branch = require('react-native-branch').default;
+  } else {
+    // This case should ideally not happen if the library is linked correctly
+    console.error('RNBranch native module not found. Branch SDK will not function.');
+    throw new Error('RNBranch native module not found');
+  }
 } catch (error) {
   console.error('Error importing Branch SDK:', error);
   // Create a fallback object that won't crash the app
@@ -97,18 +105,30 @@ class DeepLinkHandler {
 
   private navigateToArticle(articleId: string): void {
     if (!this.navigationRef?.current) {
-      console.error('Navigation ref not set');
+      console.warn('[DeepLinkHandler] Navigation ref not set when trying to navigate to article.');
       return;
     }
 
-    this.navigationRef.current.navigate('ArticleDetail', { articleId });
+    if (typeof this.navigationRef.current.isReady === 'function' && !this.navigationRef.current.isReady()) {
+      console.warn('[DeepLinkHandler] Navigation container not ready when trying to navigate to article. Queueing or logging.');
+      return;
+    }
+
+    console.log(`[DeepLinkHandler] Attempting to navigate to SingleArticleViewer with ID: ${articleId}`);
+    try {
+      this.navigationRef.current.navigate('SingleArticleViewer', { articleId });
+    } catch (e) {
+      console.error('[DeepLinkHandler] Error during navigateToArticle:', e);
+    }
   }
 
   setupDeepLinkListeners(): void {
     try {
       // Handle deep links when the app is already open
       Linking.addEventListener('url', ({ url }) => {
-        this.handleDeepLink(url);
+        if (url) {
+          this.handleDeepLink(url);
+        }
       });
 
       // Handle deep links when the app is launched from a deep link
@@ -118,6 +138,7 @@ class DeepLinkHandler {
         }
       }).catch(error => {
         console.error('Error getting initial URL:', error);
+        this.logBranchError(error, 'getInitialURL');
       });
 
       // Branch initialization and deep link handling
@@ -128,53 +149,77 @@ class DeepLinkHandler {
         }
       }
 
-      // Safely initialize Branch SDK
-      if (typeof branchSDK.init !== 'function') {
-        console.warn('Branch SDK init method not found. Branch SDK may not be properly initialized.');
-        return;
-      }
-      
-      try {
-        branchSDK.init();
-      } catch (initError) {
-        console.error('Error initializing Branch SDK:', initError);
-        return;
-      }
-
       // Safely subscribe to Branch events
       if (typeof branchSDK.subscribe !== 'function') {
         console.warn('Branch SDK subscribe method not found. Deep linking may not work correctly.');
+        this.logBranchError(new Error('branchSDK.subscribe not a function'), 'subscribe_check');
         return;
       }
 
+      // Check if we already have a subscription
+      if (this.branchUnsubscribe) {
+        // Clean up existing subscription before creating a new one
+        this.branchUnsubscribe();
+        this.branchUnsubscribe = null;
+      }
+
       try {
+        // Initialize Branch SDK with force_new_session flag
+        if (typeof branchSDK.init === 'function') {
+          branchSDK.init({ forceNewSession: true });
+        }
+
         this.branchUnsubscribe = branchSDK.subscribe(({ error, params, uri }: { error?: any; params?: any; uri?: string }) => {
           if (error) {
-            console.error('Branch error:', error);
+            if (!error.toString().includes('Session initialization already happened')) {
+              console.error('Branch error from subscribe:', error);
+              this.logBranchError(error, 'subscribe_callback');
+            }
             return;
           }
           
-          // Check if params exists and if it's a branch link
           if (params && params['+clicked_branch_link']) {
-            // Extract article ID from Branch link params
             const articleId = params.articleId || params.article_id || null;
             
-            if (articleId && this.navigationRef?.current && typeof this.navigationRef.current.navigate === 'function') {
-              console.log('Navigating to article via Branch deep link:', articleId);
-              this.navigationRef.current.navigate('ArticleDetail', { 
-                articleId,
-                branch: true // Flag to indicate this came from a Branch link
-              });
+            if (articleId) {
+              if (this.navigationRef?.current && 
+                  typeof this.navigationRef.current.isReady === 'function' && 
+                  this.navigationRef.current.isReady() && 
+                  typeof this.navigationRef.current.navigate === 'function') {
+                console.log('[DeepLinkHandler] Navigating to SingleArticleViewer via Branch deep link:', articleId);
+                try {
+                  this.navigationRef.current.navigate('SingleArticleViewer', {
+                    articleId,
+                    branch: true 
+                  });
+                } catch (navError) {
+                  console.error('[DeepLinkHandler] Error navigating from Branch subscribe:', navError);
+                  if (this.navigationRef.current.getRootState) {
+                    console.log('[DeepLinkHandler] Navigator state on error:', JSON.stringify(this.navigationRef.current.getRootState(), null, 2));
+                  }
+                }
+              } else {
+                console.warn('[DeepLinkHandler] Cannot navigate to article from Branch: Navigation reference not properly set or navigator not ready.');
+                if (this.navigationRef?.current && typeof this.navigationRef.current.isReady === 'function' && !this.navigationRef.current.isReady()){
+                    console.log('[DeepLinkHandler] Navigator was not ready.');
+                } else if (!this.navigationRef?.current) {
+                    console.log('[DeepLinkHandler] NavigationRef was not current.');
+                } else {
+                    console.log('[DeepLinkHandler] Navigate function was not available.');
+                }
+              }
             } else {
-              console.warn('Cannot navigate to article: Navigation reference not properly set or articleId missing');
+                console.warn('[DeepLinkHandler] articleId missing from Branch link params.');
             }
           }
         });
       } catch (subscribeError) {
         console.error('Error subscribing to Branch events:', subscribeError);
+        this.logBranchError(subscribeError, 'subscribe_setup');
       }
     } catch (setupError) {
       console.error('Error setting up deep link listeners:', setupError);
+      this.logBranchError(setupError, 'setupDeepLinkListeners_overall');
     }
   }
 
@@ -192,6 +237,7 @@ class DeepLinkHandler {
       return !!supportedSchemes;
     } catch (error) {
       console.error('Error verifying deep link configuration:', error);
+      this.logBranchError(error, 'verifyDeepLinkConfiguration');
       return false;
     }
   }
@@ -348,16 +394,18 @@ class DeepLinkHandler {
    */
   trackArticleShare(articleId: string, channel: string = 'unknown'): void {
     try {
-      branchSDK.userCompletedAction('SHARE', {
-        description: 'Article shared',
-        articleId: articleId.toString(),
-        channel,
-        timestamp: Date.now().toString()
-      });
-      
-      console.log('Successfully logged Branch share event for article:', articleId);
+      if (typeof branchSDK.userCompletedAction === 'function') {
+        branchSDK.userCompletedAction('share_article_custom', {
+          articleId,
+          channel,
+        });
+      } else {
+        console.warn('branchSDK.userCompletedAction is not a function, cannot track article share.');
+        this.logBranchError(new Error('branchSDK.userCompletedAction not a function'), 'trackArticleShare');
+      }
     } catch (error) {
-      console.error('Error logging Branch share event:', error);
+      console.error('Error tracking article share event:', error);
+      this.logBranchError(error, 'trackArticleShare');
     }
   }
 
@@ -368,17 +416,74 @@ class DeepLinkHandler {
    */
   trackArticleView(articleId: string, source: string = 'app'): void {
     try {
-      branchSDK.userCompletedAction('VIEW', {
-        description: 'Article viewed',
-        articleId: articleId.toString(),
-        source,
-        timestamp: Date.now().toString()
-      });
-      
-      console.log('Successfully logged Branch view event for article:', articleId);
+      if (typeof branchSDK.userCompletedAction === 'function') {
+        branchSDK.userCompletedAction('view_article_custom', {
+          articleId,
+          source,
+        });
+      } else {
+        console.warn('branchSDK.userCompletedAction is not a function, cannot track article view.');
+        this.logBranchError(new Error('branchSDK.userCompletedAction not a function'), 'trackArticleView');
+      }
     } catch (error) {
-      console.error('Error logging Branch view event:', error);
+      console.error('Error tracking article view event:', error);
+      this.logBranchError(error, 'trackArticleView');
     }
+  }
+
+  // Utility method for logging Branch related errors
+  private logBranchError(error: any, context: string): void {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`Branch SDK Error | Context: ${context} | Message: ${message}`, error);
+    
+    // Placeholder for a more sophisticated error reporting service
+    // e.g., Sentry.captureException(error, { tags: { branchContext: context } });
+    const errorMonitor = (global as any).ErrorMonitor;
+    if (typeof errorMonitor?.captureException === 'function') {
+      try {
+        errorMonitor.captureException(error, {
+          tags: {
+            context: 'branch_sdk',
+            operation: context
+          }
+        });
+      } catch (monitoringError) {
+        console.error('Failed to send error to monitoring service:', monitoringError);
+      }
+    }
+  }
+
+  // Utility method to check if Branch SDK seems initialized (optional usage)
+  private async waitForBranchInitialization(timeoutMs = 5000): Promise<boolean> {
+    if (typeof branch.getLatestReferringParams === 'function') {
+      // If this function exists, Branch native module is likely available and initialized.
+      // This doesn't guarantee session data is ready, but it's a good basic check.
+      try {
+        // A light check - this doesn't guarantee a session, but confirms SDK is responsive.
+        await branch.getLatestReferringParams(); 
+        return true;
+      } catch (e) {
+        // Could be an error if called too early, or SDK not ready.
+        this.logBranchError(e, 'waitForBranchInitialization_getLatestReferringParams');
+      }
+    }
+
+    // Fallback to polling if the above check isn't sufficient or fails
+    return new Promise((resolve) => {
+      const startTime = Date.now();
+      const interval = setInterval(() => {
+        // Check for a function that indicates Branch might be ready
+        // Adjust this check based on a reliable indicator from the Branch SDK
+        if (typeof branch.subscribe === 'function' && typeof branch.createBranchUniversalObject === 'function') {
+          clearInterval(interval);
+          resolve(true);
+        } else if (Date.now() - startTime > timeoutMs) {
+          clearInterval(interval);
+          this.logBranchError(new Error('Timeout waiting for Branch SDK initialization'), 'waitForBranchInitialization_timeout');
+          resolve(false);
+        }
+      }, 200);
+    });
   }
 }
 

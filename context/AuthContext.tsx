@@ -6,7 +6,7 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin'; // Add
 // Profile related types
 export type NotificationPreferences = {
   push: boolean;
-  email: boolean;
+  email?: boolean;
 };
 
 export interface IProfile {

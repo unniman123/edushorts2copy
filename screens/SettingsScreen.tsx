@@ -27,26 +27,27 @@ export default function SettingsScreen() {
 
   const [notificationSettings, setNotificationSettings] = useState({
     push: profile?.notification_preferences?.push ?? false,
-    email: profile?.notification_preferences?.email ?? false,
   });
 
-  const handleNotificationToggle = async (type: 'push' | 'email') => {
+  const handleNotificationToggle = async (type: 'push') => {
     if (!profile) return;
 
     setIsLoading(true);
     try {
       const newSettings = {
         ...notificationSettings,
-        [type]: !notificationSettings[type],
+        push: !notificationSettings.push,
       };
 
       await updateProfile({
         ...profile,
-        notification_preferences: newSettings,
+        notification_preferences: {
+          push: newSettings.push,
+        }
       });
 
       setNotificationSettings(newSettings);
-      toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} notifications ${newSettings[type] ? 'enabled' : 'disabled'}`);
+      toast.success(`Push notifications ${newSettings.push ? 'enabled' : 'disabled'}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update settings';
       toast.error(message);
@@ -162,15 +163,6 @@ export default function SettingsScreen() {
             <Switch
               value={notificationSettings.push}
               onValueChange={() => handleNotificationToggle('push')}
-              disabled={isLoading}
-              trackColor={{ false: '#767577', true: '#ff0000' }}
-            />
-          </View>
-          <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Email Notifications</Text>
-            <Switch
-              value={notificationSettings.email}
-              onValueChange={() => handleNotificationToggle('email')}
               disabled={isLoading}
               trackColor={{ false: '#767577', true: '#ff0000' }}
             />

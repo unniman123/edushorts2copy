@@ -38,18 +38,15 @@ export const ArticleResultCard: React.FC<ArticleResultCardProps> = ({
         </View>
         <Text style={styles.resultTitle} numberOfLines={2}>{article.title}</Text>
         <View style={styles.resultMeta}>
-          <View style={styles.sourceIconContainer}>
-            {article.source_icon ? (
+          {article.source_icon && (
+            <View style={styles.sourceIconContainer}>
               <Image 
                 source={{ uri: article.source_icon }} 
                 style={styles.sourceIcon}
               />
-            ) : (
-              <View style={[styles.sourceIcon, styles.sourceIconPlaceholder]} />
-            )}
-          </View>
-          <Text style={styles.sourceText}>{article.source_name || 'Unknown Source'}</Text>
-          <Text style={styles.timeText}> • {article.timeAgo || 'Recently'}</Text>
+            </View>
+          )}
+          {article.source_name && <Text style={styles.sourceText}>{article.source_name}</Text>}
         </View>
       </View>
     </TouchableOpacity>
@@ -79,7 +76,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   categoryWrapper: {
-    backgroundColor: '#0066cc',
+    backgroundColor: '#ff0000',
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -110,10 +107,6 @@ const styles = StyleSheet.create({
   sourceText: {
     fontSize: 12,
     color: '#666',
-  },
-  timeText: {
-    fontSize: 12,
-    color: '#888',
   },
   placeholderImage: {
     backgroundColor: '#f0f0f0',

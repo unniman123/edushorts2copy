@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../utils/supabase';
 import {
   View,
@@ -17,15 +17,26 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import { Article } from '../types/supabase';
 import { useNews } from '../context/NewsContext';
-import CategorySelector from '../components/CategorySelector';
 import { ArticleResultCard } from '../components/ArticleResultCard';
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Discover'>;
+// Debounce function
+function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+
+  const debounced = (...args: Parameters<F>) => {
+    if (timeout !== null) {
+      clearTimeout(timeout);
+      timeout = null;
+    }
+    timeout = setTimeout(() => func(...args), waitFor);
+  };
+
+  return debounced as (...args: Parameters<F>) => ReturnType<F>;
+}
 
 export default function DiscoverScreen() {
-  const navigation = useNavigation<NavigationProp>();
+  const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchResults, setSearchResults] = useState<Article[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,15 +63,6 @@ export default function DiscoverScreen() {
         query = query.or(`title.ilike.%${text}%,summary.ilike.%${text}%,content.ilike.%${text}%`);
       }
 
-      if (selectedCategory !== 'all') {
-        // Validate UUID format before using in query
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(selectedCategory)) {
-          throw new Error('Invalid category ID format');
-        }
-        query = query.eq('category_id', selectedCategory);
-      }
-
       const { data, error } = await query.limit(20);
       if (error) throw error;
       setSearchResults(data as Article[] || []);
@@ -71,12 +73,14 @@ export default function DiscoverScreen() {
     } finally {
       setLoading(false);
     }
-  }, [selectedCategory]);
+  }, []);
 
-  const filterByCategory = useCallback(async (categoryId: string) => {
-    setSelectedCategory(categoryId);
-    handleSearch(searchQuery);
-  }, [searchQuery, handleSearch]);
+  const debouncedSearch = useCallback(debounce((text: string) => handleSearch(text), 500), [handleSearch]);
+
+  useEffect(() => {
+    handleSearch('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handleSearch]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -96,14 +100,10 @@ export default function DiscoverScreen() {
           style={styles.searchInput}
           placeholder="Search for news..."
           value={searchQuery}
-          onChangeText={handleSearch}
-        />
-      </View>
-
-      <View style={styles.categoryContainer}>
-        <CategorySelector
-          selectedCategory={selectedCategory}
-          onSelectCategory={filterByCategory}
+          onChangeText={(text) => {
+            setSearchQuery(text);
+            debouncedSearch(text);
+          }}
         />
       </View>
 
@@ -111,14 +111,34 @@ export default function DiscoverScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0066cc" />
         </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : searchResults.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No articles found. Try a different search or category.</Text>
+        </View>
       ) : (
         <FlatList
           data={searchResults}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
             <ArticleResultCard
               article={item}
-              onPress={() => navigation.navigate('ArticleDetail', { articleId: item.id })}
+              onPress={() => {
+                const parentNavigator = navigation.getParent<NativeStackNavigationProp<RootStackParamList>>();
+                if (parentNavigator) {
+                  console.log(`[DiscoverScreen] Navigating to SingleArticleViewer with ID: ${item.id} using parent navigator.`);
+                  parentNavigator.navigate('SingleArticleViewer', { 
+                    articleId: item.id,
+                    articles: searchResults, 
+                    currentIndex: index 
+                  });
+                } else {
+                  console.warn('[DiscoverScreen] Could not get parent navigator to navigate to SingleArticleViewer.');
+                }
+              }}
             />
           )}
           contentContainerStyle={styles.resultsList}
@@ -246,5 +266,27 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  errorText: {
+    fontSize: 16,
+    color: 'red',
+    textAlign: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
   },
 });

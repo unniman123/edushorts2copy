@@ -1,0 +1,156 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+
+Include appropriate error handling and input validation in all functions or methods.
+
+Write clean, readable code with meaningful variable and function names.
+
+Follow consistent code style and formatting across the project (e.g. indentation, spacing).
+
+Break complex logic into small, reusable functions (DRY principle).
+
+Always write unit tests for new features and aim for high test coverage.
+
+Document non-obvious functionality with brief comments or JSDoc-style descriptions.
+
+Provide clear, concise commit messages and update README/docs for major changes.
+
+Perform a Q&A of the code to ensure accuracy and usefulness.
+
+Use MCP server whenever applicable.
+
+Follow the given task strictly without overdoing or adding unnecessary content.
+
+Do not create unnecessary files or content beyond the prompt.
+
+Analyze and deeply review the code, iterating if it is not useful or suitable for the task.
+
+Stay strictly aligned with the given task and bring the agent back if deviating.
+
+Iterate and adjust the code to ensure production readiness.
+
+Avoid making assumptions without consulting.
+
+Coding Guidelines:
+
+Constants Over Magic Numbers
+
+Replace hard-coded values with named constants.
+
+Use descriptive constant names that explain the value's purpose.
+
+Keep constants at the top of the file or in a dedicated constants file.
+
+Meaningful Names
+
+Variables, functions, and classes should reveal their purpose.
+
+Names should explain why something exists and how it's used.
+
+Avoid abbreviations unless they're universally understood.
+
+Smart Comments
+
+Avoid commenting on what the code does; make the code self-documenting.
+
+Use comments to explain why something is done a certain way.
+
+Document APIs, complex algorithms, and non-obvious side effects.
+
+Single Responsibility
+
+Each function should do exactly one thing.
+
+Functions should be small and focused.
+
+Split functions that need comments to explain what they do.
+
+DRY (Don't Repeat Yourself)
+
+Extract repeated code into reusable functions.
+
+Share common logic through proper abstraction.
+
+Maintain single sources of truth.
+
+Clean Structure
+
+Keep related code together.
+
+Organize code in a logical hierarchy.
+
+Use consistent file and folder naming conventions.
+
+Encapsulation
+
+Hide implementation details.
+
+Expose clear interfaces.
+
+Move nested conditionals into well-named functions.
+
+Code Quality Maintenance
+
+Refactor continuously.
+
+Fix technical debt early.
+
+Leave code cleaner than you found it.
+
+Testing
+
+Write tests before fixing bugs.
+
+Keep tests readable and maintainable.
+
+Test edge cases and error conditions.
+
+Version Control
+
+Write clear commit messages.
+
+Make small, focused commits.
+
+Use meaningful branch names.
+
+General Guidelines
+
+Verify Information
+
+Always verify information before presenting it.
+
+Do not make assumptions or speculate without clear evidence.
+
+File-by-File Changes
+
+Make changes file by file and allow for verification.
+
+No Apologies or Understanding Feedback
+
+Avoid apologies and subjective feedback.
+
+No Whitespace Suggestions
+
+Do not suggest changes purely for whitespace.
+
+No Summaries or Unnecessary Confirmations
+
+Avoid summarizing changes or asking for confirmation when not needed.
+
+No Inventions or Unnecessary Updates
+
+Do not create changes beyond what is requested or update files unnecessarily.
+
+Preserve Existing Code
+
+Do not remove unrelated code or functionality without reason.
+
+Single Chunk Edits
+
+Provide edits in a single, consolidated update.
+Dont make any assumption and do not make any guessing or take any educated guess only proceed if you 100% sure or has the resource and knowledge to proceed with any codefix or code changes 
+
+

@@ -26,26 +26,29 @@ import { supabase } from '../utils/supabase';
 import { Article } from '../types/supabase';
 import branch from 'react-native-branch';
 import DeepLinkHandler from '../services/DeepLinkHandler';
+import NewsCard from '../components/NewsCard';
 
 type ArticleDetailScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
-  'ArticleDetail'
+  'SavedArticlePager'
 >;
 
 type ArticleDetailScreenRouteProp = RouteProp<
   RootStackParamList,
-  'ArticleDetail'
+  'SavedArticlePager'
 >;
 
 export default function ArticleDetailScreen() {
   const navigation = useNavigation<ArticleDetailScreenNavigationProp>();
   const route = useRoute<ArticleDetailScreenRouteProp>();
-  // Handle both parameter formats for backwards compatibility
-  const articleId = 'articleId' in route.params 
-    ? route.params.articleId 
-    : 'id' in route.params 
-      ? route.params.id 
-      : '';
+  
+  // Extract parameters - SavedArticlePager only has articleId directly
+  const articleId = route.params?.articleId;
+  // const initialArticlesFromRoute = route.params?.articles; // Not applicable for SavedArticlePager
+  // const initialIndexFromRoute = route.params?.currentIndex; // Not applicable for SavedArticlePager
+
+  console.log('[ArticleDetailScreen] Received articleId for SavedArticlePager:', articleId);
+
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
   const { savedArticles, addBookmark, removeBookmark, isLoading } = useSavedArticles();
@@ -158,6 +161,7 @@ export default function ArticleDetailScreen() {
   useEffect(() => {
     const fetchArticle = async () => {
       try {
+        console.log('[ArticleDetailScreen] Fetching article with ID:', articleId);
         const { data, error } = await supabase
           .from('news')
           .select(`
@@ -170,8 +174,12 @@ export default function ArticleDetailScreen() {
           .eq('id', articleId)
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('[ArticleDetailScreen] Supabase error fetching article:', error);
+          throw error;
+        }
         if (data) {
+          console.log('[ArticleDetailScreen] Supabase data received:', data);
           setArticle(data as Article);
           // Log article view once data is loaded
           if (!hasLoggedView.current) {
@@ -199,14 +207,24 @@ export default function ArticleDetailScreen() {
           }
         }
       } catch (error) {
-        console.error('Error fetching article:', error);
+        console.error('[ArticleDetailScreen] Error in fetchArticle:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchArticle();
-  }, [articleId]);
+    if (articleId) {
+      fetchArticle();
+    } else {
+      console.error('[ArticleDetailScreen] articleId is missing, cannot fetch article.');
+      setLoading(false);
+    }
+  }, [articleId, route.params]);
+
+  // Log article state changes
+  useEffect(() => {
+    console.log('[ArticleDetailScreen] Article state updated:', article);
+  }, [article]);
 
   const handleShare = async () => {
     if (!article) return;
@@ -327,89 +345,21 @@ export default function ArticleDetailScreen() {
         onPageSelected={(e) => {
           const newIndex = e.nativeEvent.position;
           setCurrentPage(newIndex);
-          // Update article and URL when page changes
-          const newArticle = savedArticles[newIndex];
-          if (newArticle && newArticle.id !== articleId) {
-            navigation.setParams({ articleId: newArticle.id });
-            if (!loadedArticles[newArticle.id]) {
-              fetchArticleData(newArticle.id);
+          const newArticleToView = savedArticles[newIndex];
+          if (newArticleToView && newArticleToView.id !== articleId) {
+            navigation.setParams({ articleId: newArticleToView.id as any });
+            if (!loadedArticles[newArticleToView.id]) {
+              fetchArticleData(newArticleToView.id);
             }
           }
         }}
       >
-        {savedArticles.map((savedArticle, index) => {
-          const articleData = loadedArticles[savedArticle.id] || savedArticle;
+        {savedArticles.map((savedArticleItem, index) => {
+          const articleDataToDisplay = loadedArticles[savedArticleItem.id] || savedArticleItem;
           return (
-          <View key={savedArticle.id} style={styles.pageContainer}>
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              onScroll={handleScroll}
-              scrollEventThrottle={16}
-            >
-              <View style={styles.heroContainer}>
-                {articleData.image_path ? (
-                  <Image source={{ uri: articleData.image_path }} style={styles.heroImage} />
-                ) : (
-                  <View style={[styles.heroImage, styles.noHeroImage]}>
-                    <Feather name="image" size={48} color="#ccc" />
-                    <Text style={styles.noImageText}>No image available</Text>
-                  </View>
-                )}
-                <View style={styles.categoryBadge}>
-                  <Text style={styles.categoryText}>{articleData.category?.name || 'Uncategorized'}</Text>
-                </View>
-        </View>
-
-        <View style={styles.contentContainer}>
-                <Text style={[
-                  styles.title,
-                  layout === 'compact' && styles.compactTitle
-                ]}>{articleData.title}</Text>
-
-                <View style={styles.publisherContainer}>
-                  {showSourceIcon && (
-                    articleData.source_icon ? (
-                      <Image source={{ uri: articleData.source_icon }} style={styles.publisherIcon} />
-                    ) : (
-                      <View style={[styles.publisherIcon, styles.noSourceIcon]} />
-                    )
-                  )}
-                  <View style={styles.publisherInfo}>
-                    <Text style={styles.publisherName}>{articleData.source_name || 'Unknown Source'}</Text>
-                    <Text style={styles.publishDate}>{articleData.timeAgo || new Date(articleData.created_at).toLocaleDateString()}</Text>
-                  </View>
-                </View>
-
-                <Text style={[
-                  styles.summary,
-                  layout === 'compact' && styles.compactSummary
-                ]}>
-                  {articleData.summary.length > maxSummaryLength
-                    ? `${articleData.summary.substring(0, maxSummaryLength)}...`
-                    : articleData.summary}
-                </Text>
-
-                <View style={styles.divider} />
-
-                {articleData.content && (
-                  <Text style={[
-                    styles.content,
-                    layout === 'compact' && styles.compactContent
-                  ]}>{articleData.content}</Text>
-                )}
-
-                {articleData.source_url && (
-                  <TouchableOpacity
-                    style={styles.sourceLink}
-                    onPress={() => Linking.openURL(articleData.source_url || '')}
-                  >
-                    <Text style={styles.sourceLinkText}>Read full article on {articleData.source_name || 'source'}</Text>
-                    <Feather name="external-link" size={16} color="#0066cc" />
-                  </TouchableOpacity>
-                )}
-              </View>
-            </ScrollView>
-          </View>
+            <View key={savedArticleItem.id} style={styles.pageContainerForNewsCard}>
+              <NewsCard article={articleDataToDisplay} />
+            </View>
           );
         })}
       </PagerView>
@@ -418,9 +368,8 @@ export default function ArticleDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  pageContainer: {
+  pageContainerForNewsCard: {
     flex: 1,
-    backgroundColor: 'white',
   },
   pagerView: {
     flex: 1,

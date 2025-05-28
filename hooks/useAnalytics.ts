@@ -16,48 +16,64 @@ export const useScreenTracking = () => {
   const routeNameRef = useRef<string | undefined>();
 
   useEffect(() => {
+    const onReady = () => {
+      // This will be called once the navigation container is ready
+      const initialRoute = navigationRef.getCurrentRoute();
+      if (initialRoute?.name) {
+        const screenParams = {
+          screen_name: initialRoute.name,
+          screen_class: initialRoute.name,
+        } as const;
+        analyticsService.logScreenView(screenParams);
+        routeNameRef.current = initialRoute.name;
+        if (__DEV__) {
+          console.log(`[Analytics] Initial screen view tracked (onReady): ${initialRoute.name}`);
+        }
+      }
+    };
+
     const onStateChange = () => {
+      if (!navigationRef.isReady()) {
+        // Don't do anything if the navigator is not yet ready
+        return;
+      }
       const previousRouteName = routeNameRef.current;
       const currentRouteName = navigationRef.getCurrentRoute()?.name;
 
       if (previousRouteName !== currentRouteName && currentRouteName) {
         const screenParams: ScreenViewAnalyticsParams = {
           screen_name: currentRouteName,
-          screen_class: currentRouteName
+          screen_class: currentRouteName,
         };
         analyticsService.logScreenView(screenParams);
         if (__DEV__) {
-          console.log(`[Analytics] Screen view tracked: ${currentRouteName}`);
+          console.log(`[Analytics] Screen view tracked (onStateChange): ${currentRouteName}`);
         }
       }
-
-      // Save the current route name for comparison on the next change
       routeNameRef.current = currentRouteName;
     };
 
-    // Subscribe to navigation state changes
-    const unsubscribe = navigationRef.addListener('state', onStateChange);
+    // Add listener for when the navigator is ready
+    // The 'state' event might fire before 'ready', so listening to 'ready' for initial tracking is safer.
+    // However, 'ready' is not a standard event on navigationRef directly.
+    // Instead, we rely on NavigationContainer's onReady in App.tsx for the *very first* screen.
+    // For subsequent state changes after ready, onStateChange will work.
 
-    // Log the initial screen view when the hook mounts
-    const timer = setTimeout(() => {
-      const initialRoute = navigationRef.getCurrentRoute();
-      if (initialRoute?.name) {
-        const screenParams = {
-          screen_name: initialRoute.name,
-          screen_class: initialRoute.name
-        } as const;
-        analyticsService.logScreenView(screenParams);
-        routeNameRef.current = initialRoute.name;
-        if (__DEV__) {
-          console.log(`[Analytics] Initial screen view tracked: ${initialRoute.name}`);
-        }
-      }
-    }, 500);
+    // We need to ensure that the initial screen is logged *after* the navigator is ready.
+    // The App.tsx onReady callback now handles DeepLinkHandler init.
+    // useScreenTracking is primarily for ongoing screen changes and initial load if ready.
 
-    // Cleanup function
+    if (navigationRef.isReady()) {
+      // If already ready when this effect runs, log initial screen
+      onReady();
+    }
+    // else onReady will be called by NavigationContainer in App.tsx, or we can listen for a ready event if available.
+    // For now, we'll rely on isReady() check.
+
+    const unsubscribeState = navigationRef.addListener('state', onStateChange);
+
     return () => {
-      unsubscribe?.();
-      clearTimeout(timer);
+      unsubscribeState?.();
     };
   }, [navigationRef]);
 

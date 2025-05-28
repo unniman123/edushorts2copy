@@ -1,6 +1,9 @@
+import { Article } from './supabase'; // Assuming supabase types are in the same directory or adjust path
+
 export type RootStackParamList = {
   Main: { screen: keyof MainTabParamList } | undefined;
-  ArticleDetail: { articleId: string } | { id: string };
+  SingleArticleViewer: { articleId: string; articles?: Article[]; currentIndex?: number; source?: string; branch?: boolean; notification?: boolean; };
+  SavedArticlePager: { articleId: string }; // Added for saved articles PagerView
   Discover: undefined;
   Bookmarks: undefined;
   Profile: undefined;
@@ -24,7 +27,7 @@ export type RootStackParamList = {
 export type MainTabParamList = {
   HomeTab: undefined;
   DiscoverTab: undefined;
-  BookmarksTab: undefined;
+  BookmarksTab: undefined; // This is the screen that lists bookmarks
   ProfileTab: undefined;
 };
 

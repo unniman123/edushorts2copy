@@ -28,6 +28,7 @@ import LoadingScreen from './screens/LoadingScreen';
 import HomeScreen from './screens/HomeScreen';
 import DiscoverScreen from './screens/DiscoverScreen';
 import ArticleDetailScreen from './screens/ArticleDetailScreen';
+import SingleArticleViewer from './screens/SingleArticleViewer';
 import BookmarksScreen from './screens/BookmarksScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import LoginScreen from './screens/LoginScreen';
@@ -161,7 +162,8 @@ function RootStackNavigator() {
         // Authenticated stack
         <>
           <Stack.Screen name="Main" component={MainTabs} />
-          <Stack.Screen name="ArticleDetail" component={ArticleDetailScreen} />
+          <Stack.Screen name="SingleArticleViewer" component={SingleArticleViewer} />
+          <Stack.Screen name="SavedArticlePager" component={ArticleDetailScreen} />
           <Stack.Screen name="Discover" component={DiscoverScreen} />
           <Stack.Screen name="Bookmarks" component={BookmarksScreen} />
           <Stack.Screen name="Profile" component={ProfileScreen} />
@@ -190,13 +192,12 @@ GoogleSignin.configure({
 
 function AppContent() {
   const [isReady, setIsReady] = useState(false);
-  // Use the screen tracking hook which provides the navigationRef
-  const navigationRef = useScreenTracking(); 
+  const navigationRef = useScreenTracking();
 
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // Initialize auth
+        // Initialize auth first
         const authCleanup = initializeAuth();
 
         // Initialize FCM background handler
@@ -204,18 +205,15 @@ function AppContent() {
           messaging().setBackgroundMessageHandler(async remoteMessage => {
             console.log('Message handled in the background!', remoteMessage);
             
-            // Process Branch deep link if present
             const branchLink = remoteMessage.data?.branch_link || remoteMessage.data?.deep_link;
             if (branchLink && typeof branchLink === 'string') {
               try {
-                // Branch links are handled when the app is opened by the notification click
                 console.log('FCM message contains Branch link:', branchLink);
               } catch (error) {
                 console.error('Error processing Branch link from FCM:', error);
               }
             }
             
-            // Store the notification using existing service
             try {
               await NotificationBridge.getInstance().processNotification({
                 type: 'push',
@@ -236,17 +234,14 @@ function AppContent() {
           });
         } catch (messagingError) {
           console.error('Error setting up messaging background handler:', messagingError);
-          // Continue initialization - this is non-critical
         }
 
-        // Initialize each service independently to avoid one failure affecting others
+        // Initialize services that DO NOT depend on navigationRef.current being immediately available
         try {
-          // Initialize notification services
           const notificationBridge = NotificationBridge.getInstance();
           await notificationBridge.initialize();
         } catch (notificationError) {
           console.error('Error initializing notification service:', notificationError);
-          // Continue initialization - this is somewhat recoverable
         }
 
         try {
@@ -254,52 +249,37 @@ function AppContent() {
           await monitoringService.initialize();
         } catch (monitoringError) {
           console.error('Error initializing monitoring service:', monitoringError);
-          // Continue initialization - this is somewhat recoverable
         }
 
-        // Initialize deep link handler with navigation ref
-        try {
-          const deepLinkHandler = DeepLinkHandler.getInstance();
-          if (navigationRef) {
-            deepLinkHandler.setNavigationRef(navigationRef);
-            deepLinkHandler.setupDeepLinkListeners();
-          } else {
-            console.error('Navigation reference not available for deep link handler');
-          }
-        } catch (deepLinkError) {
-          console.error('Error initializing deep link handler:', deepLinkError);
-          // Continue initialization - deep linking is non-critical for app basic function
-        }
-
-        // Initialize remote config
         try {
           await remoteConfigService.initialize();
         } catch (configError) {
           console.error('Error initializing remote config:', configError);
-          // Continue initialization - this is non-critical
         }
 
+        // DeepLinkHandler will be initialized in NavigationContainer.onReady
+        // Set isReady to true to allow NavigationContainer to render
         setIsReady(true);
       } catch (error) {
-        console.error('Failed to initialize services:', error);
-        // Still set isReady to true to avoid getting stuck on loading screen
-        setIsReady(true);
+        console.error('Failed to initialize core services:', error);
+        setIsReady(true); // Still set ready to allow UI to render, even if some services failed
       }
     };
 
     initializeApp();
 
-    // Cleanup function
     return () => {
+      // Call cleanup functions for services if they were returned/stored
+      // e.g., if (authCleanup) authCleanup();
       const notificationBridge = NotificationBridge.getInstance();
       const monitoringService = MonitoringService.getInstance();
       const deepLinkHandler = DeepLinkHandler.getInstance();
       
       notificationBridge.cleanup();
       monitoringService.cleanup();
-      deepLinkHandler.cleanupBranchListeners();
+      deepLinkHandler.cleanupBranchListeners(); // This cleanup is fine here
     };
-  }, [navigationRef]);
+  }, []); // Run once on mount
 
   if (!isReady) {
     return <LoadingScreen />;
@@ -330,7 +310,7 @@ function AppContent() {
           }
         },
         Main: 'main',
-        ArticleDetail: {
+        SingleArticleViewer: {
           path: '/article/:articleId',
           parse: {
             articleId: (articleId: string) => articleId
@@ -342,7 +322,26 @@ function AppContent() {
   };
 
   return (
-    <NavigationContainer ref={navigationRef} linking={linking}>
+    <NavigationContainer
+      ref={navigationRef}
+      linking={linking}
+      onReady={() => {
+        console.log('[AppContent] NavigationContainer is ready. Initializing DeepLinkHandler.');
+        try {
+          const deepLinkHandler = DeepLinkHandler.getInstance();
+          // navigationRef.current should be populated now by the NavigationContainer itself
+          if (navigationRef?.current) { // Double check, though onReady implies it is
+            deepLinkHandler.setNavigationRef(navigationRef);
+            deepLinkHandler.setupDeepLinkListeners();
+            console.log('[AppContent] DeepLinkHandler listeners set up via onReady.');
+          } else {
+            console.error('[AppContent] Navigation reference (navigationRef.current) is unexpectedly null in onReady.');
+          }
+        } catch (deepLinkError) {
+          console.error('[AppContent] Error initializing DeepLinkHandler in onReady:', deepLinkError);
+        }
+      }}
+    >
       <NotificationProvider navigation={navigationRef}>
         <RootStackNavigator />
       </NotificationProvider>

@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, Ionicons } from '@expo/vector-icons';
@@ -30,7 +31,22 @@ export default function BookmarksScreen() {
   const { removeBookmark } = useSavedArticles();
 
   const handleRemoveBookmark = (articleId: string) => {
-    removeBookmark(articleId);
+    Alert.alert(
+      'Delete Article',
+      'Are you sure you want to remove this article from your saved list?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => removeBookmark(articleId),
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   return (
@@ -67,7 +83,7 @@ export default function BookmarksScreen() {
             <View style={styles.articleCard}>
               <TouchableOpacity
                 style={styles.articleContent}
-                onPress={() => navigation.navigate('ArticleDetail', { articleId: item.id })}
+                onPress={() => navigation.navigate('SavedArticlePager', { articleId: item.id })}
               >
                 <Image source={{ uri: item.image_path || undefined }} style={styles.articleImage} />
                 <View style={styles.articleDetails}>

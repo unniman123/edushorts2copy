@@ -21,9 +21,12 @@ export function NotificationProvider({ children, navigation }: { children: React
 
   const setupNotifications = async () => {
     try {
-      const token = await notificationService.registerForPushNotifications();
-      if (token && session?.user) {
-        await notificationService.storeExpoToken(token);
+      // registerForPushNotifications will request permissions and store tokens internally
+      const tokens = await notificationService.registerForPushNotifications();
+      if (tokens.expoToken || tokens.fcmToken) {
+        console.log('Push notification tokens registered and stored.');
+      } else {
+        console.warn('Failed to register or store push notification tokens.');
       }
     } catch (error) {
       console.error('Error setting up notifications:', error);
@@ -32,9 +35,12 @@ export function NotificationProvider({ children, navigation }: { children: React
 
   const updatePushToken = async () => {
     try {
-      const token = await notificationService.registerForPushNotifications();
-      if (token && session?.user) {
-        await notificationService.storeExpoToken(token);
+      // registerForPushNotifications will handle requesting and storing new tokens
+      const tokens = await notificationService.registerForPushNotifications();
+      if (tokens.expoToken || tokens.fcmToken) {
+        console.log('Push notification tokens updated and stored.');
+      } else {
+        console.warn('Failed to update or store push notification tokens.');
       }
     } catch (error) {
       console.error('Error updating push token:', error);
@@ -45,10 +51,6 @@ export function NotificationProvider({ children, navigation }: { children: React
     if (session?.user) {
       setupNotifications();
     }
-
-    // Set deep link handler navigation ref
-    deepLinkHandler.setNavigationRef(navigation);
-    deepLinkHandler.setupDeepLinkListeners();
 
     // Configure foreground notification behavior
     Notifications.setNotificationHandler({
@@ -84,7 +86,7 @@ export function NotificationProvider({ children, navigation }: { children: React
         Notifications.removeNotificationSubscription(responseListener.current);
       }
     };
-  }, [session?.user, navigation]);
+  }, [session?.user, navigation, deepLinkHandler]);
 
   return (
     <NotificationContext.Provider value={{ setupNotifications, updatePushToken }}>
