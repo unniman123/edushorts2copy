@@ -3,6 +3,9 @@ import type { NotificationType, DeliveryStatus } from '../constants/config';
 import { supabase } from '../utils/supabase';
 import MonitoringService from './MonitoringService';
 import DeepLinkHandler from './DeepLinkHandler';
+// import type { RemoteMessage as FirebaseRemoteMessage } from '@react-native-firebase/messaging'; // Original
+import { FirebaseMessagingTypes } from '@react-native-firebase/messaging'; // New import strategy
+import * as Notifications from 'expo-notifications';
 
 // Import Branch with a fallback in case of errors
 let branch: any;
@@ -55,6 +58,15 @@ class NotificationBridge {
   async initialize(): Promise<void> {
     await this.setupRealtimeSubscription();
     this.startRetryProcessor();
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    if (finalStatus !== 'granted') {
+      console.warn('Failed to get push notification permissions for NotificationBridge!');
+    }
   }
 
   private setupRealtimeSubscription(): void {
@@ -257,9 +269,9 @@ class NotificationBridge {
         try {
           await this.processNotification(payload);
           this.retryQueue.delete(id);
-    } catch (error: unknown) {
-      console.error(`Retry attempt ${attempts} failed for notification ${id}:`, 
-        error instanceof Error ? error.message : error);
+        } catch (error: unknown) {
+          console.error(`Retry attempt ${attempts} failed for notification ${id}:`, 
+            error instanceof Error ? error.message : error);
         }
       }
     }, 60000); // Process retry queue every minute
@@ -315,6 +327,98 @@ class NotificationBridge {
   cleanup(): void {
     // Clean up any subscriptions or intervals
     clearInterval(this.startRetryProcessor as unknown as number);
+  }
+
+  /**
+   * Handles an FCM message received directly by the app.
+   * This method processes both notification and data messages from FCM and displays them using expo-notifications.
+   * @param remoteMessage The FCM message received from @react-native-firebase/messaging
+   */
+  async handleReceivedFcmMessage(remoteMessage: FirebaseMessagingTypes.RemoteMessage): Promise<void> {
+    console.log('NotificationBridge: handleReceivedFcmMessage', JSON.stringify(remoteMessage, null, 2));
+    try {
+      // Extract notification data, prioritizing notification fields over data fields
+      const notificationData = {
+        title: remoteMessage.notification?.title || remoteMessage.data?.title || 'New Notification',
+        body: remoteMessage.notification?.body || remoteMessage.data?.body || remoteMessage.data?.message || '',
+        deep_link: (remoteMessage.data?.deep_link || remoteMessage.data?.url || remoteMessage.data?.click_action || '').toString(),
+        // Preserve all original data for potential use
+        originalData: remoteMessage.data || {},
+        messageId: remoteMessage.messageId,
+        // Include additional FCM-specific fields if present
+        channelId: remoteMessage.notification?.android?.channelId,
+      };
+
+      // Handle deep link if present
+      if (notificationData.deep_link) {
+        this.handleDeepLink(notificationData.deep_link);
+      }
+
+      // Map FCM priority to a string priority value if present
+      let priority: string | undefined;
+      if (remoteMessage.notification?.android?.priority) {
+        switch (remoteMessage.notification.android.priority) {
+          case FirebaseMessagingTypes.NotificationAndroidPriority.PRIORITY_HIGH:
+          case FirebaseMessagingTypes.NotificationAndroidPriority.PRIORITY_MAX:
+            priority = 'high';
+            break;
+          case FirebaseMessagingTypes.NotificationAndroidPriority.PRIORITY_LOW:
+          case FirebaseMessagingTypes.NotificationAndroidPriority.PRIORITY_MIN:
+            priority = 'low';
+            break;
+          default:
+            priority = 'default';
+        }
+      }
+
+      // Ensure all data values are strings
+      const sanitizedData = Object.entries(notificationData).reduce((acc, [key, value]) => ({
+        ...acc,
+        [key]: typeof value === 'string' ? value : value?.toString() || ''
+      }), {});
+
+      // Schedule the notification using expo-notifications
+      const notificationId = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: String(notificationData.title),
+          body: String(notificationData.body),
+          data: sanitizedData,
+          sound: 'default',
+          // If we have an Android channel ID from FCM, use it
+          ...(notificationData.channelId && { android: { channelId: notificationData.channelId } }),
+          // Include priority if mapped
+          ...(priority && { priority }),
+        },
+        trigger: null, // Display immediately
+      });
+
+      console.log('NotificationBridge: FCM notification scheduled with expo-notifications, ID:', notificationId);
+
+      // Update delivery status if we have a message ID
+      if (remoteMessage.messageId) {
+        await this.updateDeliveryStatus({
+          notificationId: remoteMessage.messageId,
+          status: DELIVERY_STATUS.DELIVERED,
+          timestamp: new Date()
+        });
+      }
+
+    } catch (error) {
+      console.error('NotificationBridge: Error in handleReceivedFcmMessage:', error);
+      // If we have a message ID, update the delivery status as failed
+      if (remoteMessage.messageId) {
+        await this.handleDeliveryFailure({
+          type: NOTIFICATION_TYPES.PUSH,
+          payload: {
+            title: remoteMessage.notification?.title || '',
+            body: remoteMessage.notification?.body || '',
+            data: { id: remoteMessage.messageId }
+          }
+        });
+      }
+      // Re-throw the error for upstream handling
+      throw error;
+    }
   }
 }
 

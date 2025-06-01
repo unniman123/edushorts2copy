@@ -1,5 +1,6 @@
 import { Platform, InteractionManager, NativeModules } from 'react-native';
-import analytics from '@react-native-firebase/analytics';
+import { getAnalytics, FirebaseAnalyticsTypes } from '@react-native-firebase/analytics';
+import type { ReactNativeFirebase } from '@react-native-firebase/app';
 
 interface PerformanceMetrics {
   timeToInteractive: number;
@@ -26,6 +27,8 @@ interface ImageLoadMetrics {
 
 class PerformanceMonitoringService {
   private static instance: PerformanceMonitoringService;
+  private firebaseApp: ReactNativeFirebase.FirebaseApp | null = null;
+  private analyticsInstance: FirebaseAnalyticsTypes.Module | null = null;
   private metrics: PerformanceMetrics = {
     timeToInteractive: 0,
     imageLoadTime: 0,
@@ -51,6 +54,29 @@ class PerformanceMonitoringService {
       PerformanceMonitoringService.instance = new PerformanceMonitoringService();
     }
     return PerformanceMonitoringService.instance;
+  }
+
+  /**
+   * Initializes the PerformanceMonitoringService with the Firebase App instance.
+   * This MUST be called before any methods that rely on Firebase Analytics.
+   * @param app The FirebaseApp instance.
+   */
+  async initialize(app: ReactNativeFirebase.FirebaseApp): Promise<void> {
+    this.firebaseApp = app;
+    this.analyticsInstance = getAnalytics(app);
+    
+    if (__DEV__) {
+      console.log('[PerformanceMonitoringService] Initialized with Firebase App.');
+    }
+  }
+
+  // Helper to ensure analytics instance is available
+  private getAnalyticsInstance(): FirebaseAnalyticsTypes.Module {
+    if (!this.analyticsInstance) {
+      console.error('[PerformanceMonitoring] Error: PerformanceMonitoringService not initialized. Call initialize() first.');
+      throw new Error('PerformanceMonitoringService not initialized.');
+    }
+    return this.analyticsInstance;
   }
 
   startMonitoring(): void {
@@ -173,7 +199,7 @@ class PerformanceMonitoringService {
 
   private async logMetricsToAnalytics(): Promise<void> {
     try {
-      await analytics().logEvent('app_performance_metrics', {
+      await this.getAnalyticsInstance().logEvent('app_performance_metrics', {
         ...this.metrics,
         imageMetrics: Array.from(this.imageMetrics.values()),
         timestamp: Date.now()

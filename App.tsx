@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import messaging from '@react-native-firebase/messaging';
+import { getApp } from '@react-native-firebase/app';
+import messaging, { getMessaging } from '@react-native-firebase/messaging';
 import { RootStackParamList } from './types/navigation';
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import { StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Toaster } from 'sonner-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,12 +18,17 @@ import { NewsProvider } from './context/NewsContext';
 import { AdvertisementProvider } from './context/AdvertisementContext';
 import { initializeAuth } from './utils/authHelpers';
 import * as Linking from 'expo-linking';
+import * as Notifications from 'expo-notifications';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { NotificationBridge, MonitoringService, DeepLinkHandler } from './services';
 import { useScreenTracking } from './hooks/useAnalytics';
 import { remoteConfigService } from './services/RemoteConfigService';
 import { RemoteConfigProvider } from './context/RemoteConfigContext';
 import branch from 'react-native-branch';
+import { analyticsService } from './services/AnalyticsService';
+import NotificationService from './services/NotificationService';
+import PerformanceMonitoringService from './services/PerformanceMonitoringService';
+import { NativeModules } from 'react-native';
 
 import LoadingScreen from './screens/LoadingScreen';
 import HomeScreen from './screens/HomeScreen';
@@ -191,58 +197,97 @@ GoogleSignin.configure({
 });
 
 function AppContent() {
-  const [isReady, setIsReady] = useState(false);
+  const [isAppContentReady, setIsAppContentReady] = useState(false);
   const navigationRef = useScreenTracking();
+  const [notificationListener, setNotificationListener] = useState<Notifications.Subscription | null>(null);
+  const [foregroundMessageUnsubscribe, setForegroundMessageUnsubscribe] = useState<(() => void) | null>(null);
 
   useEffect(() => {
-    const initializeApp = async () => {
+    const setupAppContentSpecifics = async () => {
       try {
-        // Initialize auth first
         const authCleanup = initializeAuth();
 
-        // Initialize FCM background handler
-        try {
-          messaging().setBackgroundMessageHandler(async remoteMessage => {
-            console.log('Message handled in the background!', remoteMessage);
-            
-            const branchLink = remoteMessage.data?.branch_link || remoteMessage.data?.deep_link;
-            if (branchLink && typeof branchLink === 'string') {
-              try {
-                console.log('FCM message contains Branch link:', branchLink);
-              } catch (error) {
-                console.error('Error processing Branch link from FCM:', error);
-              }
-            }
-            
+        Notifications.setNotificationHandler({
+          handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: true,
+          }),
+        });
+
+        // Fix: Use global messaging() for background handler, not a specific instance
+        messaging().setBackgroundMessageHandler(async remoteMessage => {
+          console.log('Message handled in the background!', remoteMessage);
+          
+          const branchLink = remoteMessage.data?.branch_link || remoteMessage.data?.deep_link;
+          if (branchLink && typeof branchLink === 'string') {
             try {
-              await NotificationBridge.getInstance().processNotification({
-                type: 'push',
-                payload: {
-                  title: remoteMessage.notification?.title || '',
-                  body: remoteMessage.notification?.body || '',
-                  data: remoteMessage.data || {},
+              console.log('FCM message contains Branch link:', branchLink);
+            } catch (error) {
+              console.error('Error processing Branch link from FCM:', error);
+            }
+          }
+          
+          try {
+            if (remoteMessage.notification) {
+              console.log('Received notification-type FCM message, letting FCM handle it natively');
+              return;
+            }
+            await NotificationBridge.getInstance().processNotification({
+              type: 'push',
+              payload: {
+                title: typeof remoteMessage.data?.title === 'string' ? remoteMessage.data.title : '',
+                body: typeof remoteMessage.data?.body === 'string' ? remoteMessage.data.body : 
+                      typeof remoteMessage.data?.message === 'string' ? remoteMessage.data.message : '',
+                data: {
+                  ...remoteMessage.data,
                   deep_link: typeof remoteMessage.data?.deep_link === 'string' 
                     ? remoteMessage.data.deep_link 
                     : typeof remoteMessage.data?.branch_link === 'string'
                       ? remoteMessage.data.branch_link
-                      : undefined
+                      : typeof remoteMessage.data?.url === 'string'
+                        ? remoteMessage.data.url
+                        : undefined
                 }
-              });
-            } catch (processError) {
-              console.error('Error processing notification:', processError);
-            }
-          });
-        } catch (messagingError) {
-          console.error('Error setting up messaging background handler:', messagingError);
-        }
+              }
+            });
+          } catch (processError) {
+            console.error('Error processing FCM notification:', processError);
+          }
+        });
 
-        // Initialize services that DO NOT depend on navigationRef.current being immediately available
-        try {
-          const notificationBridge = NotificationBridge.getInstance();
-          await notificationBridge.initialize();
-        } catch (notificationError) {
-          console.error('Error initializing notification service:', notificationError);
-        }
+        // Also set up foreground message handler for when app is active
+        const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
+          console.log('Message handled in the foreground!', remoteMessage);
+          
+          try {
+            // For foreground messages, we handle them differently
+            // Let expo-notifications handle the display, but also process via NotificationBridge
+            await NotificationBridge.getInstance().processNotification({
+              type: 'push',
+              payload: {
+                title: remoteMessage.notification?.title || (typeof remoteMessage.data?.title === 'string' ? remoteMessage.data.title : ''),
+                body: remoteMessage.notification?.body || (typeof remoteMessage.data?.body === 'string' ? remoteMessage.data.body : 
+                      typeof remoteMessage.data?.message === 'string' ? remoteMessage.data.message : ''),
+                data: {
+                  ...remoteMessage.data,
+                  deep_link: typeof remoteMessage.data?.deep_link === 'string' 
+                    ? remoteMessage.data.deep_link 
+                    : typeof remoteMessage.data?.branch_link === 'string'
+                      ? remoteMessage.data.branch_link
+                      : typeof remoteMessage.data?.url === 'string'
+                        ? remoteMessage.data.url
+                        : undefined
+                }
+              }
+            });
+          } catch (processError) {
+            console.error('Error processing foreground FCM notification:', processError);
+          }
+        });
+
+        // Store the unsubscribe function for cleanup
+        setForegroundMessageUnsubscribe(() => unsubscribeOnMessage);
 
         try {
           const monitoringService = MonitoringService.getInstance();
@@ -251,38 +296,37 @@ function AppContent() {
           console.error('Error initializing monitoring service:', monitoringError);
         }
 
-        try {
-          await remoteConfigService.initialize();
-        } catch (configError) {
-          console.error('Error initializing remote config:', configError);
-        }
-
-        // DeepLinkHandler will be initialized in NavigationContainer.onReady
-        // Set isReady to true to allow NavigationContainer to render
-        setIsReady(true);
+        setIsAppContentReady(true);
       } catch (error) {
-        console.error('Failed to initialize core services:', error);
-        setIsReady(true); // Still set ready to allow UI to render, even if some services failed
+        console.error('Error initializing AppContent specifics:', error);
+        setIsAppContentReady(true); 
       }
     };
 
-    initializeApp();
+    setupAppContentSpecifics();
 
     return () => {
-      // Call cleanup functions for services if they were returned/stored
-      // e.g., if (authCleanup) authCleanup();
       const notificationBridge = NotificationBridge.getInstance();
       const monitoringService = MonitoringService.getInstance();
       const deepLinkHandler = DeepLinkHandler.getInstance();
       
+      if (notificationListener) {
+        notificationListener.remove();
+      }
+      
+      if (foregroundMessageUnsubscribe) {
+        foregroundMessageUnsubscribe();
+      }
+      
       notificationBridge.cleanup();
       monitoringService.cleanup();
-      deepLinkHandler.cleanupBranchListeners(); // This cleanup is fine here
+      deepLinkHandler.cleanupBranchListeners();
+      // if (typeof authCleanup === 'function') authCleanup();
     };
-  }, []); // Run once on mount
+  }, []);
 
-  if (!isReady) {
-    return <LoadingScreen />;
+  if (!isAppContentReady) {
+    return <LoadingScreen />; 
   }
 
   const linking: LinkingOptions<any> = {
@@ -329,11 +373,10 @@ function AppContent() {
         console.log('[AppContent] NavigationContainer is ready. Initializing DeepLinkHandler.');
         try {
           const deepLinkHandler = DeepLinkHandler.getInstance();
-          // navigationRef.current should be populated now by the NavigationContainer itself
-          if (navigationRef?.current) { // Double check, though onReady implies it is
+          if (navigationRef?.current) {
             deepLinkHandler.setNavigationRef(navigationRef);
-            deepLinkHandler.setupDeepLinkListeners();
-            console.log('[AppContent] DeepLinkHandler listeners set up via onReady.');
+            deepLinkHandler.initialize(); 
+            console.log('[AppContent] DeepLinkHandler initialized via onReady.');
           } else {
             console.error('[AppContent] Navigation reference (navigationRef.current) is unexpectedly null in onReady.');
           }
@@ -350,16 +393,61 @@ function AppContent() {
 }
 
 export default function App() {
+  const [coreServicesInitialized, setCoreServicesInitialized] = useState(false);
+
+  useEffect(() => {
+    const initializeCoreServices = async () => {
+      try {
+        // Initialize Firebase services ONCE here
+        const firebaseAppInstance = getApp(); // Ensure Firebase app is initialized if not already done globally
+        
+        await analyticsService.initialize(firebaseAppInstance);
+        console.log('[App] AnalyticsService initialized.');
+
+        await remoteConfigService.initialize(firebaseAppInstance);
+        console.log('[App] RemoteConfigService initialized.');
+
+        const notificationService = NotificationService.getInstance();
+        await notificationService.initialize(firebaseAppInstance);
+        console.log('[App] NotificationService initialized.');
+        
+        const performanceMonitoringService = PerformanceMonitoringService.getInstance();
+        await performanceMonitoringService.initialize(firebaseAppInstance);
+        console.log('[App] PerformanceMonitoringService initialized.');
+        
+        // Check for Branch native module availability. Actual SDK initialization is handled by DeepLinkHandler.
+        if (Platform.OS !== 'web' && NativeModules.RNBranch) {
+          console.log('[App] Branch native module (RNBranch) found. Branch SDK initialization is handled by DeepLinkHandler.');
+          // The imported 'branch' module from 'react-native-branch' might not directly expose 'init'.
+          // We rely on DeepLinkHandler to use the correct Branch SDK methods.
+        } else {
+          console.log('[App] Branch native module (RNBranch) not found or not on a supported platform. Branch SDK may not function.');
+        }
+
+      } catch (error) {
+        console.error('Error initializing core services in App:', error);
+      } finally {
+        setCoreServicesInitialized(true);
+      }
+    };
+
+    initializeCoreServices();
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider style={styles.container}>
-      <AuthProvider>
+        <AuthProvider>
           <NewsProvider>
             <SavedArticlesProvider>
               <AdvertisementProvider>
                 <RemoteConfigProvider>
                   <Toaster richColors />
-                  <AppContent />
+                  {coreServicesInitialized ? (
+                    <AppContent />
+                  ) : (
+                    <LoadingScreen /> // This LoadingScreen is now within AuthProvider scope
+                  )}
                 </RemoteConfigProvider>
               </AdvertisementProvider>
             </SavedArticlesProvider>

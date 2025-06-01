@@ -1,4 +1,5 @@
-import remoteConfig from '@react-native-firebase/remote-config';
+import remoteConfig, { FirebaseRemoteConfigTypes, getRemoteConfig } from '@react-native-firebase/remote-config';
+import type { ReactNativeFirebase } from '@react-native-firebase/app';
 import { REMOTE_CONFIG_DEFAULTS, REMOTE_CONFIG_INTERVALS } from '../constants/remoteConfig';
 
 export type ArticleLayout = 'default' | 'compact';
@@ -13,45 +14,85 @@ export interface RemoteConfigParams {
 }
 
 class RemoteConfigService {
+  private static instance: RemoteConfigService;
+  private firebaseApp: ReactNativeFirebase.FirebaseApp | null = null;
+  private remoteConfigInstance: FirebaseRemoteConfigTypes.Module | null = null;
   private defaults: RemoteConfigParams = REMOTE_CONFIG_DEFAULTS;
-  private initialized = false;
 
-  async initialize(): Promise<void> {
-    if (this.initialized) {
-      return;
+  private constructor() {
+    // Private constructor for singleton pattern
+  }
+
+  static getInstance(): RemoteConfigService {
+    if (!RemoteConfigService.instance) {
+      RemoteConfigService.instance = new RemoteConfigService();
     }
+    return RemoteConfigService.instance;
+  }
+
+  /**
+   * Initializes the RemoteConfigService with the Firebase App instance.
+   * This MUST be called before fetching or getting config values.
+   * @param app The FirebaseApp instance obtained from `@react-native-firebase/app`.
+   */
+  async initialize(app: ReactNativeFirebase.FirebaseApp): Promise<void> {
+    this.firebaseApp = app;
+    this.remoteConfigInstance = getRemoteConfig(app);
 
     try {
       // Set default values and apply remote config settings
-      await remoteConfig().setDefaults(this.defaults as { [key: string]: any });
+      await this.remoteConfigInstance.setDefaults(this.defaults as { [key: string]: any });
 
       // Set up config settings
       const fetchInterval = __DEV__ 
         ? REMOTE_CONFIG_INTERVALS.DEV 
         : REMOTE_CONFIG_INTERVALS.PROD;
 
-      await remoteConfig().setConfigSettings({
+      await this.remoteConfigInstance.setConfigSettings({
         minimumFetchIntervalMillis: fetchInterval,
       });
 
-      this.initialized = true;
+      // Perform initial fetch and activate
+      await this.fetchAndActivate();
+
+      if (__DEV__) {
+        console.log('[RemoteConfigService] Initialized with Firebase App');
+      }
     } catch (error) {
-      console.error('Failed to initialize remote config:', error);
+      console.error('[RemoteConfigService] Error initializing:', error);
       throw error;
     }
   }
 
   async fetchAndActivate(): Promise<boolean> {
+    if (!this.remoteConfigInstance) {
+      console.error('[RemoteConfigService] Error: RemoteConfigService not initialized. Call initialize() first.');
+      return false;
+    }
+
     try {
-      return await remoteConfig().fetchAndActivate();
+      const fetchedRemotely = await this.remoteConfigInstance.fetchAndActivate();
+      if (__DEV__) {
+        if (fetchedRemotely) {
+          console.log('[RemoteConfigService] Remote Configs fetched and activated from server');
+        } else {
+          console.log('[RemoteConfigService] Remote Configs not fetched (using cached or default values)');
+        }
+      }
+      return fetchedRemotely;
     } catch (error) {
-      console.error('Failed to fetch and activate remote config:', error);
-      throw error;
+      console.error('[RemoteConfigService] Error fetching and activating remote config:', error);
+      return false;
     }
   }
 
   getValue<K extends keyof RemoteConfigParams>(key: K): RemoteConfigParams[K] {
-    const configValue = remoteConfig().getValue(key);
+    if (!this.remoteConfigInstance) {
+      console.error('[RemoteConfigService] Error: RemoteConfigService not initialized. Call initialize() first.');
+      return this.defaults[key];
+    }
+
+    const configValue = this.remoteConfigInstance.getValue(key);
 
     switch (key) {
       case 'article_layout':
@@ -80,4 +121,4 @@ class RemoteConfigService {
   }
 }
 
-export const remoteConfigService = new RemoteConfigService();
+export const remoteConfigService = RemoteConfigService.getInstance();

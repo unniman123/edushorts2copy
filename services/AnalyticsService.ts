@@ -1,4 +1,5 @@
-import analytics, { FirebaseAnalyticsTypes } from '@react-native-firebase/analytics';
+import { getAnalytics, FirebaseAnalyticsTypes } from '@react-native-firebase/analytics';
+import { ReactNativeFirebase } from '@react-native-firebase/app';
 import {
   ANALYTICS_EVENTS,
   ArticleAnalyticsParams,
@@ -11,11 +12,12 @@ import {
 
 class AnalyticsService {
   private static instance: AnalyticsService;
+  private firebaseApp: ReactNativeFirebase.FirebaseApp | null = null;
+  private analyticsInstance: FirebaseAnalyticsTypes.Module | null = null;
 
   private constructor() {
-    // Private constructor for singleton pattern
-    // Initialize any default settings if needed
-    this.setAnalyticsCollectionEnabled(true); // Enable collection by default
+    // Private constructor. Firebase-specific initialization deferred to `initialize`.
+    // DO NOT call methods that rely on this.analyticsInstance here.
   }
 
   static getInstance(): AnalyticsService {
@@ -26,30 +28,47 @@ class AnalyticsService {
   }
 
   /**
+   * Initializes the AnalyticsService with the Firebase App instance.
+   * This MUST be called before any other analytics methods.
+   * @param app The FirebaseApp instance.
+   */
+  async initialize(app: ReactNativeFirebase.FirebaseApp): Promise<void> {
+    this.firebaseApp = app;
+    this.analyticsInstance = getAnalytics(app); // Initialize analyticsInstance first
+    
+    // Now it's safe to call methods that use this.analyticsInstance
+    await this.setAnalyticsCollectionEnabled(true); 
+
+    if (__DEV__) {
+      console.log('[AnalyticsService] Initialized with Firebase App.');
+    }
+  }
+
+  // Helper to ensure analytics instance is available
+  private getAnalyticsInstance(): FirebaseAnalyticsTypes.Module {
+    if (!this.analyticsInstance) {
+      console.error('[Analytics] Error: AnalyticsService not initialized. Call initialize() first.');
+      throw new Error('AnalyticsService not initialized.');
+    }
+    return this.analyticsInstance;
+  }
+
+  /**
    * Generic method to log any analytics event.
    * @param name - The name of the event.
    * @param params - Optional parameters for the event.
    */
   async logEvent(name: AnalyticsEventName | string, params?: EventParams): Promise<void> {
     try {
-      // Basic validation
       if (!name || typeof name !== 'string' || name.length > 40) {
-      if (__DEV__) {
-        console.warn(`[Analytics] Invalid event name: ${name}`);
-      }
+        if (__DEV__) { console.warn(`[Analytics] Invalid event name: ${name}`); }
         return;
       }
-      // Parameter validation could be added here (e.g., check types, length)
       
-      await analytics().logEvent(name, params);
-      if (__DEV__) {
-        console.log(`[Analytics] Event logged: ${name}`, params || '');
-      }
+      await this.getAnalyticsInstance().logEvent(name, params);
+      if (__DEV__) { console.log(`[Analytics] Event logged: ${name}`, params || ''); }
     } catch (error) {
-      if (__DEV__) {
-        console.error(`[Analytics] Error logging event "${name}":`, error);
-      }
-      // Optionally, log this error to a different monitoring service (e.g., Crashlytics)
+      if (__DEV__) { console.error(`[Analytics] Error logging event "${name}":`, error); }
     }
   }
 
@@ -112,7 +131,16 @@ class AnalyticsService {
 
   // Screen/Navigation Analytics
   async logScreenView(params: ScreenViewAnalyticsParams): Promise<void> {
-    await this.logEvent(ANALYTICS_EVENTS.SCREEN_VIEW, params);
+    try {
+      await this.getAnalyticsInstance().logScreenView(params);
+      if (__DEV__) {
+        console.log('[Analytics] Screen view logged:', params);
+      }
+    } catch (error) {
+      if (__DEV__) {
+        console.error('[Analytics] Error logging screen view:', error);
+      }
+    }
   }
 
   // Authentication Events
@@ -131,12 +159,12 @@ class AnalyticsService {
    * @param userId - The unique identifier for the user.
    */
   async setUserId(userId: string | null): Promise<void> {
-    try {
-      await analytics().setUserId(userId);
+    try { 
+      await this.getAnalyticsInstance().setUserId(userId); 
       if (__DEV__) {
         console.log(`[Analytics] User ID set: ${userId}`);
       }
-    } catch (error) {
+    } catch (error) { 
       if (__DEV__) {
         console.error('[Analytics] Error setting User ID:', error);
       }
@@ -149,29 +177,26 @@ class AnalyticsService {
    * @param value - The value of the user property.
    */
   async setUserProperty(name: string, value: string | null): Promise<void> {
-    try {
-      // User property name validation (Firebase limits apply)
+    try { 
       if (!name || typeof name !== 'string' || name.length > 24) {
-         if (__DEV__) {
-           console.warn(`[Analytics] Invalid property name: ${name}`);
-         }
-         return;
+        if (__DEV__) {
+          console.warn(`[Analytics] Invalid property name: ${name}`);
+        }
+        return;
       }
-      // User property value validation (Firebase limits apply)
       if (value !== null && (typeof value !== 'string' || value.length > 36)) {
-         if (__DEV__) {
-           console.warn(`[Analytics] Invalid property value for ${name}: ${value}`);
-         }
-         return;
+        if (__DEV__) {
+          console.warn(`[Analytics] Invalid property value for ${name}: ${value}`);
+        }
+        return;
       }
-      
-      await analytics().setUserProperty(name, value);
+      await this.getAnalyticsInstance().setUserProperty(name, value); 
       if (__DEV__) {
-        console.log(`[Analytics] User property set: ${name} = ${value}`);
+        console.log(`[Analytics] User property set: ${name}=${value}`);
       }
-    } catch (error) {
+    } catch (error) { 
       if (__DEV__) {
-        console.error(`[Analytics] Error setting User Property "${name}":`, error);
+        console.error(`[Analytics] Error setting user property "${name}":`, error);
       }
     }
   }
@@ -181,8 +206,7 @@ class AnalyticsService {
    * @param properties - An object containing user property key-value pairs.
    */
   async setUserProperties(properties: { [key: string]: string | null }): Promise<void> {
-    try {
-      // Validate each property before setting
+    try { 
       const validProperties: { [key: string]: string | null } = {};
       for (const name in properties) {
         const value = properties[name];
@@ -200,12 +224,11 @@ class AnalyticsService {
          }
          validProperties[name] = value;
       }
-      
-      await analytics().setUserProperties(validProperties);
+      await this.getAnalyticsInstance().setUserProperties(validProperties); 
       if (__DEV__) {
         console.log('[Analytics] User properties set:', validProperties);
       }
-    } catch (error) {
+    } catch (error) { 
       if (__DEV__) {
         console.error('[Analytics] Error setting User Properties:', error);
       }
@@ -217,12 +240,14 @@ class AnalyticsService {
    * @param enabled - Boolean indicating whether collection should be enabled.
    */
   async setAnalyticsCollectionEnabled(enabled: boolean): Promise<void> {
-    try {
-      await analytics().setAnalyticsCollectionEnabled(enabled);
+    // This method relies on analyticsInstance being set.
+    // It's called from initialize() after analyticsInstance is set, or externally via getAnalyticsInstance().
+    try { 
+      await this.getAnalyticsInstance().setAnalyticsCollectionEnabled(enabled);
       if (__DEV__) {
         console.log(`[Analytics] Collection ${enabled ? 'enabled' : 'disabled'}`);
       }
-    } catch (error) {
+    } catch (error) { 
       if (__DEV__) {
         console.error('[Analytics] Error setting collection status:', error);
       }
@@ -233,12 +258,12 @@ class AnalyticsService {
    * Resets all analytics data for this instance. Used primarily for testing or user logout.
    */
   async resetAnalyticsData(): Promise<void> {
-    try {
-      await analytics().resetAnalyticsData();
+    try { 
+      await this.getAnalyticsInstance().resetAnalyticsData(); 
       if (__DEV__) {
         console.log('[Analytics] Data reset');
       }
-    } catch (error) {
+    } catch (error) { 
       if (__DEV__) {
         console.error('[Analytics] Error resetting data:', error);
       }
@@ -249,13 +274,13 @@ class AnalyticsService {
    * Gets the app instance ID. Useful for debugging.
    */
   async getAppInstanceId(): Promise<string | null> {
-    try {
-      const id = await analytics().getAppInstanceId();
+    try { 
+      const id = await this.getAnalyticsInstance().getAppInstanceId(); 
       if (__DEV__) {
         console.log('[Analytics] App Instance ID:', id);
       }
       return id;
-    } catch (error) {
+    } catch (error) { 
       if (__DEV__) {
         console.error('[Analytics] Error getting App Instance ID:', error);
       }

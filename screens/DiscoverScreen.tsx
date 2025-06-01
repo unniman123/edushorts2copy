@@ -92,7 +92,7 @@ export default function DiscoverScreen() {
         <View style={{ width: 24 }} />
       </View>
 
-      <Text style={styles.subtitle}>News from all around the world</Text>
+      <Text style={styles.subtitle}>Global news at your fingertips</Text>
 
       <View style={styles.searchContainer}>
         <Feather name="search" size={20} color="#888" style={styles.searchIcon} />
