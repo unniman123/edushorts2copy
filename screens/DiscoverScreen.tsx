@@ -82,6 +82,22 @@ export default function DiscoverScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleSearch]);
 
+  const renderItem = useCallback(({ item, index }: { item: Article; index: number }) => (
+    <ArticleResultCard
+      article={item}
+      onPress={() => {
+        const parentNavigator = navigation.getParent<NativeStackNavigationProp<RootStackParamList>>();
+        if (parentNavigator) {
+          parentNavigator.navigate('SingleArticleViewer', { 
+            articleId: item.id,
+            articles: searchResults, 
+            currentIndex: index 
+          });
+        }
+      }}
+    />
+  ), [navigation, searchResults]);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -105,6 +121,17 @@ export default function DiscoverScreen() {
             debouncedSearch(text);
           }}
         />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity 
+            onPress={() => {
+              setSearchQuery('');
+              debouncedSearch('');
+            }}
+            style={styles.clearIcon}
+          >
+            <Feather name="x-circle" size={20} color="#888" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {loading ? (
@@ -123,26 +150,12 @@ export default function DiscoverScreen() {
         <FlatList
           data={searchResults}
           keyExtractor={(item) => item.id}
-          renderItem={({ item, index }) => (
-            <ArticleResultCard
-              article={item}
-              onPress={() => {
-                const parentNavigator = navigation.getParent<NativeStackNavigationProp<RootStackParamList>>();
-                if (parentNavigator) {
-                  console.log(`[DiscoverScreen] Navigating to SingleArticleViewer with ID: ${item.id} using parent navigator.`);
-                  parentNavigator.navigate('SingleArticleViewer', { 
-                    articleId: item.id,
-                    articles: searchResults, 
-                    currentIndex: index 
-                  });
-                } else {
-                  console.warn('[DiscoverScreen] Could not get parent navigator to navigate to SingleArticleViewer.');
-                }
-              }}
-            />
-          )}
+          renderItem={renderItem}
           contentContainerStyle={styles.resultsList}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={10}
+          maxToRenderPerBatch={5}
+          windowSize={10}
         />
       )}
     </SafeAreaView>
@@ -195,6 +208,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     paddingVertical: 8,
+  },
+  clearIcon: {
+    padding: 4,
   },
   categoryContainer: {
     marginBottom: 16,

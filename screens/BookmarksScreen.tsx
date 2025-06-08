@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useSavedArticles } from '../context/SavedArticlesContext';
 import {
   View,
@@ -17,6 +17,7 @@ import { CompositeNavigationProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { RootStackParamList, MainTabParamList } from '../types/navigation';
+import BookmarkCard from '../components/BookmarkCard';
 
 type NavigationProp = CompositeNavigationProp<
   NativeStackNavigationProp<RootStackParamList>,
@@ -49,6 +50,14 @@ export default function BookmarksScreen() {
     );
   };
 
+  const renderItem = useCallback(({ item }: { item: any }) => (
+    <BookmarkCard
+      item={item}
+      onPress={() => navigation.navigate('SavedArticlePager', { articleId: item.id })}
+      onRemove={() => handleRemoveBookmark(item.id)}
+    />
+  ), [navigation, handleRemoveBookmark]);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -79,31 +88,12 @@ export default function BookmarksScreen() {
         <FlatList
           data={savedArticles}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.articleCard}>
-              <TouchableOpacity
-                style={styles.articleContent}
-                onPress={() => navigation.navigate('SavedArticlePager', { articleId: item.id })}
-              >
-                <Image source={{ uri: item.image_path || undefined }} style={styles.articleImage} />
-                <View style={styles.articleDetails}>
-                  <Text style={styles.articleTitle} numberOfLines={2}>{item.title}</Text>
-                  <View style={styles.articleMeta}>
-                    <Text style={styles.sourceText}>{item.source_name || 'Unknown Source'}</Text>
-                    <Text style={styles.timeText}>{new Date(item.saved_at).toLocaleDateString()}</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => handleRemoveBookmark(item.id)}
-              >
-                <Feather name="trash-2" size={18} color="#ff3b30" />
-              </TouchableOpacity>
-            </View>
-          )}
+          renderItem={renderItem}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.list}
+          initialNumToRender={10}
+          maxToRenderPerBatch={5}
+          windowSize={10}
           ListFooterComponent={loading ? (
             <ActivityIndicator size="large" color="#0066cc" style={styles.loader} />
           ) : null}

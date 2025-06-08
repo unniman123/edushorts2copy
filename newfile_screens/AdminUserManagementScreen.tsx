@@ -1,13 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../utils/supabase';
 import { toast } from 'sonner-native';
+import UserListItem from './components/UserListItem';
+
+interface User {
+  id: string;
+  full_name: string;
+  email: string;
+  role: string;
+}
 
 export default function AdminUserManagementScreen() {
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [roleUpdate, setRoleUpdate] = useState({}); // { userId: newRole }
+  const [roleUpdate, setRoleUpdate] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     fetchUsers();
@@ -19,12 +27,12 @@ export default function AdminUserManagementScreen() {
     if (error) {
       toast.error(`Error fetching users: ${error.message}`);
     } else {
-      setUsers(data);
+      setUsers(data as User[]);
     }
     setLoading(false);
   };
 
-  const updateUserRole = async (userId, newRole) => {
+  const updateUserRole = async (userId: string, newRole: string) => {
     const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
     if (error) {
       toast.error(`Error updating role: ${error.message}`);
@@ -34,20 +42,14 @@ export default function AdminUserManagementScreen() {
     }
   };
 
-  const renderUserItem = ({ item }) => (
-    <View style={styles.userItem}>
-      <Text style={styles.userName}>{item.full_name || 'No Name'}</Text>
-      <Text style={styles.userEmail}>{item.email}</Text>
-      <TextInput
-        style={styles.roleInput}
-        value={roleUpdate[item.id] !== undefined ? roleUpdate[item.id] : item.role}
-        onChangeText={(text) => setRoleUpdate({ ...roleUpdate, [item.id]: text })}
-      />
-      <TouchableOpacity style={styles.updateButton} onPress={() => updateUserRole(item.id, roleUpdate[item.id] || item.role)}>
-        <Text style={styles.updateButtonText}>Update Role</Text>
-      </TouchableOpacity>
-    </View>
-  );
+  const renderUserItem = useCallback(({ item }: { item: User }) => (
+    <UserListItem
+      item={item}
+      role={roleUpdate[item.id] !== undefined ? roleUpdate[item.id] : item.role}
+      onRoleChange={(text) => setRoleUpdate({ ...roleUpdate, [item.id]: text })}
+      onUpdateRole={() => updateUserRole(item.id, roleUpdate[item.id] || item.role)}
+    />
+  ), [roleUpdate, updateUserRole]);
 
   // For metrics, simulate counts (in a real app, use aggregate queries)
   const totalUsers = users.length;
@@ -68,6 +70,9 @@ export default function AdminUserManagementScreen() {
           keyExtractor={(item) => item.id}
           renderItem={renderUserItem}
           contentContainerStyle={styles.list}
+          initialNumToRender={10}
+          maxToRenderPerBatch={5}
+          windowSize={10}
         />
       )}
     </SafeAreaView>

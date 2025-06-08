@@ -14,7 +14,7 @@ interface SavedArticleRecord {
   news?: NewsRow;
 }
 
-interface SavedArticle {
+export interface SavedArticle {
   id: string;
   title: string;
   summary: string;

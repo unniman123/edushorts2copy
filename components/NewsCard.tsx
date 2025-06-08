@@ -14,15 +14,11 @@ import {
 } from 'react-native';
 import ImageOptimizer from '../utils/ImageOptimizer';
 import PerformanceMonitoringService from '../services/PerformanceMonitoringService';
-// Removed useNavigation as it's not used in Phase 1 card directly
-// import { useNavigation } from '@react-navigation/native';
-// import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Article } from '../types/supabase';
-// import { RootStackParamList } from '../types/navigation'; // Not needed for Phase 1 card
-import { Feather } from '@expo/vector-icons'; // Import icons
-import { useSavedArticles } from '../context/SavedArticlesContext'; // Import saved articles context
-import { showToast } from '../utils/toast'; // Import showToast directly
-import DeepLinkHandler from '../services/DeepLinkHandler'; // Import DeepLinkHandler for Branch.io links
+import { Feather, Ionicons } from '@expo/vector-icons'; 
+import { useSavedArticles } from '../context/SavedArticlesContext'; 
+import { showToast } from '../utils/toast'; 
+import DeepLinkHandler from '../services/DeepLinkHandler';
 
 interface NewsCardProps {
   article: Article;
@@ -42,7 +38,6 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
     setIsSmallDevice(windowWidth < 375);
   }, [windowWidth]);
 
-  // Preload and optimize image
   useEffect(() => {
     if (article.image_path && typeof article.image_path === 'string') {
       const loadImage = async () => {
@@ -50,7 +45,6 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
           imageLoadStartTime.current = Date.now();
           await imageOptimizer.current.preloadImage(article.image_path!);
           
-          // Delay setting imageLoaded to ensure smooth transition
           InteractionManager.runAfterInteractions(() => {
             setImageLoaded(true);
               const loadTime = Date.now() - imageLoadStartTime.current;
@@ -58,7 +52,7 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
           });
         } catch (error) {
           console.error('Failed to preload image:', error);
-          setImageLoaded(true); // Show image anyway on error
+          setImageLoaded(true);
         }
       };
 
@@ -66,28 +60,23 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
     }
 
     return () => {
-      // Cleanup if component unmounts during image load
       setImageLoaded(false);
     };
   }, [article.image_path]);
-  // const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(); // Not needed for Phase 1
-  const [showIcons, setShowIcons] = useState(false); // State for icon visibility
-  // Get correct functions and state from context
+
+  const [showIcons, setShowIcons] = useState(false);
   const { savedArticles, addBookmark, removeBookmark } = useSavedArticles();
 
-  // Derive saved state by checking if the article id exists in the savedArticles array
   const isSaved = savedArticles.some(saved => saved.id === article.id);
 
-  // Function to format timestamp (basic example)
   const formatTimeAgo = (timestamp: string | undefined): string => {
     if (!timestamp) return '';
-    // Placeholder: Implement actual time ago logic here using a library like date-fns if needed
     const date = new Date(timestamp);
     const now = new Date();
     const diffHours = Math.abs(now.getTime() - date.getTime()) / 36e5;
     if (diffHours < 1) return 'Just now';
     if (diffHours < 24) return `${Math.floor(diffHours)} hours ago`;
-    return date.toLocaleDateString(); // Fallback for older dates
+    return date.toLocaleDateString();
   };
 
   const handleSourceLinkPress = useCallback(() => {
@@ -96,13 +85,10 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
     }
   }, [article.source_url]);
 
-  // Handle Share action
   const handleShare = useCallback(async () => {
     try {
-      // Get the deep link handler instance
       const deepLinkHandler = DeepLinkHandler.getInstance();
       
-      // Create a Branch link using the deep link handler
       const branchUrl = await deepLinkHandler.createBranchLink(
         article.id,
         article.title,
@@ -110,16 +96,14 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
         article.image_path || undefined
       );
 
-      // Updated message to reflect sharing the article with Branch link
       const message = `Check out this article in Edushorts: ${article.title}\n\n${branchUrl}`;
 
       await Share.share({
         message: message,
         url: branchUrl,
-        title: article.title, // Optional title
+        title: article.title,
       });
       
-      // Track the share with Branch analytics
       deepLinkHandler.trackArticleShare(article.id, 'news_card');
       
     } catch (error: any) {
@@ -128,34 +112,27 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
     }
   }, [article.id, article.title, article.summary, article.image_path]);
 
-  // Handle Save/Unsave action
   const handleSaveToggle = useCallback(() => {
     try {
       if (isSaved) {
-        // Use removeBookmark function from context
         removeBookmark(article.id);
-        showToast('success', 'Article removed from bookmarks'); // Swapped arguments
+        showToast('success', 'Article removed from bookmarks');
       } else {
-        // Use addBookmark function from context (takes articleId)
         addBookmark(article.id);
-        showToast('success', 'Article saved to bookmarks'); // Swapped arguments
+        showToast('success', 'Article saved to bookmarks');
       }
-      // Optionally hide icons after action
-      // setShowIcons(false);
     } catch (error: any) {
       console.error('Error saving/unsaving article:', error.message);
-      showToast('error', 'Error updating bookmarks'); // Swapped arguments
+      showToast('error', 'Error updating bookmarks');
     }
   }, [article.id, isSaved, removeBookmark, addBookmark]);
 
   return (
-    // Root TouchableOpacity for the full card, toggles icons
     <TouchableOpacity
       style={styles.fullScreenCard}
-      onPress={() => setShowIcons(prev => !prev)} // Toggle icons on tap
-      activeOpacity={1} // Use 1 to prevent visual feedback on the whole card tap
+      onPress={() => setShowIcons(prev => !prev)}
+      activeOpacity={0.98}
     >
-      {/* Image Section */}
       <View style={styles.imageContainer}>
         {article.image_path ? (
           <Image
@@ -172,7 +149,7 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
               setImageLoaded(true);
             }}
             onError={() => {
-              setImageLoaded(true); // Show placeholder on error
+              setImageLoaded(true); 
             }}
           />
         ) : (
@@ -180,41 +157,27 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
             <Text style={styles.noImageText}>No Image Available</Text>
           </View>
         )}
-
-        {/* Edushorts Logo Overlay */}
         <View style={styles.logoOverlay}>
           <Text style={styles.logoText}>Edushorts</Text>
         </View>
       </View>
 
-      {/* Content Area */}
       <View style={styles.cardContentContainer}>
-        {/* Scrollable content within the content area */}
         <ScrollView
           showsVerticalScrollIndicator={false}
           style={styles.scrollView}
-          removeClippedSubviews={true} // Improve performance by removing offscreen views
-          scrollEventThrottle={16} // Optimize scroll event firing (60fps)
-          overScrollMode="never" // Prevent overscroll effect on Android
+          removeClippedSubviews={true} 
+          scrollEventThrottle={16} 
+          overScrollMode="never" 
         >
-          {/* Source Tag */}
           <View style={styles.sourceTagContainer}>
             <Text style={styles.sourceTagText} numberOfLines={1}>
-              {/* Display Category Name here */}
               {article.category?.name || 'General'}
             </Text>
           </View>
-
-          {/* Timestamp - Moved below category */}
           <Text style={styles.timeText}>{formatTimeAgo(article.created_at)}</Text>
-
-          {/* Title */}
           <Text style={styles.title}>{article.title}</Text>
-
-          {/* Summary */}
           <Text style={styles.summary} numberOfLines={isSmallDevice ? 8 : 10}>{article.summary}</Text>
-
-          {/* Read More Button - Moved below summary */}
           {article.source_url && (
             <TouchableOpacity
               style={styles.readMoreButton}
@@ -224,24 +187,15 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
               <Feather name="external-link" size={14} color="#ff0000" style={styles.linkIcon} />
             </TouchableOpacity>
           )}
-
-          {/* Add padding at the bottom to ensure content doesn't get hidden */}
           <View style={styles.scrollViewBottomPadding} />
         </ScrollView>
-
-        {/* Removed the fixed position Read More button */}
       </View>
 
-      {/* Interaction Icons - Conditionally Rendered Overlay */}
       {showIcons && (
         <View style={styles.interactionContainer}>
-          {/* Save Icon */}
           <TouchableOpacity onPress={handleSaveToggle} style={styles.iconButton}>
-            {/* Change icon based on saved state */}
-            <Feather name={isSaved ? "bookmark" : "bookmark"} size={28} color={isSaved ? "#ff0000" : "#333"} />
-            {/* Using same icon but changing color. Could use different icons if available */}
+            <Ionicons name={isSaved ? "bookmark" : "bookmark-outline"} size={28} color={isSaved ? "#ff0000" : "#333"} />
           </TouchableOpacity>
-          {/* Share Icon */}
           <TouchableOpacity onPress={handleShare} style={styles.iconButton}>
             <Feather name="share-2" size={28} color="#333" />
           </TouchableOpacity>
@@ -251,26 +205,24 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
   );
 });
 
-// Get static dimensions for initial layout
 const { height, width } = Dimensions.get('window');
 
-// Create a StyleSheet factory function for responsive styles
 const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
   fullScreenCard: {
-    flex: 1, // Make card fill the SafeAreaView in HomeScreen
+    flex: 1, 
     backgroundColor: 'white',
-    height: height, // Explicitly set height
-    width: width,   // Explicitly set width
+    height: height, 
+    width: width,   
   },
   cardImage: {
     width: '100%',
-    height: height * (smallDevice ? 0.3 : 0.35), // Adjust height based on device size
-    resizeMode: 'cover', // Ensure image covers the area
+    height: height * (smallDevice ? 0.3 : 0.35), 
+    resizeMode: 'cover', 
   },
   imageContainer: {
     position: 'relative',
     width: '100%',
-    backgroundColor: '#f0f0f0', // Placeholder background
+    backgroundColor: '#f0f0f0', 
   },
   imageLoading: {
     opacity: 0.7,
@@ -290,7 +242,7 @@ const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
     fontWeight: 'bold',
   },
   noImage: {
-    backgroundColor: '#e0e0e0', // Slightly darker grey for placeholder
+    backgroundColor: '#e0e0e0',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -300,52 +252,50 @@ const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
     textAlign: 'center',
   },
   cardContentContainer: {
-    flex: 1.5, // Increased from 1 to 1.5 to give more space to content
-    // Position absolutely to overlay image slightly if needed, or use negative margin
-    marginTop: -20, // Pull the container up to overlap the image
-    backgroundColor: 'white', // Ensure background is white
-    borderTopLeftRadius: 20, // Added curve to top-left corner
-    borderTopRightRadius: 20, // Added curve to top-right corner
-    paddingBottom: 20, // Add padding at the very bottom
-    position: 'relative', // Ensure proper positioning for absolute elements
+    flex: 1.5, 
+    marginTop: -20, 
+    backgroundColor: 'white', 
+    borderTopLeftRadius: 20, 
+    borderTopRightRadius: 20, 
+    paddingBottom: 20, 
+    position: 'relative',
   },
   scrollView: {
-    paddingHorizontal: smallDevice ? 16 : 20, // Adjust horizontal padding based on device size
-    paddingTop: 40,       // Increased padding to compensate for negative margin (20 + 20)
-    paddingBottom: 20,    // Add padding at bottom
+    paddingHorizontal: smallDevice ? 16 : 20, 
+    paddingTop: 40,       
+    paddingBottom: 20,    
   },
   scrollViewBottomPadding: {
-    height: 20, // Extra padding at the bottom of the ScrollView content
+    height: 20, 
   },
-
   sourceTagContainer: {
-    backgroundColor: '#ff0000', // Changed to red background
+    backgroundColor: '#ff0000',
     paddingHorizontal: 12,
     paddingVertical: 5,
-    borderRadius: 6, // Slightly less rounded corners
-    alignSelf: 'flex-start', // Align tag to the left
-    marginBottom: 15,      // Space below the tag
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginBottom: 15,      
   },
   sourceTagText: {
-    color: '#ffffff', // Changed to white text
+    color: '#ffffff',
     fontSize: 14,
     fontWeight: '500',
   },
   title: {
-    fontSize: smallDevice ? 22 : 24, // Adjust font size based on device size
-    fontWeight: 'bold', // Bold title
-    marginBottom: 12, // Increased space below title
-    color: '#333333', // Dark text color
-    lineHeight: smallDevice ? 28 : 30, // Adjust line height based on device size
+    fontSize: smallDevice ? 22 : 24,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    color: '#333333',
+    lineHeight: smallDevice ? 28 : 30,
   },
   summary: {
-    fontSize: smallDevice ? 15 : 16, // Adjust font size based on device size
-    color: '#666666', // Medium grey text color
-    lineHeight: smallDevice ? 22 : 24, // Adjust line height based on device size
-    marginBottom: 16, // Space below summary
-    marginTop: 4, // Added small space above summary
+    fontSize: smallDevice ? 15 : 16,
+    color: '#666666',
+    lineHeight: smallDevice ? 22 : 24,
+    marginBottom: 16,
+    marginTop: 4,
+    fontWeight: 'normal',
   },
-
   timeText: {
     fontSize: smallDevice ? 11 : 12,
     color: '#666666',
@@ -357,35 +307,29 @@ const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
     alignItems: 'center',
     marginTop: smallDevice ? 10 : 12,
     marginBottom: smallDevice ? 16 : 20,
-    paddingVertical: 4, // Added vertical padding for better touch target
+    paddingVertical: 4, 
   },
   readMoreText: {
     fontSize: smallDevice ? 14 : 15,
     color: '#ff0000',
     fontWeight: '600',
-    letterSpacing: 0.2, // Slightly increase letter spacing for better readability
+    letterSpacing: 0.2,
   },
   linkIcon: {
     marginLeft: 8,
   },
   interactionContainer: {
-    position: 'absolute', // Position over the content
-    bottom: 30,           // Distance from bottom
-    right: 20,            // Distance from right
-    // Removed flexDirection: 'column' and alignItems: 'center' if icons are side-by-side
-    // If icons should be vertical, uncomment below:
+    position: 'absolute',
+    bottom: 30,           
+    right: 20,            
     flexDirection: 'column',
     alignItems: 'center',
   },
   iconButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.85)', // Slightly less transparent background
-    padding: 12,          // Padding around the icon
-    borderRadius: 30,     // Make it circular (increased size)
-    // If icons are vertical:
-    marginBottom: 15,     // Space between vertical icons
-    // If icons are horizontal:
-    // marginLeft: 15,    // Space between horizontal icons
-    // Adding some shadow for depth
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    padding: 12,          
+    borderRadius: 30,     
+    marginBottom: 15,     
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

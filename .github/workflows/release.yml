@@ -1,0 +1,97 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      track:
+        type: choice
+        description: The Google Play track to release to
+        required: true
+        default: 'internal'
+        options:
+          - internal
+          - beta
+          - production
+  push:
+    branches:
+      - develop
+
+jobs:
+  distribute-to-firebase:
+    name: Distribute to Firebase App Distribution
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Build APK for Firebase Distribution
+        id: build
+        run: |
+          apk_url=$(eas build --platform android --profile preview --non-interactive --json | jq -r '.[] | .artifacts.buildUrl')
+          echo "apk_url=$apk_url" >> $GITHUB_OUTPUT
+        env:
+          EAS_TOKEN: ${{ secrets.EAS_TOKEN }}
+
+      - name: Download APK
+        run: curl -o app.apk "${{ steps.build.outputs.apk_url }}"
+
+      - name: Distribute to Firebase
+        run: |
+          firebase appdistribution:distribute ./app.apk \
+            --app "${{ secrets.FIREBASE_APP_ID }}" \
+            --token "${{ secrets.FIREBASE_TOKEN }}" \
+            --groups "internal-qa-team"
+        
+  submit-to-google-play:
+    name: Submit to Google Play Store
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Decode and write Google Service Account Key
+        run: echo "${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}" > ./google-service-account.json
+
+      - name: Build AAB for Google Play
+        id: build
+        run: |
+          build_url=$(eas build --platform android --profile production --non-interactive --json | jq -r '.[] | .buildUrl')
+          echo "build_url=$build_url" >> $GITHUB_OUTPUT
+        env:
+          EAS_TOKEN: ${{ secrets.EAS_TOKEN }}
+
+      - name: Submit to Google Play Store
+        run: |
+          eas submit --platform android \
+            --url "${{ steps.build.outputs.build_url }}" \
+            --track ${{ github.event.inputs.track }} \
+            --non-interactive
+        env:
+          EAS_TOKEN: ${{ secrets.EAS_TOKEN }} 
