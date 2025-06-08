@@ -14,7 +14,7 @@ on:
           - production
   push:
     branches:
-      - main
+      - new-main
 
 jobs:
   distribute-to-firebase:
