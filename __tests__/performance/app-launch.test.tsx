@@ -4,7 +4,8 @@ import App from '../../App';
 
 // Initialize performance metrics collector
 global.__PERFORMANCE_METRICS__ = {
-  tests: {}
+  tests: {},
+  currentTest: null
 };
 
 describe('App Launch Performance Tests', () => {

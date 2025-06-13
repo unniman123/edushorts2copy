@@ -133,7 +133,7 @@ export const useNotificationSettings = () => {
 
   useEffect(() => {
     loadSettings();
-  }, [loadSettings]);
+  }, []);
 
   return {
     settings,

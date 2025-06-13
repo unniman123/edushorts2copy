@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getApp } from '@react-native-firebase/app';
 import { remoteConfigService, RemoteConfigParams } from '../services/RemoteConfigService';
 
 export function useRemoteConfig() {
@@ -10,10 +11,13 @@ export function useRemoteConfig() {
     const initializeConfig = async () => {
       try {
         setLoading(true);
-        await remoteConfigService.initialize();
+        // Wait for Firebase app to be available
+        const firebaseApp = getApp();
+        await remoteConfigService.initialize(firebaseApp);
         setConfig(remoteConfigService.getParams());
         setError(null);
       } catch (err) {
+        console.error('[useRemoteConfig] Initialization error:', err);
         setError(err instanceof Error ? err : new Error('Failed to initialize remote config'));
         // Use default values in case of error
         setConfig(remoteConfigService.getParams());

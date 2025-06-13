@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react-native';
 import { useRemoteConfig } from '../../hooks/useRemoteConfig';
 import { remoteConfigService, RemoteConfigParams } from '../../services/RemoteConfigService';
 

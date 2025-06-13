@@ -12,8 +12,8 @@ interface NewsContextType {
   hasMore: boolean;
   currentCategoryId: string | null;
   filterByCategory: (categoryId: string | null) => void;
-  loadMoreNews: () => void;
-  refreshNews: () => void;
+  loadMoreNews: () => Promise<void>;
+  refreshNews: () => Promise<void>;
 }
 
 interface NewsRealtimePayload {
@@ -48,11 +48,11 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const loadMoreNews = useCallback(() => {
-    fetchMore(currentCategoryId);
+    return fetchMore(currentCategoryId);
   }, [fetchMore, currentCategoryId]);
 
   const refreshNews = useCallback(() => {
-    fetchNews(currentCategoryId);
+    return fetchNews(currentCategoryId);
   }, [fetchNews, currentCategoryId]);
 
   const value = {

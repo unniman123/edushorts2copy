@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react-hooks';
+import { renderHook } from '@testing-library/react-native';
 import { useScreenTracking } from '../../hooks/useAnalytics';
 import { analyticsService } from '../../services/AnalyticsService';
 

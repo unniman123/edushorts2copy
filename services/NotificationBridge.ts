@@ -142,6 +142,11 @@ class NotificationBridge {
         this.handleDeepLink(notification.payload.deep_link);
       }
       
+      const expoToken = await this.getExpoToken();
+      if (!expoToken) {
+        throw new Error('No Expo push token available');
+      }
+      
       const response = await fetch(NOTIFICATION_CONFIG.expo.apiUrl, {
         method: 'POST',
         headers: {
@@ -149,7 +154,7 @@ class NotificationBridge {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          to: await this.getExpoToken(),
+          to: expoToken,
           title: notification.payload.title,
           body: notification.payload.body,
           data: {
@@ -160,8 +165,30 @@ class NotificationBridge {
         })
       });
 
+      // Comprehensive status code validation
       if (!response.ok) {
-        throw new Error(`Push notification failed: ${response.statusText}`);
+        let errorMessage = `Push notification failed: ${response.status} ${response.statusText}`;
+        
+        try {
+          const errorBody = await response.text();
+          if (errorBody) {
+            errorMessage += ` - ${errorBody}`;
+          }
+        } catch (parseError) {
+          // If we can't parse the error body, use the status text
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      // Validate response body
+      try {
+        const responseData = await response.json();
+        if (responseData.errors && responseData.errors.length > 0) {
+          console.warn('Expo push notification warnings:', responseData.errors);
+        }
+      } catch (jsonError) {
+        console.warn('Could not parse push notification response as JSON');
       }
 
       await this.updateDeliveryStatus({
@@ -289,7 +316,7 @@ class NotificationBridge {
       .eq('id', profile.user.id)
       .single();
 
-    const expoToken = userProfile?.notification_preferences?.expo_push_token;
+    const expoToken = userProfile?.notification_preferences?.expo_token;
     if (!expoToken) {
       throw new Error('No Expo push token found');
     }

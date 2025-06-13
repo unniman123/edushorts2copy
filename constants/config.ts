@@ -1,3 +1,5 @@
+import Constants from 'expo-constants';
+
 export const NOTIFICATION_CONFIG = {
   expo: {
     projectId: "cfa91622-46a9-49aa-86c3-177c0a05d850",

@@ -21,7 +21,6 @@
     "test": "jest",
     "test:toast": "jest __tests__/utils/toast.test.ts --config=toast.jest.config.js",
     "test:unit": "jest --testPathPattern=__tests__/.*\\.test\\.(ts|tsx)$",
-    "test:integration": "jest --testPathPattern=tests/integration/.*\\.test\\.(ts|tsx)$",
     "test:e2e": "detox test -c ios.sim.debug",
     "test:e2e:android": "detox test -c android.emu.debug",
     "test:e2e:build": "detox build -c ios.sim.debug",

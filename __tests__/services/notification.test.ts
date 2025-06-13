@@ -59,34 +59,68 @@ describe('NotificationService', () => {
 
       expect(result).toBe('test-token');
     });
-  });
 
-  describe('storeExpoToken', () => {
-    it('should store token in Supabase profiles table', async () => {
-      const mockUser = { id: 'test-user-id' };
-      (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
-        data: { user: mockUser },
+    it('should store notification token successfully', async () => {
+      const notificationService = NotificationService.getInstance();
+      
+      // Mock the Firebase messaging and permissions
+      jest.spyOn(notificationService as any, 'getMessagingInstance').mockReturnValue({
+        getToken: jest.fn().mockResolvedValue('test-fcm-token'),
+        requestPermission: jest.fn().mockResolvedValue(1), // AuthorizationStatus.AUTHORIZED
+        onTokenRefresh: jest.fn()
       });
-
-      await notificationService.storeExpoToken('test-token');
-
-      expect(supabase.from('profiles').update).toHaveBeenCalledWith({
-        notification_preferences: {
-          push: true,
-          email: true,
-          expo_push_token: 'test-token',
-        },
-      });
+      
+      const result = await notificationService.registerForPushNotifications();
+      expect(result.fcmToken).toBeDefined();
     });
 
-    it('should throw error if no user is authenticated', async () => {
-      (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
-        data: { user: null },
+    it('should handle token storage errors gracefully', async () => {
+      const notificationService = NotificationService.getInstance();
+      
+      // Mock to throw error
+      jest.spyOn(notificationService as any, 'getMessagingInstance').mockReturnValue({
+        getToken: jest.fn().mockRejectedValue(new Error('Token error')),
+        requestPermission: jest.fn().mockResolvedValue(1),
+        onTokenRefresh: jest.fn()
+      });
+      
+      const result = await notificationService.registerForPushNotifications();
+      expect(result.fcmToken).toBeNull();
+    });
+  });
+
+  describe('token storage', () => {
+    it('should handle token storage via registerForPushNotifications', async () => {
+      const mockUser = { id: 'test-user-id' };
+      (supabase.auth.getSession as jest.Mock).mockResolvedValueOnce({
+        data: { session: { user: mockUser } },
+      });
+      (supabase.from as jest.Mock).mockReturnValue({
+        upsert: jest.fn().mockResolvedValue({ error: null })
       });
 
-      await expect(notificationService.storeExpoToken('test-token')).rejects.toThrow(
-        'No authenticated user found'
-      );
+      jest.spyOn(notificationService, 'requestPermissions').mockResolvedValueOnce(true);
+      (Notifications.getExpoPushTokenAsync as jest.Mock).mockResolvedValueOnce({
+        data: 'test-expo-token',
+      });
+
+      const result = await notificationService.registerForPushNotifications();
+      expect(result.expoToken).toBe('test-expo-token');
+    });
+
+    it('should handle token storage errors gracefully', async () => {
+      const mockUser = { id: 'test-user-id' };
+      (supabase.auth.getSession as jest.Mock).mockResolvedValueOnce({
+        data: { session: null },
+      });
+
+      jest.spyOn(notificationService, 'requestPermissions').mockResolvedValueOnce(true);
+      (Notifications.getExpoPushTokenAsync as jest.Mock).mockResolvedValueOnce({
+        data: 'test-expo-token',
+      });
+
+      const result = await notificationService.registerForPushNotifications();
+      expect(result.expoToken).toBe('test-expo-token');
     });
   });
 });

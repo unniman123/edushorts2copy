@@ -20,7 +20,7 @@ import { initializeAuth } from './utils/authHelpers';
 import * as Linking from 'expo-linking';
 import * as Notifications from 'expo-notifications';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { NotificationBridge, MonitoringService, DeepLinkHandler } from './services';
+import { MonitoringService, DeepLinkHandler } from './services';
 import { useScreenTracking } from './hooks/useAnalytics';
 import { remoteConfigService } from './services/RemoteConfigService';
 import { RemoteConfigProvider } from './context/RemoteConfigContext';
@@ -233,24 +233,8 @@ function AppContent() {
               console.log('Received notification-type FCM message, letting FCM handle it natively');
               return;
             }
-            await NotificationBridge.getInstance().processNotification({
-              type: 'push',
-              payload: {
-                title: typeof remoteMessage.data?.title === 'string' ? remoteMessage.data.title : '',
-                body: typeof remoteMessage.data?.body === 'string' ? remoteMessage.data.body : 
-                      typeof remoteMessage.data?.message === 'string' ? remoteMessage.data.message : '',
-                data: {
-                  ...remoteMessage.data,
-                  deep_link: typeof remoteMessage.data?.deep_link === 'string' 
-                    ? remoteMessage.data.deep_link 
-                    : typeof remoteMessage.data?.branch_link === 'string'
-                      ? remoteMessage.data.branch_link
-                      : typeof remoteMessage.data?.url === 'string'
-                        ? remoteMessage.data.url
-                        : undefined
-                }
-              }
-            });
+            // Background messages handled natively by FCM, no custom processing needed
+            console.log('FCM background message received and handled natively');
           } catch (processError) {
             console.error('Error processing FCM notification:', processError);
           }
@@ -261,26 +245,24 @@ function AppContent() {
           console.log('Message handled in the foreground!', remoteMessage);
           
           try {
-            // For foreground messages, we handle them differently
-            // Let expo-notifications handle the display, but also process via NotificationBridge
-            await NotificationBridge.getInstance().processNotification({
-              type: 'push',
-              payload: {
-                title: remoteMessage.notification?.title || (typeof remoteMessage.data?.title === 'string' ? remoteMessage.data.title : ''),
-                body: remoteMessage.notification?.body || (typeof remoteMessage.data?.body === 'string' ? remoteMessage.data.body : 
-                      typeof remoteMessage.data?.message === 'string' ? remoteMessage.data.message : ''),
-                data: {
-                  ...remoteMessage.data,
-                  deep_link: typeof remoteMessage.data?.deep_link === 'string' 
-                    ? remoteMessage.data.deep_link 
-                    : typeof remoteMessage.data?.branch_link === 'string'
-                      ? remoteMessage.data.branch_link
-                      : typeof remoteMessage.data?.url === 'string'
-                        ? remoteMessage.data.url
-                        : undefined
-                }
-              }
-            });
+            // For foreground messages, we need to display them manually using expo-notifications
+            // since FCM won't show them when app is active
+            if (remoteMessage.notification) {
+              await Notifications.scheduleNotificationAsync({
+                content: {
+                  title: remoteMessage.notification.title || 'Notification',
+                  body: remoteMessage.notification.body || '',
+                  data: {
+                    ...remoteMessage.data,
+                    // Ensure deep link data is preserved for navigation
+                    deep_link: remoteMessage.data?.deep_link || remoteMessage.data?.branch_link || remoteMessage.data?.url
+                  },
+                  sound: 'default',
+                },
+                trigger: null, // Display immediately
+              });
+              console.log('FCM foreground message displayed via expo-notifications');
+            }
           } catch (processError) {
             console.error('Error processing foreground FCM notification:', processError);
           }
@@ -306,7 +288,6 @@ function AppContent() {
     setupAppContentSpecifics();
 
     return () => {
-      const notificationBridge = NotificationBridge.getInstance();
       const monitoringService = MonitoringService.getInstance();
       const deepLinkHandler = DeepLinkHandler.getInstance();
       
@@ -318,7 +299,6 @@ function AppContent() {
         foregroundMessageUnsubscribe();
       }
       
-      notificationBridge.cleanup();
       monitoringService.cleanup();
       deepLinkHandler.cleanupBranchListeners();
       // if (typeof authCleanup === 'function') authCleanup();
@@ -333,6 +313,7 @@ function AppContent() {
     prefixes: ['edushorts://', 'https://xbwk1.app.link', 'https://xbwk1-alternate.app.link', 'exp://localhost:19000'],
     config: {
       screens: {
+        Settings: 'settings/delete-account',
         Login: {
           path: 'login',
           parse: {
@@ -355,7 +336,7 @@ function AppContent() {
         },
         Main: 'main',
         SingleArticleViewer: {
-          path: '/article/:articleId',
+          path: 'article/:articleId',
           parse: {
             articleId: (articleId: string) => articleId
           }

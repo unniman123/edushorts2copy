@@ -50,9 +50,11 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
         const adIndex = Math.floor(index / frequency) % advertisements.length;
         const ad = advertisements[adIndex];
         if (ad) {
+          // Generate unique key combining ad ID and position to prevent duplicates
+          const uniqueKey = `${ad.id || `ad-${adIndex}`}-${acc.length}`;
           acc.push({
             type: 'ad',
-            id: ad.id || `ad-${adIndex}`,
+            id: uniqueKey,
             content: ad
           });
         }

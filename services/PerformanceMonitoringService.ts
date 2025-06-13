@@ -44,6 +44,11 @@ class PerformanceMonitoringService {
   private imageMetrics: Map<string, ImageLoadMetrics> = new Map();
   private startTime: number = 0;
   private isMonitoring: boolean = false;
+  
+  // Add timeout tracking for proper cleanup
+  private memoryMonitorTimeout: NodeJS.Timeout | null = null;
+  private batteryMonitorTimeout: NodeJS.Timeout | null = null;
+  private networkMonitorTimeout: NodeJS.Timeout | null = null;
 
   private constructor() {
     this.startTime = Date.now();
@@ -110,9 +115,9 @@ class PerformanceMonitoringService {
       this.metrics.memoryUsage = 0; // Ensure a value in case of error
     }
 
-    // Continue monitoring every 5 seconds
+    // Continue monitoring every 5 seconds with proper cleanup tracking
     if (this.isMonitoring) {
-        setTimeout(() => this.monitorMemoryUsage(), 5000);
+      this.memoryMonitorTimeout = setTimeout(() => this.monitorMemoryUsage(), 5000);
     }
   }
 
@@ -131,9 +136,9 @@ class PerformanceMonitoringService {
       this.metrics.batteryImpact = 0; // Ensure a value in case of error
     }
 
-    // Continue monitoring every minute
+    // Continue monitoring every minute with proper cleanup tracking
     if (this.isMonitoring) {
-        setTimeout(() => this.monitorBatteryImpact(), 60000);
+      this.batteryMonitorTimeout = setTimeout(() => this.monitorBatteryImpact(), 60000);
     }
   }
 
@@ -141,18 +146,41 @@ class PerformanceMonitoringService {
     if (!this.isMonitoring) return;
 
     try {
-      const start = Date.now();
-      await fetch('https://www.google.com/generate_204'); // Simple ping endpoint
-      this.metrics.networkLatency = Date.now() - start;
+      const startTime = Date.now();
+      
+      // Add timeout and proper error handling for network requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
+      try {
+        await fetch('https://www.google.com/generate_204', {
+          method: 'HEAD',
+          signal: controller.signal,
+          cache: 'no-cache'
+        });
+        clearTimeout(timeoutId);
+        
+        const latency = Date.now() - startTime;
+        this.metrics.networkLatency = latency;
+      } catch (fetchError: unknown) {
+        clearTimeout(timeoutId);
+        
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+          console.warn('Network latency measurement timed out');
+          this.metrics.networkLatency = 5000; // Set to timeout value
+        } else {
+          throw fetchError;
+        }
+      }
     } catch (error) {
       // In test environments, fetch might be mocked or fail. Handle gracefully.
       console.warn('Failed to measure network latency:', error);
-      this.metrics.networkLatency = -1; // Indicate failure or mock value
+      this.metrics.networkLatency = 0;
     }
 
-    // Continue monitoring every 30 seconds
+    // Continue monitoring every 30 seconds with proper cleanup tracking
     if (this.isMonitoring) {
-        setTimeout(() => this.monitorNetworkLatency(), 30000);
+      this.networkMonitorTimeout = setTimeout(() => this.monitorNetworkLatency(), 30000);
     }
   }
 
@@ -235,9 +263,22 @@ class PerformanceMonitoringService {
 
   stopMonitoring(): void {
     this.isMonitoring = false;
-    // Clear any pending timeouts
-    // This requires storing timeout IDs, which adds complexity.
-    // For Jest tests, jest.clearAllTimers() in afterEach should suffice.
+    
+    // Clear all pending timeouts to prevent memory leaks
+    if (this.memoryMonitorTimeout) {
+      clearTimeout(this.memoryMonitorTimeout);
+      this.memoryMonitorTimeout = null;
+    }
+    
+    if (this.batteryMonitorTimeout) {
+      clearTimeout(this.batteryMonitorTimeout);
+      this.batteryMonitorTimeout = null;
+    }
+    
+    if (this.networkMonitorTimeout) {
+      clearTimeout(this.networkMonitorTimeout);
+      this.networkMonitorTimeout = null;
+    }
   }
 }
 

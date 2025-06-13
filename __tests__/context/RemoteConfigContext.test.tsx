@@ -1,5 +1,5 @@
 import React from 'react';
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react-native';
 import { RemoteConfigProvider, useRemoteConfigContext } from '../../context/RemoteConfigContext';
 import { useRemoteConfig } from '../../hooks/useRemoteConfig';
 

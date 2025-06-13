@@ -131,10 +131,15 @@ export function SavedArticlesProvider({ children }: { children: ReactNode }) {
     // Load articles once auth is ready
     if (!authLoading && !initialized) {
       console.log('SavedArticlesContext: Initial load started');
-      loadSavedArticles().then(() => {
-        setInitialized(true);
-        console.log('SavedArticlesContext: Initial load complete');
-      });
+      loadSavedArticles()
+        .then(() => {
+          setInitialized(true);
+          console.log('SavedArticlesContext: Initial load complete');
+        })
+        .catch((error) => {
+          console.error('SavedArticlesContext: Error during initial load:', error);
+          setInitialized(true); // Still mark as initialized to prevent loops
+        });
     }
   }, [authLoading, loadSavedArticles, initialized]);
 

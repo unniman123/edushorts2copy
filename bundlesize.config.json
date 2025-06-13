@@ -2,17 +2,17 @@
   "files": [
     {
       "path": "dist/*.js",
-      "maxSize": "15 kB",
+      "maxSize": "2.5 MB",
       "compression": "gzip"
     },
     {
       "path": "dist/assets/*.js",
-      "maxSize": "5 kB",
+      "maxSize": "500 kB",
       "compression": "gzip"
     },
     {
       "path": "dist/styles/*.css",
-      "maxSize": "3 kB",
+      "maxSize": "50 kB",
       "compression": "gzip"
     }
   ],

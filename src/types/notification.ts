@@ -1,7 +1,7 @@
 export interface NotificationPreferences {
   push: boolean;
   email?: boolean;
-  expo_push_token?: string;
+  expo_token?: string;
   fcm_token?: string;
   push_enabled: boolean;
   subscriptions: string[];

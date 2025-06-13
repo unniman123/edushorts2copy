@@ -89,7 +89,7 @@ const NotificationRenderer: React.FC<NotificationRendererProps> = ({
     if (notification.deep_link && notification.deep_link.startsWith('edushorts://articles/')) {
       const articleId = notification.deep_link.split('/').pop();
       if (articleId) {
-        navigation.navigate('ArticleDetail', { articleId });
+        navigation.navigate('SingleArticleViewer', { articleId });
       }
     }
     onPress?.(notification);
