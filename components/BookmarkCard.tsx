@@ -19,7 +19,7 @@ const BookmarkCard: React.FC<BookmarkCardProps> = ({ item, onPress, onRemove }) 
             {item.title}
           </Text>
           <View style={styles.articleMeta}>
-            <Text style={styles.sourceText}>{item.source_name || 'Unknown Source'}</Text>
+            {item.source_name && <Text style={styles.sourceText}>{item.source_name}</Text>}
             <Text style={styles.timeText}>{new Date(item.saved_at).toLocaleDateString()}</Text>
           </View>
         </View>
