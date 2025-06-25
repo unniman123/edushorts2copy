@@ -153,4 +153,12 @@ Single Chunk Edits
 Provide edits in a single, consolidated update.
 Dont make any assumption and do not make any guessing or take any educated guess only proceed if you 100% sure or has the resource and knowledge to proceed with any codefix or code changes 
 
+1. **Preserve Functionality:** Under no circumstances alter, break, or disrupt existing functionalities. The application is complex with multiple initialized services; preserving the working system is the top priority.
 
+2. **No Redundancy:** Do not write any duplicate or redundant code. Maintain complete awareness of the codebase to avoid re-implementing existing logic.
+
+3. **Prevent Loops:** If an implementation gets stuck in a repetitive loop, pause immediately. Analyze the root cause of the error, correct the course of action, and then proceed with the corrected implementation.
+
+4. **Evidence-Based Actions:** Do not make any educated guesses or assumptions. Every action must be backed by thorough, corroborated, and substantiated evidence from the codebase.
+
+5. **Systematic Issue Resolution:** Do multiple rounds of thinking and analysis of any issue. Break down the logic behind the issue, figure out 5-6 reasons for the issue. Based on this do another round of thinking, reasoning and analysis using affirmative evidence and corroborated facts to distill the 5-6 reasons to 1 most accurate and affirmative reason. Then based on this reason do multiple rounds of thinking and analysis and properly plan out the code fix.
