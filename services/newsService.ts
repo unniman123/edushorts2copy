@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import { supabase } from '../utils/supabase';
-import { Article, NewsRow, CategoryRow } from '../types/supabase';
+import { Article } from '../types/supabase';
 
 // Types
 interface FetchOptions {
@@ -16,13 +16,13 @@ interface InteractionData {
   articleId: string;
   type: 'view' | 'share' | 'bookmark' | 'click';
   duration?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface OfflineAction {
   id: string;
   type: 'view' | 'interaction';
-  data: any;
+  data: { articleId: string } | InteractionData;
   timestamp: number;
 }
 
@@ -52,16 +52,12 @@ const isOnline = async (): Promise<boolean> => {
   return netInfo.isConnected ?? true;
 };
 
-const getTimeAgo = (date: Date): string => {
-  const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-
-  if (days > 0) return `${days}d ago`;
-  if (hours > 0) return `${hours}h ago`;
-  if (minutes > 0) return `${minutes}m ago`;
-  return 'Just now';
+const getFormattedDate = (date: Date): string => {
+  return date.toLocaleDateString('en-US', {
+    month: '2-digit',
+    day: '2-digit',
+    year: 'numeric'
+  });
 };
 
 class NewsService {
@@ -135,32 +131,35 @@ class NewsService {
         return this.getCachedArticles();
       }
 
+      const { categoryId, search, limit = 10, page = 1 } = options;
+      const rangeStart = (page - 1) * limit;
+      const rangeEnd = rangeStart + limit - 1;
+
       let query = supabase
         .from('news')
         .select('*, categories(*)')
         .eq('status', 'published')
         .order('created_at', { ascending: false });
 
-      if (options.categoryId) {
-        query = query.eq('category_id', options.categoryId);
+      if (categoryId) {
+        query = query.eq('category_id', categoryId);
       }
 
-      if (options.search) {
-        query = query.ilike('title', `%${options.search}%`);
+      if (search) {
+        query = query.ilike('title', `%${search}%`);
       }
 
-      if (options.limit) {
-        query = query.limit(options.limit);
-      }
+      query = query.range(rangeStart, rangeEnd);
 
       const { data, error } = await query;
 
       if (error) throw error;
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const articles = data.map((row: any) => ({
         ...row,
         category: row.categories,
-        timeAgo: getTimeAgo(new Date(row.created_at)),
+        formattedDate: getFormattedDate(new Date(row.created_at)),
       }));
 
       // Cache the fetched articles
@@ -187,7 +186,7 @@ class NewsService {
       return {
         ...data,
         category: data.categories,
-        timeAgo: getTimeAgo(new Date(data.created_at)),
+        formattedDate: getFormattedDate(new Date(data.created_at)),
       };
     } catch (error) {
       console.error('Failed to fetch article:', error);
@@ -269,9 +268,11 @@ class NewsService {
       await Promise.all(
         actions.map(async (action) => {
           if (action.type === 'view') {
-            await this.trackView(action.data.articleId);
+            const viewData = action.data as { articleId: string };
+            await this.trackView(viewData.articleId);
           } else if (action.type === 'interaction') {
-            await this.trackInteraction(action.data);
+            const interactionData = action.data as InteractionData;
+            await this.trackInteraction(interactionData);
           }
         })
       );

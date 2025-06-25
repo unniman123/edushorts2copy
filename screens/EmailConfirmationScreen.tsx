@@ -6,7 +6,7 @@ import { RootStackParamList } from '../types/navigation';
 import * as Linking from 'expo-linking'; // Import Linking
 import { supabase } from '../utils/supabase';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { toast } from 'sonner-native';
+import { toast, showSuccessToast } from '../src/utils/toast/config';
 
 type EmailConfirmationRouteProp = RouteProp<RootStackParamList, 'EmailConfirmation'>;
 type EmailConfirmationNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -49,7 +49,7 @@ export default function EmailConfirmationScreen() {
         }
 
         setConfirmationStatus('success');
-        toast.success('Email confirmed successfully!');
+        showSuccessToast('Email confirmed successfully!');
 
         // Get the current user to potentially create profile/role if needed
         // Note: Profile/role creation might be better handled on first login after confirmation
@@ -93,7 +93,7 @@ export default function EmailConfirmationScreen() {
 
       if (error) throw error;
 
-      toast.success('Verification email resent! Please check your inbox.');
+      showSuccessToast('Verification email resent! Please check your inbox.');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to resend verification email';
       toast.error(`Error: ${errorMessage}`);

@@ -1,6 +1,7 @@
 import { Platform, InteractionManager, NativeModules } from 'react-native';
 import { getAnalytics, FirebaseAnalyticsTypes } from '@react-native-firebase/analytics';
 import type { ReactNativeFirebase } from '@react-native-firebase/app';
+import { logger } from '../utils/logger';
 
 interface PerformanceMetrics {
   timeToInteractive: number;
@@ -71,7 +72,7 @@ class PerformanceMonitoringService {
     this.analyticsInstance = getAnalytics(app);
     
     if (__DEV__) {
-      console.log('[PerformanceMonitoringService] Initialized with Firebase App.');
+      logger.log('[PerformanceMonitoringService] Initialized with Firebase App.');
     }
   }
 

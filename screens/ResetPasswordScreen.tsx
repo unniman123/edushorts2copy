@@ -16,7 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
 import { supabase } from '../utils/supabase';
 import { RootStackParamList } from '../types/navigation';
-import { toast } from 'sonner-native';
+import { toast, showSuccessToast } from '../src/utils/toast/config';
 
 type ResetPasswordRouteProp = RouteProp<RootStackParamList, 'ResetPassword'>;
 type ResetPasswordNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -54,7 +54,7 @@ export default function ResetPasswordScreen() {
 
       if (error) throw error;
 
-      toast.success('Password reset successful!');
+      showSuccessToast('Password reset successful!');
       navigation.navigate('Login', { emailConfirmed: true });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to reset password';

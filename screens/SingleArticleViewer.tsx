@@ -39,6 +39,15 @@ export default function SingleArticleViewerScreen() {
   const [error, setError] = useState<string | null>(null);
   const pagerRef = useRef<PagerView>(null);
 
+  // Date formatting function (matching newsService.ts)
+  const getFormattedDate = (date: Date): string => {
+    return date.toLocaleDateString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric'
+    });
+  };
+
   useEffect(() => {
     const loadContent = async () => {
       setLoading(true);
@@ -47,9 +56,15 @@ export default function SingleArticleViewerScreen() {
       if (initialArticles && initialArticles.length > 0 && initialCurrentIndex !== undefined && initialCurrentIndex >= 0) {
         // Case 1: Navigating from Discover with a list of articles
         if (initialCurrentIndex < initialArticles.length) {
-          setDisplayArticles(initialArticles);
+          // Ensure all articles have formatted dates
+          const articlesWithFormattedDates = initialArticles.map(article => ({
+            ...article,
+            formattedDate: article.formattedDate || getFormattedDate(new Date(article.created_at))
+          }));
+          
+          setDisplayArticles(articlesWithFormattedDates);
           setCurrentArticleIndex(initialCurrentIndex);
-          setCurrentArticleForHeader(initialArticles[initialCurrentIndex]);
+          setCurrentArticleForHeader(articlesWithFormattedDates[initialCurrentIndex]);
         } else {
           setError('Invalid initial index provided.');
         }
@@ -65,9 +80,15 @@ export default function SingleArticleViewerScreen() {
           if (fetchError) throw fetchError;
           if (!articleData) throw new Error('Article not found.');
 
-          setDisplayArticles([articleData as Article]);
+          // Add formatted date to the article
+          const articleWithFormattedDate = {
+            ...articleData,
+            formattedDate: getFormattedDate(new Date(articleData.created_at))
+          } as Article;
+
+          setDisplayArticles([articleWithFormattedDate]);
           setCurrentArticleIndex(0);
-          setCurrentArticleForHeader(articleData as Article);
+          setCurrentArticleForHeader(articleWithFormattedDate);
         } catch (e) {
           console.error('Error fetching single article:', e);
           setError(e instanceof Error ? e.message : 'Failed to load article.');

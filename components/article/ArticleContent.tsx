@@ -21,10 +21,24 @@ const ArticleContent: React.FC<ArticleContentProps> = ({
   showSourceIcon,
   maxSummaryLength,
 }) => {
-  const truncatedSummary =
-    article.summary.length > maxSummaryLength
-      ? article.summary.substring(0, maxSummaryLength) + '...'
-      : article.summary;
+  // Original truncation logic (preserved for rollback):
+  // const truncatedSummary =
+  //   article.summary.length > maxSummaryLength
+  //     ? article.summary.substring(0, maxSummaryLength) + '...'
+  //     : article.summary;
+  
+  const truncatedSummary = article.summary; // Display full summary without truncation
+
+  // Dynamic publisher container style based on source icon presence
+  const publisherContainerStyle = [
+    styles.publisherContainer,
+    !showSourceIcon && styles.publisherContainerNoIcon,
+  ];
+
+  const publisherInfoStyle = [
+    styles.publisherInfo,
+    !showSourceIcon && styles.publisherInfoNoIcon,
+  ];
 
   return (
     <View>
@@ -40,14 +54,14 @@ const ArticleContent: React.FC<ArticleContentProps> = ({
       </View>
       <View style={styles.contentContainer}>
         <Text style={styles.title}>{article.title}</Text>
-        <View style={styles.publisherContainer}>
+        <View style={publisherContainerStyle}>
           {showSourceIcon && article.source_icon && (
             <Image
               source={{ uri: article.source_icon }}
               style={styles.publisherIcon}
             />
           )}
-          <View style={styles.publisherInfo}>
+          <View style={publisherInfoStyle}>
             <Text style={styles.publisherName}>{article.source_name}</Text>
             <Text style={styles.publishDate}>
               {new Date(article.created_at).toLocaleDateString()}
@@ -105,6 +119,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 15,
   },
+  publisherContainerNoIcon: {
+    justifyContent: 'flex-start',
+  },
   publisherIcon: {
     width: 40,
     height: 40,
@@ -113,6 +130,10 @@ const styles = StyleSheet.create({
   },
   publisherInfo: {
     flex: 1,
+  },
+  publisherInfoNoIcon: {
+    flex: 0,
+    alignSelf: 'flex-start',
   },
   publisherName: {
     fontSize: 16,
@@ -147,7 +168,7 @@ const styles = StyleSheet.create({
   },
   sourceLinkText: {
     fontSize: 14,
-    color: '#0066cc',
+    color: '#ff0000',
     fontWeight: '600',
     marginRight: 6,
   },

@@ -181,18 +181,11 @@ class NotificationService {
         return; 
       }
 
-      let profileError: any = null;
-      let notificationError: any = null;
-
       // Update notification preferences in profiles
-      // Assuming existing preferences might exist, fetch them first or ensure upsert merges correctly.
-      // For simplicity here, we'll overwrite, but a merge might be better in a real scenario
-      // if other preferences are set independently.
       const profileUpdate = {
-        id: userId, // Assuming 'id' is the column name for user_id in profiles table and is the conflict target
-        notification_preferences: { // This structure should match your DB
-          push: true, // Defaulting to true since we have tokens
-          // email: false, // Preserve existing email preference if not explicitly changing it
+        id: userId,
+        notification_preferences: {
+          push: true,
           expo_token: expoToken,
           fcm_token: fcmToken 
         },
@@ -202,54 +195,13 @@ class NotificationService {
       console.log('[NotificationService] Upserting to profiles for user:', userId, profileUpdate);
       const { error: supabaseProfileError } = await supabase
         .from('profiles')
-        .upsert(profileUpdate, { onConflict: 'id' }); // Ensure 'id' is the correct conflict column for profiles
-      
-      profileError = supabaseProfileError;
+        .upsert(profileUpdate, { onConflict: 'id' });
 
-      // Create a notification record for token storage
-      // Storing FCM token in expo_push_token column as per user's clarification.
-      // If both tokens exist, Expo is generally preferred for sending via Expo's services, 
-      // but storing both is good. The column name `expo_push_token` might be slightly misleading
-      // if it exclusively stores FCM at times, but adhering to current schema.
-      const tokenForNotificationsTable = expoToken || fcmToken; // Prioritize Expo token if available for the specific column
-
-      if (tokenForNotificationsTable) { // Only insert if there's a token to store
-        const notificationUpdate = {
-          user_id: userId,
-          expo_push_token: tokenForNotificationsTable, // Storing the primary token here
-          // fcm_token: fcmToken, // If there's a separate fcm_token column in 'notifications' table, use it
-          type: 'device_registration', // Clear type for this record
-          title: 'Device Registered', // System notification title
-          body: `Device token ${expoToken ? 'Expo' : ''} ${fcmToken && expoToken ? '&' : ''} ${fcmToken ? 'FCM' : ''} updated.`, // Descriptive body
-          target_audience: 'user', // Or system, depending on conventions
-          created_at: new Date().toISOString(),
-          // sent_at: new Date().toISOString(), // 'sent_at' might not be applicable for a registration event
-        };
-
-        console.log('[NotificationService] Inserting into notifications for user:', userId, notificationUpdate);
-        const { error: supabaseNotificationError } = await supabase
-          .from('notifications') // Correct table
-          .insert(notificationUpdate); // Insert as it's a new registration event/log
-        
-        notificationError = supabaseNotificationError;
-      }
-
-
-      if (profileError || notificationError) {
-        console.error('[NotificationService] Error storing tokens. Details:', {
-          profileError: profileError ? JSON.stringify(profileError, null, 2) : null,
-          notificationError: notificationError ? JSON.stringify(notificationError, null, 2) : null,
-          userId,
-          expoTokenProvided: !!expoToken,
-          fcmTokenProvided: !!fcmToken,
-          timestamp: new Date().toISOString()
-        });
-        // Decide on toast behavior. Maybe one generic error or specific ones.
-        if (profileError) toast.error(`Profile update error: ${profileError.message || 'Unknown error'}`, TOAST_ERROR_CONFIG);
-        if (notificationError) toast.error(`Notification record error: ${notificationError.message || 'Unknown error'}`, TOAST_ERROR_CONFIG);
+      if (supabaseProfileError) {
+        console.error('[NotificationService] Error storing tokens in profiles:', supabaseProfileError);
+        toast.error(`Profile update error: ${supabaseProfileError.message || 'Unknown error'}`, TOAST_ERROR_CONFIG);
       } else {
         console.log('[NotificationService] Push notification tokens processed successfully for user:', userId);
-        // toast.success(TOAST_MESSAGES.TOKEN_SUCCESS, TOAST_SUCCESS_CONFIG); // Optional success toast
       }
     } catch (e: any) {
       console.error('[NotificationService] General exception in storeTokens. Message:', e?.message);

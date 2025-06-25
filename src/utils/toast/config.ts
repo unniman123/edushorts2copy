@@ -11,23 +11,23 @@ interface ToastConfig {
 
 // Base toast configuration with mobile-specific settings
 const baseConfig: ToastConfig = {
-  duration: 5000,
+  duration: 8000, // Consistent 8 seconds for all toasts
   style: {
     width: width * 0.9, // 90% of screen width
     marginBottom: 20
   }
 };
 
-// Success messages use shorter duration
+// Success messages use the same consistent duration
 export const TOAST_SUCCESS_CONFIG: ToastConfig = {
   ...baseConfig,
-  duration: 3000
+  duration: 8000
 };
 
 // Error messages use full duration
 export const TOAST_ERROR_CONFIG: ToastConfig = {
   ...baseConfig,
-  duration: 5000
+  duration: 6000
 };
 
 // Basic config for non-critical messages
@@ -42,6 +42,13 @@ export const TOAST_MESSAGES = {
   PROFILE_UPDATE_ERROR: 'Failed to update profile with notification token.',
   TOKEN_STORE_ERROR: 'Failed to store notification token.',
   LISTENER_ERROR: 'Failed to initialize notification listeners.'
+};
+
+// Helper function for consistent success toast usage with explicit duration
+export const showSuccessToast = (message: string): void => {
+  sonnerToast.success(message, {
+    duration: 8000, // Explicit 8 seconds for success messages
+  });
 };
 
 // Export configured toast instance

@@ -70,11 +70,14 @@ describe('RemoteConfigContext', () => {
   });
 
   it('throws error when used outside provider', () => {
-    const { result } = renderHook(() => useRemoteConfigContext());
-
-    expect(result.error).toEqual(
-      Error('useRemoteConfigContext must be used within a RemoteConfigProvider')
-    );
+    // Suppress console.error for this test since we're expecting an error
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    
+    expect(() => {
+      renderHook(() => useRemoteConfigContext());
+    }).toThrow('useRemoteConfigContext must be used within a RemoteConfigProvider');
+    
+    consoleErrorSpy.mockRestore();
   });
 
   it('handles loading state', () => {

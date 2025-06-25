@@ -9,7 +9,7 @@
       version: '1.0.0',
       orientation: 'portrait',
       schemes: ['edushorts', 'exp+edushorts'],
-      icon: './assets/app-logo.png',
+      icon: './assets/adaptive-icon-foreground.png',
       userInterfaceStyle: 'light',
       splash: {
         image: './assets/splash icon.png', // Updated splash icon
@@ -52,7 +52,7 @@
       },
       android: {
         adaptiveIcon: {
-          foregroundImage: './assets/splash icon.png',
+          foregroundImage: './assets/adaptive-icon-foreground.png',
           backgroundColor: '#FFFFFF'
         },
         package: 'com.ajilkojilgokulravi.unniman',
@@ -127,7 +127,7 @@
         [
           'expo-notifications',
           {
-            icon: './assets/app-logo.png',
+            icon: './assets/adaptive-icon-foreground.png',
             color: '#ffffff',
             androidMode: 'default',
             androidCollapsedTitle: 'Edushorts'

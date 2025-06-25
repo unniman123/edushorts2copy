@@ -6,6 +6,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  StatusBar,
+  FlatList,
+  RefreshControl,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNews } from '../context/NewsContext';
@@ -15,6 +19,9 @@ import AdvertCard from '../components/AdvertCard';
 import PagerView from 'react-native-pager-view';
 import { Article } from '../types/supabase';
 import { Advertisement } from '../types/advertisement';
+import { useRoute, useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS } from '../constants/theme';
 
 interface HomeScreenRef {
   scrollToTop: () => void;
@@ -121,7 +128,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ff0000" />
+          <ActivityIndicator size="large" color={COLORS.PRIMARY} />
         </View>
       </SafeAreaView>
     );
@@ -146,7 +153,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
       );
     }
     return (
-      <View style={styles.pageContainer} key={`news_${item.id}`}>
+      <View style={styles.pageContainer} key={`news_${item.id}_${content.indexOf(item)}`}>
         <NewsCard article={item} />
       </View>
     );
@@ -174,7 +181,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
       </PagerView>
       {isLoadingMore && (
         <View style={styles.loadingMoreIndicator}>
-          <ActivityIndicator size="small" color="#ff0000" />
+          <ActivityIndicator size="small" color={COLORS.PRIMARY} />
         </View>
       )}
     </SafeAreaView>
@@ -191,11 +198,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.WHITE,
   },
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.WHITE,
   },
   pagerView: {
     flex: 1,
@@ -230,6 +237,17 @@ const styles = StyleSheet.create({
   retryText: {
     color: '#ffffff',
     fontWeight: 'bold',
+  },
+  bannerButton: {
+    color: COLORS.PRIMARY,
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  loadingText: {
+    color: COLORS.WHITE,
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 

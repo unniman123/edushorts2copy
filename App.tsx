@@ -423,7 +423,12 @@ export default function App() {
             <SavedArticlesProvider>
               <AdvertisementProvider>
                 <RemoteConfigProvider>
-                  <Toaster richColors />
+                  <Toaster 
+                    richColors 
+                    toastOptions={{
+                      duration: 8000,
+                    } as any}
+                  />
                   {coreServicesInitialized ? (
                     <AppContent />
                   ) : (

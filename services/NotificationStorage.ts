@@ -7,7 +7,7 @@ interface StoredNotification {
   id: string;
   status: DeliveryStatus;
   timestamp: Date;
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
   retryCount: number;
 }
 

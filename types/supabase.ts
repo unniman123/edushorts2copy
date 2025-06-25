@@ -105,7 +105,7 @@ export type CategoryRow = Database['public']['Tables']['categories']['Row']
 // Define the Article interface that maps to our news table
 export interface Article extends NewsRow {
   category?: CategoryRow
-  timeAgo?: string // For UI display
+  formattedDate?: string // For UI display - MM/DD/YYYY format
 }
 
 // Type guard to check if an object is an Article

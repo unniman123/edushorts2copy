@@ -49,9 +49,6 @@ export default function LoginScreen() {
                 style={styles.logo}
               />
               <Text style={styles.logoText}>Edushorts</Text>
-              <Text style={styles.subtitle}>
-                "Your Daily Briefing on Foreign Education & Immigration."
-              </Text>
             </View>
 
             <View style={styles.formContainer}>
@@ -117,46 +114,34 @@ const styles = StyleSheet.create({
     borderRadius: 40,
   },
   logoText: {
-    fontSize: 26,
-    fontWeight: '700',
+    fontSize: 32,
+    fontWeight: '800',
     color: '#FFFFFF',
-    marginTop: 12,
-    marginBottom: 8,
-    letterSpacing: 1,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    marginTop: 16,
+    marginBottom: 16,
+    letterSpacing: 2,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
     textTransform: 'uppercase',
-  },
-  subtitle: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    letterSpacing: 0.25,
-    lineHeight: 22,
-    maxWidth: '80%',
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
   },
   formContainer: {
     marginBottom: 24,
   },
   loginButton: {
-    backgroundColor: '#ff0000',
+    backgroundColor: '#FFFFFF',
     paddingVertical: 15,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderColor: '#e0e0e0',
   },
   loginButtonDisabled: {
-    backgroundColor: '#ff9999',
+    backgroundColor: '#f5f5f5',
   },
   loginButtonText: {
-    color: 'white',
+    color: '#333',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -166,20 +151,20 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   registerText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#FFFFFF',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: -1, height: 1 },
-    textShadowRadius: 5,
+    textShadowColor: 'rgba(0, 0, 0, 0.4)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   registerLink: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '600',
     color: '#FFFFFF',
-    marginLeft: 4,
+    marginLeft: 6,
     textDecorationLine: 'underline',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: -1, height: 1 },
-    textShadowRadius: 5,
+    textShadowColor: 'rgba(0, 0, 0, 0.4)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
 });

@@ -1,6 +1,7 @@
-import remoteConfig, { FirebaseRemoteConfigTypes, getRemoteConfig } from '@react-native-firebase/remote-config';
+import { FirebaseRemoteConfigTypes, getRemoteConfig } from '@react-native-firebase/remote-config';
 import type { ReactNativeFirebase } from '@react-native-firebase/app';
 import { REMOTE_CONFIG_DEFAULTS, REMOTE_CONFIG_INTERVALS } from '../constants/remoteConfig';
+import { logger } from '../utils/logger';
 
 export type ArticleLayout = 'default' | 'compact';
 
@@ -41,7 +42,7 @@ class RemoteConfigService {
 
     try {
       // Set default values and apply remote config settings
-      await this.remoteConfigInstance.setDefaults(this.defaults as { [key: string]: any });
+      await this.remoteConfigInstance.setDefaults(this.defaults as unknown as Record<string, string | number | boolean>);
 
       // Set up config settings
       const fetchInterval = __DEV__ 
@@ -56,17 +57,17 @@ class RemoteConfigService {
       await this.fetchAndActivate();
 
       if (__DEV__) {
-        console.log('[RemoteConfigService] Initialized with Firebase App');
+        logger.log('[RemoteConfigService] Initialized with Firebase App');
       }
     } catch (error) {
-      console.error('[RemoteConfigService] Error initializing:', error);
+      logger.error('[RemoteConfigService] Error initializing:', error);
       throw error;
     }
   }
 
   async fetchAndActivate(): Promise<boolean> {
     if (!this.remoteConfigInstance) {
-      console.error('[RemoteConfigService] Error: RemoteConfigService not initialized. Call initialize() first.');
+      logger.error('[RemoteConfigService] Error: RemoteConfigService not initialized. Call initialize() first.');
       return false;
     }
 
@@ -74,21 +75,21 @@ class RemoteConfigService {
       const fetchedRemotely = await this.remoteConfigInstance.fetchAndActivate();
       if (__DEV__) {
         if (fetchedRemotely) {
-          console.log('[RemoteConfigService] Remote Configs fetched and activated from server');
+          logger.log('[RemoteConfigService] Remote Configs fetched and activated from server');
         } else {
-          console.log('[RemoteConfigService] Remote Configs not fetched (using cached or default values)');
+          logger.log('[RemoteConfigService] Remote Configs not fetched (using cached or default values)');
         }
       }
       return fetchedRemotely;
     } catch (error) {
-      console.error('[RemoteConfigService] Error fetching and activating remote config:', error);
+      logger.error('[RemoteConfigService] Error fetching and activating remote config:', error);
       return false;
     }
   }
 
   getValue<K extends keyof RemoteConfigParams>(key: K): RemoteConfigParams[K] {
     if (!this.remoteConfigInstance) {
-      console.error('[RemoteConfigService] Error: RemoteConfigService not initialized. Call initialize() first.');
+      logger.error('[RemoteConfigService] Error: RemoteConfigService not initialized. Call initialize() first.');
       return this.defaults[key];
     }
 

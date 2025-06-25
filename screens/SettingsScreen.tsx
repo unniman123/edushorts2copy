@@ -16,7 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../utils/supabase';
-import { toast } from 'sonner-native';
+import { toast, showSuccessToast } from '../src/utils/toast/config';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Settings'>;
 
@@ -47,7 +47,7 @@ export default function SettingsScreen() {
       });
 
       setNotificationSettings(newSettings);
-      toast.success(`Push notifications ${newSettings.push ? 'enabled' : 'disabled'}`);
+      showSuccessToast(`Push notifications ${newSettings.push ? 'enabled' : 'disabled'}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update settings';
       toast.error(message);
@@ -121,7 +121,7 @@ export default function SettingsScreen() {
 
               // Delete auth user
               await signOut();
-              toast.success('Account successfully deleted');
+              showSuccessToast('Account successfully deleted');
             } catch (error) {
               const message = error instanceof Error ? error.message : 'Failed to delete account';
               toast.error(message);

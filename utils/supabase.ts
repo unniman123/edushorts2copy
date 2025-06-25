@@ -45,7 +45,7 @@ export const supabase = createClient<Database>(supabaseUrl!, supabaseAnonKey!, {
 });
 
 let activeChannels: Record<string, RealtimeChannel> = {};
-let reconnectTimers: Record<string, NodeJS.Timeout> = {};
+const reconnectTimers: Record<string, NodeJS.Timeout> = {};
 const MAX_RETRIES = 3;
 
 export const createChannel = (channelName: string) => {

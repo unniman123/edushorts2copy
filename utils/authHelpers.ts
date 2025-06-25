@@ -1,4 +1,5 @@
 import { toast } from 'sonner-native';
+import { showSuccessToast } from '../src/utils/toast/config';
 import { supabase } from './supabase';
 // Use the main GoogleSignin export and related types/status codes
 import {
@@ -7,12 +8,11 @@ import {
   isErrorWithCode,
   isSuccessResponse, // Helper to check for success response type
   isCancelledResponse, // Helper to check for cancelled response type
-  type User,
   type SignInResponse
 } from '@react-native-google-signin/google-signin';
 
 // Function to handle profile creation/update and role assignment after successful sign-in
-const syncUserProfileAndRole = async (userId: string, email?: string) => {
+const syncUserProfileAndRole = async (userId: string, _email?: string) => {
   console.log('[authHelpers] Syncing profile/role for user:', userId);
   try {
     // Assign user role if not exists
@@ -44,10 +44,10 @@ const syncUserProfileAndRole = async (userId: string, email?: string) => {
        console.log('[authHelpers] User already has a role:', existingRole.role);
     }
 
-  } catch (syncError) {
-    console.error('[authHelpers] Error during profile/role sync:', syncError);
-    toast.warning('Profile data sync failed. Please check your profile later.');
-  }
+      } catch (syncError) {
+      console.error('[authHelpers] Error during profile/role sync:', syncError);
+      toast.warning('Profile data sync failed. Please check your profile later.');
+    }
 };
 
 
@@ -58,11 +58,11 @@ export const handleGoogleSignIn = async (): Promise<boolean> => {
     // Check for Play Services
     try {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-    } catch (playServicesError) {
-      console.error('[authHelpers] Play services error:', playServicesError);
-      toast.error('Google Play Services required for sign-in.');
-      return false;
-    }
+          } catch (playServicesError) {
+        console.error('[authHelpers] Play services error:', playServicesError);
+        toast.error('Google Play Services required for sign-in.');
+        return false;
+      }
 
     console.log('[authHelpers] Calling GoogleSignin.signIn()...');
     const signInResponse: SignInResponse = await GoogleSignin.signIn();
@@ -99,7 +99,7 @@ export const handleGoogleSignIn = async (): Promise<boolean> => {
       // Sync profile and role
       await syncUserProfileAndRole(session.user.id, session.user.email);
 
-      toast.success('Successfully signed in with Google!');
+      showSuccessToast('Successfully signed in with Google!');
       return true; // Indicate success
 
     } else if (isCancelledResponse(signInResponse)) {
@@ -113,7 +113,7 @@ export const handleGoogleSignIn = async (): Promise<boolean> => {
       throw new Error('Google Sign-In failed with an unexpected response type.');
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[authHelpers] Error in handleGoogleSignIn:', error);
     let message = 'Failed to sign in with Google';
 
@@ -143,14 +143,14 @@ export const handleGoogleSignIn = async (): Promise<boolean> => {
              message = error.message || 'An unknown Google Sign-In error occurred.';
            }
       }
-    } else {
-      // Handle errors not originating from the Google Sign-In library (e.g., Supabase errors)
-      message = error?.message || 'An unknown error occurred during sign in.';
-    }
+          } else {
+        // Handle errors not originating from the Google Sign-In library (e.g., Supabase errors)
+        message = (error instanceof Error ? error.message : null) || 'An unknown error occurred during sign in.';
+      }
 
-    // Show toast for actual errors, not cancellations
-    toast.error(message);
-    return false; // Indicate failure
+          // Show toast for actual errors, not cancellations
+      toast.error(message);
+      return false; // Indicate failure
   }
 };
 

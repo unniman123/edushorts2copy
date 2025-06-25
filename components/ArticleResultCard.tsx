@@ -102,7 +102,6 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    marginRight: 4,
   },
   sourceText: {
     fontSize: 12,
