@@ -38,3 +38,9 @@ local.properties
 # iOS
 ios/Pods/
 *.xcworkspace
+
+# Test coverage reports (Jest generated)
+coverage/
+
+# Test coverage reports (Jest generated)
+coverage/
