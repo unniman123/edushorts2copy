@@ -9,6 +9,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import { COLORS, BORDER_RADIUS, TYPOGRAPHY } from '../constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -90,7 +91,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
-    backgroundColor: '#FF0000',
+    backgroundColor: COLORS.PRIMARY,
   },
   container: {
     flex: 1,
@@ -114,9 +115,9 @@ const styles = StyleSheet.create({
     borderRadius: 40,
   },
   logoText: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontSize: TYPOGRAPHY.FONT_SIZE.TITLE,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.EXTRA_BOLD,
+    color: COLORS.WHITE,
     marginTop: 16,
     marginBottom: 16,
     letterSpacing: 2,
@@ -129,21 +130,21 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   loginButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.WHITE,
     paddingVertical: 15,
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.LARGE,
     alignItems: 'center',
     marginTop: 10,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: COLORS.GRAY_50,
   },
   loginButtonDisabled: {
     backgroundColor: '#f5f5f5',
   },
   loginButtonText: {
-    color: '#333',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: COLORS.TEXT_PRIMARY,
+    fontSize: TYPOGRAPHY.FONT_SIZE.LARGE,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
   },
   registerContainer: {
     flexDirection: 'row',
@@ -151,16 +152,16 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   registerText: {
-    fontSize: 16,
-    color: '#FFFFFF',
+    fontSize: TYPOGRAPHY.FONT_SIZE.LARGE,
+    color: COLORS.WHITE,
     textShadowColor: 'rgba(0, 0, 0, 0.4)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
   registerLink: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: TYPOGRAPHY.FONT_SIZE.LARGE,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
+    color: COLORS.WHITE,
     marginLeft: 6,
     textDecorationLine: 'underline',
     textShadowColor: 'rgba(0, 0, 0, 0.4)',

@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { COLORS, BORDER_RADIUS, TYPOGRAPHY, COMPONENT_STYLES, ELEVATION } from '../constants/theme';
 import type { SavedArticle } from '../context/SavedArticlesContext';
 
 interface BookmarkCardProps {
@@ -33,16 +34,7 @@ const BookmarkCard: React.FC<BookmarkCardProps> = ({ item, onPress, onRemove }) 
 
 const styles = StyleSheet.create({
   articleCard: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    ...COMPONENT_STYLES.CARD_CONTAINER,
   },
   articleContent: {
     flex: 1,
@@ -58,9 +50,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   articleTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: TYPOGRAPHY.FONT_SIZE.MEDIUM,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 6,
   },
   articleMeta: {
@@ -69,18 +61,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sourceText: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: TYPOGRAPHY.FONT_SIZE.SMALL,
+    color: COLORS.TEXT_SECONDARY,
   },
   timeText: {
-    fontSize: 10,
-    color: '#888',
+    fontSize: TYPOGRAPHY.FONT_SIZE.TINY,
+    color: COLORS.TEXT_TERTIARY,
   },
   removeButton: {
     padding: 16,
     justifyContent: 'center',
     borderLeftWidth: 1,
-    borderLeftColor: '#eeeeee',
+    borderLeftColor: COLORS.GRAY_100,
   },
 });
 

@@ -3,8 +3,7 @@ import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { getApp } from '@react-native-firebase/app';
-import messaging, { getMessaging } from '@react-native-firebase/messaging';
-import { RootStackParamList } from './types/navigation';
+import messaging from '@react-native-firebase/messaging';
 import { StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Toaster } from 'sonner-native';
@@ -17,7 +16,6 @@ import { SavedArticlesProvider } from './context/SavedArticlesContext';
 import { NewsProvider } from './context/NewsContext';
 import { AdvertisementProvider } from './context/AdvertisementContext';
 import { initializeAuth } from './utils/authHelpers';
-import * as Linking from 'expo-linking';
 import * as Notifications from 'expo-notifications';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { MonitoringService, DeepLinkHandler } from './services';
@@ -29,6 +27,7 @@ import { analyticsService } from './services/AnalyticsService';
 import NotificationService from './services/NotificationService';
 import PerformanceMonitoringService from './services/PerformanceMonitoringService';
 import { NativeModules } from 'react-native';
+import { COLORS } from './constants/theme';
 
 import LoadingScreen from './screens/LoadingScreen';
 import HomeScreen from './screens/HomeScreen';
@@ -50,7 +49,7 @@ function MainTabs() {
   const homeScreenRef = React.useRef<{scrollToTop: () => void}>(null);
   const { refreshNews } = useNews();
 
-  const handleTabPress = (tabName: string, navigation: any) => {
+  const handleTabPress = (tabName: string, navigation: { navigate: (screen: string, params?: any) => void; isFocused: () => boolean }) => {
     console.log('(NOBRIDGE) LOG  Tab pressed:', tabName);
     
     if (tabName === 'HomeTab') {
@@ -100,7 +99,7 @@ function MainTabs() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#ff0000',
+                    tabBarActiveTintColor: COLORS.PRIMARY,
         tabBarInactiveTintColor: '#888',
         headerShown: false,
         tabBarStyle: {
@@ -112,7 +111,6 @@ function MainTabs() {
     >
         <Tab.Screen
         name="HomeTab"
-        children={() => <HomeScreen ref={homeScreenRef} />}
         options={({ navigation }) => ({ 
           tabBarLabel: 'Home',
           tabBarButton: (props) => (
@@ -122,7 +120,9 @@ function MainTabs() {
             />
           )
         })}
-      />
+      >
+        {() => <HomeScreen ref={homeScreenRef} />}
+      </Tab.Screen>
       <Tab.Screen
         name="DiscoverTab"
         component={DiscoverScreen}
@@ -199,13 +199,13 @@ GoogleSignin.configure({
 function AppContent() {
   const [isAppContentReady, setIsAppContentReady] = useState(false);
   const navigationRef = useScreenTracking();
-  const [notificationListener, setNotificationListener] = useState<Notifications.Subscription | null>(null);
+  const [notificationListener] = useState<Notifications.Subscription | null>(null);
   const [foregroundMessageUnsubscribe, setForegroundMessageUnsubscribe] = useState<(() => void) | null>(null);
 
   useEffect(() => {
     const setupAppContentSpecifics = async () => {
       try {
-        const authCleanup = initializeAuth();
+        initializeAuth();
 
         Notifications.setNotificationHandler({
           handleNotification: async () => ({
@@ -416,7 +416,7 @@ export default function App() {
   }, []);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider style={styles.container}>
         <AuthProvider>
           <NewsProvider>

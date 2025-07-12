@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
+import { COLORS, BORDER_RADIUS, TYPOGRAPHY, COMPONENT_STYLES } from '../constants/theme';
 import { Article } from '../types/supabase';
 
 interface ArticleResultCardProps {
@@ -55,16 +56,7 @@ export const ArticleResultCard: React.FC<ArticleResultCardProps> = ({
 
 const styles = StyleSheet.create({
   resultItem: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    ...COMPONENT_STYLES.CARD_CONTAINER,
   },
   resultImage: {
     width: 120,
@@ -76,22 +68,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   categoryWrapper: {
-    backgroundColor: '#ff0000',
+    backgroundColor: COLORS.PRIMARY,
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.SMALL,
     marginBottom: 8,
   },
   categoryLabel: {
-    color: 'white',
-    fontSize: 10,
-    fontWeight: 'bold',
+    color: COLORS.WHITE,
+    fontSize: TYPOGRAPHY.FONT_SIZE.TINY,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
   },
   resultTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: TYPOGRAPHY.FONT_SIZE.MEDIUM,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 8,
   },
   resultMeta: {
@@ -104,17 +96,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   sourceText: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: TYPOGRAPHY.FONT_SIZE.SMALL,
+    color: COLORS.TEXT_SECONDARY,
   },
   placeholderImage: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: COLORS.GRAY_100,
     justifyContent: 'center',
     alignItems: 'center',
   },
   placeholderText: {
-    fontSize: 12,
-    color: '#888',
+    fontSize: TYPOGRAPHY.FONT_SIZE.SMALL,
+    color: COLORS.TEXT_TERTIARY,
   },
   sourceIconContainer: {
     width: 16,
@@ -122,6 +114,6 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   sourceIconPlaceholder: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: COLORS.GRAY_100,
   },
 });

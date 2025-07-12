@@ -23,12 +23,20 @@ export const COLORS = {
   // Background Colors
   BACKGROUND_OVERLAY: 'rgba(0, 0, 0, 0.5)',
   BACKGROUND_CARD: 'rgba(255, 255, 255, 0.85)',
+  BACKGROUND_LIGHT: '#f8f9fa',
+  BACKGROUND_INPUT: '#f5f5f5',
   
   // Status Colors
   SUCCESS: '#00cc00',
   WARNING: '#ff9900',
   ERROR: '#ff0000',
   INFO: '#007AFF',
+  
+  // Text Colors
+  TEXT_PRIMARY: '#333333',
+  TEXT_SECONDARY: '#666666',
+  TEXT_TERTIARY: '#888888',
+  TEXT_PLACEHOLDER: '#888888',
 } as const;
 
 // Typography
@@ -41,6 +49,8 @@ export const TYPOGRAPHY = {
     LARGE: 16,
     XL: 18,
     XXL: 20,
+    XXXL: 28,
+    TITLE: 32,
   },
   
   // Font Weights
@@ -48,6 +58,7 @@ export const TYPOGRAPHY = {
     NORMAL: 'normal' as const,
     MEDIUM: '600' as const,
     BOLD: 'bold' as const,
+    EXTRA_BOLD: '800' as const,
   },
   
   // Line Heights
@@ -94,38 +105,97 @@ export const SPACING = {
   XXXXL: 20,
   LARGE: 24,
   XLARGE: 30,
+  XXLARGE: 40,
 } as const;
 
-// Border Radius
+// Border Radius - Centralized values found in assessment
 export const BORDER_RADIUS = {
+  NONE: 0,
   SMALL: 4,
-  MEDIUM: 6,
-  LARGE: 20,
+  MEDIUM: 8,
+  LARGE: 12,  // Most common value found (12+ instances)
+  XL: 20,
   CIRCLE: 30,
+  PILL: 40,
 } as const;
 
-// Elevation/Shadow
+// Elevation/Shadow - Centralized shadow patterns
 export const ELEVATION = {
+  NONE: {
+    elevation: 0,
+    shadowOpacity: 0,
+  },
   LOW: {
+    elevation: 2,
+    shadowColor: COLORS.BLACK,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  MEDIUM: {
     elevation: 4,
     shadowColor: COLORS.BLACK,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3,
   },
-  MEDIUM: {
+  HIGH: {
     elevation: 5,
     shadowColor: COLORS.BLACK,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
-  HIGH: {
-    elevation: 10,
+  CARD: {
+    // Standard card shadow pattern found in 8+ files
     shadowColor: COLORS.BLACK,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+} as const;
+
+// Common Component Styles - Extracted duplicated patterns
+export const COMPONENT_STYLES = {
+  // Card container pattern found in multiple components
+  CARD_CONTAINER: {
+    flexDirection: 'row' as const,
+    backgroundColor: COLORS.WHITE,
+    borderRadius: BORDER_RADIUS.LARGE,
+    overflow: 'hidden' as const,
+    marginBottom: 16,
+    ...ELEVATION.CARD,
+  },
+  
+  // Button patterns
+  BUTTON_PRIMARY: {
+    backgroundColor: COLORS.PRIMARY,
+    borderRadius: BORDER_RADIUS.LARGE,
+    paddingVertical: 15,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  
+  // Input container pattern
+  INPUT_CONTAINER: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: COLORS.BACKGROUND_INPUT,
+    borderRadius: BORDER_RADIUS.LARGE,
+    paddingHorizontal: 16,
+    height: 56,
+  },
+  
+  // Header pattern
+  HEADER_CONTAINER: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    padding: 16,
+    backgroundColor: COLORS.WHITE,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eeeeee',
   },
 } as const;
 

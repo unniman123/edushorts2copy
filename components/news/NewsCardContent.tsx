@@ -95,7 +95,7 @@ NewsCardContent.displayName = 'NewsCardContent';
 
 const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
     cardContentContainer: {
-        flex: 1.5,
+        flex: 1.48,
         marginTop: -18,
         backgroundColor: COLORS.WHITE,
         borderTopLeftRadius: BORDER_RADIUS.LARGE,
@@ -116,11 +116,11 @@ const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
     },
     categoryContainer: {
         position: 'absolute',
-        bottom: SPACING.MD, // Positioned within the white extension area
+        bottom: SPACING.XXL, // Moved closer to image boundary for enhanced visual connection
         left: smallDevice ? SPACING.XXL : SPACING.XXXL,
         backgroundColor: COLORS.PRIMARY,
         paddingHorizontal: SPACING.MD,
-        paddingVertical: SPACING.XS,
+        paddingVertical: 3,
         borderRadius: BORDER_RADIUS.MEDIUM,
         maxWidth: '60%',
     },
@@ -131,7 +131,7 @@ const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
     },
     scrollView: {
         paddingHorizontal: smallDevice ? SPACING.XXL : SPACING.XXXL,
-        paddingTop: SPACING.LARGE, // Adjusted to account for the extension area
+        paddingTop: 17, // Reduced from 17px to optimize space between category and content
         paddingBottom: SPACING.XL,
     },
     scrollViewBottomPadding: {
@@ -140,7 +140,7 @@ const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
     title: {
         fontSize: smallDevice ? TYPOGRAPHY.FONT_SIZE.XL : TYPOGRAPHY.FONT_SIZE.XXL,
         fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
-        marginBottom: SPACING.XS,
+        marginBottom: 2, // Reduced to match Inshorts minimal title-summary spacing
         color: COLORS.GRAY_900,
         lineHeight: smallDevice ? TYPOGRAPHY.LINE_HEIGHT.TIGHT : TYPOGRAPHY.LINE_HEIGHT.NORMAL,
         textAlign: 'left',
@@ -150,7 +150,7 @@ const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
         fontSize: smallDevice ? TYPOGRAPHY.FONT_SIZE.MEDIUM : TYPOGRAPHY.FONT_SIZE.LARGE,
         color: COLORS.GRAY_700,
         lineHeight: smallDevice ? TYPOGRAPHY.LINE_HEIGHT.RELAXED : TYPOGRAPHY.LINE_HEIGHT.LOOSE,
-        marginTop: SPACING.XS,
+        marginTop: 0, // Removed to achieve Inshorts-style minimal title-summary gap
         fontWeight: TYPOGRAPHY.FONT_WEIGHT.NORMAL,
         textAlign: 'left',
         letterSpacing: 0.4,

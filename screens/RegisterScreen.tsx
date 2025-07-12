@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import { COLORS, BORDER_RADIUS, TYPOGRAPHY, COMPONENT_STYLES } from '../constants/theme';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { toast } from 'sonner-native';
@@ -196,7 +197,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff'
+    backgroundColor: COLORS.WHITE
   },
   keyboard: {
     flex: 1
@@ -207,28 +208,23 @@ const styles = StyleSheet.create({
     padding: 24
   },
   header: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: TYPOGRAPHY.FONT_SIZE.XXXL,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 24,
     textAlign: 'center'
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    ...COMPONENT_STYLES.INPUT_CONTAINER,
     marginBottom: 16,
-    height: 56,
   },
   inputIcon: {
     marginRight: 12
   },
   input: {
     flex: 1,
-    fontSize: 16,
-    color: '#333'
+    fontSize: TYPOGRAPHY.FONT_SIZE.LARGE,
+    color: COLORS.TEXT_PRIMARY
   },
   termsText: {
     fontSize: 12,
@@ -237,31 +233,28 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   button: {
-    backgroundColor: '#ff0000',
-    borderRadius: 12,
+    ...COMPONENT_STYLES.BUTTON_PRIMARY,
     height: 56,
-    justifyContent: 'center',
-    alignItems: 'center',
     marginBottom: 16,
   },
   buttonDisabled: {
     opacity: 0.7
   },
   buttonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: 'white'
+    fontSize: TYPOGRAPHY.FONT_SIZE.LARGE,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
+    color: COLORS.WHITE
   },
   loginLinkContainer: {
     alignItems: 'center',
     padding: 8,
   },
   loginLinkText: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: TYPOGRAPHY.FONT_SIZE.MEDIUM,
+    color: COLORS.TEXT_SECONDARY,
   },
   loginLinkHighlight: {
-    color: '#ff0000',
-    fontWeight: 'bold',
+    color: COLORS.PRIMARY,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
   },
 });

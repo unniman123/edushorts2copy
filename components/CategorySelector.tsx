@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 
 import { useNews } from '../context/NewsContext';
+import { COLORS } from '../constants/theme';
 
 interface Category {
   id: string;
@@ -88,7 +89,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
   },  
   selectedCategory: {
-    backgroundColor: '#ff0000',
+    backgroundColor: COLORS.PRIMARY,
   },
   categoryText: {
     fontSize: 14,

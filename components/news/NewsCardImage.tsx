@@ -58,7 +58,7 @@ const NewsCardImage: React.FC<NewsCardImageProps> = memo(({
       {
         height: imageHeightAnim.interpolate({
           inputRange: [1, 1.4],
-          outputRange: [height * (isSmallDevice ? 0.33 : 0.38), height * (isSmallDevice ? 0.46 : 0.53)]
+          outputRange: [height * 0.39, height * 0.546]
         })
       }
     ]}>
@@ -76,7 +76,7 @@ const NewsCardImage: React.FC<NewsCardImageProps> = memo(({
               {
                 height: imageHeightAnim.interpolate({
                   inputRange: [1, 1.4],
-                  outputRange: [height * (isSmallDevice ? 0.33 : 0.38), height * (isSmallDevice ? 0.46 : 0.53)]
+                  outputRange: [height * 0.39, height * 0.546]
                 })
               }
             ]}
