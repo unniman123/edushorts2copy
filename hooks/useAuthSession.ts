@@ -1,3 +1,28 @@
+/**
+ * useAuthSession - Custom hook for managing authentication session persistence and validation
+ * 
+ * Provides comprehensive session management including automatic persistence to AsyncStorage,
+ * session validation with refresh threshold, and auth state change handling. Implements
+ * periodic session checks and automatic refresh when sessions are near expiration.
+ * Handles session cleanup on sign out and user deletion events.
+ * 
+ * @hook
+ * @returns {UseAuthSessionReturn} Object containing session management methods
+ * 
+ * @example
+ * const { checkSession, persistSession } = useAuthSession();
+ * 
+ * // Manual session check
+ * const isValid = await checkSession();
+ * if (!isValid) {
+ *   // Redirect to login
+ * }
+ * 
+ * // Session will automatically:
+ * // - Persist on sign in/token refresh
+ * // - Refresh when near expiration
+ * // - Clean up on sign out
+ */
 import { useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../utils/supabase';
@@ -5,12 +30,49 @@ import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner-native';
 import { AuthChangeEvent } from '@supabase/supabase-js';
 
+/**
+ * Return type for useAuthSession hook
+ * @interface UseAuthSessionReturn
+ */
+interface UseAuthSessionReturn {
+  /** Function to check and validate current session */
+  checkSession: () => Promise<boolean>;
+  /** Function to persist current session to storage */
+  persistSession: () => Promise<void>;
+}
+
+/**
+ * Return type for useRequireAuth hook
+ * @interface UseRequireAuthReturn
+ */
+interface UseRequireAuthReturn {
+  /** Whether the user is authenticated */
+  isAuthenticated: boolean;
+  /** Loading state indicator */
+  isLoading: boolean;
+}
+
+/**
+ * AsyncStorage key for session persistence
+ * @constant {string}
+ */
 const SESSION_KEY = '@edushorts/auth_session';
+
+/**
+ * Session refresh threshold in milliseconds (1 hour)
+ * Sessions will be refreshed when they expire within this timeframe
+ * @constant {number}
+ */
 const REFRESH_THRESHOLD = 60 * 60 * 1000; // 1 hour in milliseconds
 
-export function useAuthSession() {
+export function useAuthSession(): UseAuthSessionReturn {
   const { refreshSession } = useAuth();
 
+  /**
+   * Persists current session to AsyncStorage
+   * Stores access token, refresh token, and expiration time
+   * @returns {Promise<void>} Promise that resolves when session is persisted
+   */
   const persistSession = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -26,6 +88,11 @@ export function useAuthSession() {
     }
   }, []);
 
+  /**
+   * Checks current session validity and refreshes if needed
+   * Validates stored session and refreshes when near expiration
+   * @returns {Promise<boolean>} Promise that resolves to true if session is valid
+   */
   const checkSession = useCallback(async (): Promise<boolean> => {
     try {
       const sessionStr = await AsyncStorage.getItem(SESSION_KEY);
@@ -88,8 +155,27 @@ export function useAuthSession() {
   };
 }
 
-// Custom hook for protected routes that require authentication
-export function useRequireAuth(redirectTo: string = '/login') {
+/**
+ * useRequireAuth - Custom hook for components that require authentication
+ * 
+ * Provides authentication requirement checking for protected components.
+ * Automatically validates session and handles redirection logic for
+ * unauthenticated users. Integrates with useAuthSession for session validation.
+ * 
+ * @hook
+ * @param {string} [redirectTo='/login'] - Path to redirect to if not authenticated
+ * @returns {UseRequireAuthReturn} Object containing authentication state
+ * 
+ * @example
+ * const { isAuthenticated, isLoading } = useRequireAuth('/login');
+ * 
+ * if (isLoading) return <LoadingScreen />;
+ * if (!isAuthenticated) return null; // Will handle redirect
+ * 
+ * // Component content for authenticated users
+ * return <ProtectedContent />;
+ */
+export function useRequireAuth(redirectTo: string = '/login'): UseRequireAuthReturn {
   const { session, isLoading } = useAuth();
   const { checkSession } = useAuthSession();
 

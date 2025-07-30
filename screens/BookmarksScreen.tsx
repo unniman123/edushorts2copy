@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { CompositeNavigationProp } from '@react-navigation/native';
@@ -27,6 +27,7 @@ type NavigationProp = CompositeNavigationProp<
 
 export default function BookmarksScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const insets = useSafeAreaInsets();
   const { savedArticles } = useSavedArticles();
   const [loading, setLoading] = useState(false);
 
@@ -60,13 +61,13 @@ export default function BookmarksScreen() {
   ), [navigation, handleRemoveBookmark]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Saved Articles</Text>
-        <View style={{width: 24}} />
+        <View style={{ width: 24 }} />
       </View>
 
       {savedArticles.length === 0 ? (
@@ -135,7 +136,7 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     marginBottom: 24,
-  },   browseButton: {
+  }, browseButton: {
     backgroundColor: COLORS.PRIMARY,
     paddingHorizontal: 24,
     paddingVertical: 12,

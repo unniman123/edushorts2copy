@@ -4,8 +4,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { getApp } from '@react-native-firebase/app';
 import messaging from '@react-native-firebase/messaging';
+import { RootStackParamList } from './types/navigation';
 import { StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { Toaster } from 'sonner-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -46,17 +48,17 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function MainTabs() {
-  const homeScreenRef = React.useRef<{scrollToTop: () => void}>(null);
+  const homeScreenRef = React.useRef<{ scrollToTop: () => void }>(null);
   const { refreshNews } = useNews();
 
-  const handleTabPress = (tabName: string, navigation: { navigate: (screen: string, params?: any) => void; isFocused: () => boolean }) => {
+  const handleTabPress = (tabName: string, navigation: { navigate: (screen: string, params?: { screen: string }) => void; isFocused: () => boolean }) => {
     console.log('(NOBRIDGE) LOG  Tab pressed:', tabName);
-    
+
     if (tabName === 'HomeTab') {
       // Always navigate to HomeTab first
       console.log('(NOBRIDGE) LOG  Navigating to HomeTab');
       navigation.navigate('Main', { screen: 'HomeTab' });
-      
+
       // If already on HomeTab, also refresh and scroll
       if (navigation.isFocused()) {
         console.log('(NOBRIDGE) LOG  Already on HomeTab - refreshing');
@@ -99,7 +101,7 @@ function MainTabs() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-                    tabBarActiveTintColor: COLORS.PRIMARY,
+        tabBarActiveTintColor: COLORS.PRIMARY,
         tabBarInactiveTintColor: '#888',
         headerShown: false,
         tabBarStyle: {
@@ -109,9 +111,9 @@ function MainTabs() {
         },
       })}
     >
-        <Tab.Screen
+      <Tab.Screen
         name="HomeTab"
-        options={({ navigation }) => ({ 
+        options={({ navigation }) => ({
           tabBarLabel: 'Home',
           tabBarButton: (props) => (
             <TouchableOpacity
@@ -198,7 +200,7 @@ GoogleSignin.configure({
 
 function AppContent() {
   const [isAppContentReady, setIsAppContentReady] = useState(false);
-  const navigationRef = useScreenTracking();
+  const { navigationRef } = useScreenTracking();
   const [notificationListener] = useState<Notifications.Subscription | null>(null);
   const [foregroundMessageUnsubscribe, setForegroundMessageUnsubscribe] = useState<(() => void) | null>(null);
 
@@ -218,7 +220,7 @@ function AppContent() {
         // Fix: Use global messaging() for background handler, not a specific instance
         messaging().setBackgroundMessageHandler(async remoteMessage => {
           console.log('Message handled in the background!', remoteMessage);
-          
+
           const branchLink = remoteMessage.data?.branch_link || remoteMessage.data?.deep_link;
           if (branchLink && typeof branchLink === 'string') {
             try {
@@ -227,7 +229,7 @@ function AppContent() {
               console.error('Error processing Branch link from FCM:', error);
             }
           }
-          
+
           try {
             if (remoteMessage.notification) {
               console.log('Received notification-type FCM message, letting FCM handle it natively');
@@ -243,7 +245,7 @@ function AppContent() {
         // Also set up foreground message handler for when app is active
         const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
           console.log('Message handled in the foreground!', remoteMessage);
-          
+
           try {
             // For foreground messages, we need to display them manually using expo-notifications
             // since FCM won't show them when app is active
@@ -281,7 +283,7 @@ function AppContent() {
         setIsAppContentReady(true);
       } catch (error) {
         console.error('Error initializing AppContent specifics:', error);
-        setIsAppContentReady(true); 
+        setIsAppContentReady(true);
       }
     };
 
@@ -290,15 +292,15 @@ function AppContent() {
     return () => {
       const monitoringService = MonitoringService.getInstance();
       const deepLinkHandler = DeepLinkHandler.getInstance();
-      
+
       if (notificationListener) {
         notificationListener.remove();
       }
-      
+
       if (foregroundMessageUnsubscribe) {
         foregroundMessageUnsubscribe();
       }
-      
+
       monitoringService.cleanup();
       deepLinkHandler.cleanupBranchListeners();
       // if (typeof authCleanup === 'function') authCleanup();
@@ -306,10 +308,10 @@ function AppContent() {
   }, []);
 
   if (!isAppContentReady) {
-    return <LoadingScreen />; 
+    return <LoadingScreen />;
   }
 
-  const linking: LinkingOptions<any> = {
+  const linking: LinkingOptions<{}> = {
     prefixes: ['edushorts://', 'https://xbwk1.app.link', 'https://xbwk1-alternate.app.link', 'exp://localhost:19000'],
     config: {
       screens: {
@@ -341,8 +343,7 @@ function AppContent() {
             articleId: (articleId: string) => articleId
           }
         }
-      },
-      initialRouteName: 'Login'
+      }
     }
   };
 
@@ -356,7 +357,7 @@ function AppContent() {
           const deepLinkHandler = DeepLinkHandler.getInstance();
           if (navigationRef?.current) {
             deepLinkHandler.setNavigationRef(navigationRef);
-            deepLinkHandler.initialize(); 
+            deepLinkHandler.initialize();
             console.log('[AppContent] DeepLinkHandler initialized via onReady.');
           } else {
             console.error('[AppContent] Navigation reference (navigationRef.current) is unexpectedly null in onReady.');
@@ -381,7 +382,7 @@ export default function App() {
       try {
         // Initialize Firebase services ONCE here
         const firebaseAppInstance = getApp(); // Ensure Firebase app is initialized if not already done globally
-        
+
         await analyticsService.initialize(firebaseAppInstance);
         console.log('[App] AnalyticsService initialized.');
 
@@ -391,11 +392,11 @@ export default function App() {
         const notificationService = NotificationService.getInstance();
         await notificationService.initialize(firebaseAppInstance);
         console.log('[App] NotificationService initialized.');
-        
+
         const performanceMonitoringService = PerformanceMonitoringService.getInstance();
         await performanceMonitoringService.initialize(firebaseAppInstance);
         console.log('[App] PerformanceMonitoringService initialized.');
-        
+
         // Check for Branch native module availability. Actual SDK initialization is handled by DeepLinkHandler.
         if (Platform.OS !== 'web' && NativeModules.RNBranch) {
           console.log('[App] Branch native module (RNBranch) found. Branch SDK initialization is handled by DeepLinkHandler.');
@@ -418,16 +419,15 @@ export default function App() {
   return (
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider style={styles.container}>
+        <StatusBar style="auto" translucent={true} />
         <AuthProvider>
           <NewsProvider>
             <SavedArticlesProvider>
               <AdvertisementProvider>
                 <RemoteConfigProvider>
-                  <Toaster 
-                    richColors 
-                    toastOptions={{
-                      duration: 8000,
-                    } as any}
+                  <Toaster
+                    richColors
+                    duration={8000}
                   />
                   {coreServicesInitialized ? (
                     <AppContent />

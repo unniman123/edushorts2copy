@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  StatusBar,
   FlatList,
   RefreshControl,
   Alert,
@@ -51,7 +50,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
     // Use reduce for better performance
     return news.reduce((acc: ContentItem[], newsItem, index) => {
       acc.push(newsItem as ContentItem);
-      
+
       const frequency = advertisements[0]?.display_frequency || 5;
       if ((index + 1) % frequency === 0) {
         const adIndex = Math.floor(index / frequency) % advertisements.length;
@@ -66,7 +65,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
           });
         }
       }
-      
+
       return acc;
     }, []);
   }, [news, advertisements]);
@@ -93,7 +92,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
     if (newsLoading || isLoadingMore || news.length === 0) return;
 
     setIsLoadingMore(true);
-    debouncedLoadRef.current(() => 
+    debouncedLoadRef.current(() =>
       loadMoreNews()
         .catch(error => {
           console.error('Error loading more news:', error);
@@ -113,7 +112,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
 
   if (newsError) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right']}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Error: {newsError}</Text>
           <TouchableOpacity onPress={refreshNews} style={styles.retryButton}>
@@ -126,7 +125,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
 
   if (newsLoading && news.length === 0) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.PRIMARY} />
         </View>
@@ -136,7 +135,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
 
   if (!newsLoading && news.length === 0 && !newsError) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right']}>
         <View style={styles.emptyList}>
           <Text>No news available.</Text>
         </View>
@@ -160,7 +159,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
   });
 
   return (
-    <SafeAreaView style={styles.container} edges={['right', 'bottom', 'left']}>
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <PagerView
         // @ts-ignore - Ignoring the ref TypeScript error
         ref={pagerRef}

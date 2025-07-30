@@ -1,3 +1,25 @@
+/**
+ * ArticleHeader - Header component for article detail screens with navigation and actions
+ * 
+ * Renders a header bar with back navigation, bookmark toggle, and optional share button.
+ * Features loading state handling for bookmark operations, conditional icon states,
+ * and responsive action button layout. Includes proper accessibility support and
+ * visual feedback for user interactions.
+ * 
+ * @component
+ * @param {ArticleHeaderProps} props - Component properties
+ * @returns {React.ReactElement} The rendered article header component
+ * 
+ * @example
+ * <ArticleHeader
+ *   onBack={() => navigation.goBack()}
+ *   onToggleBookmark={() => handleBookmarkToggle()}
+ *   onShare={() => handleShare()}
+ *   isBookmarked={isArticleBookmarked}
+ *   isBookmarkLoading={isLoading}
+ *   enableSharing={true}
+ * />
+ */
 import React from 'react';
 import {
   View,
@@ -7,12 +29,22 @@ import {
 } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 
+/**
+ * Props interface for ArticleHeader component
+ * @interface ArticleHeaderProps
+ */
 interface ArticleHeaderProps {
+  /** Callback function for back navigation */
   onBack: () => void;
+  /** Callback function for bookmark toggle action */
   onToggleBookmark: () => void;
+  /** Callback function for share action */
   onShare: () => void;
+  /** Whether the article is currently bookmarked */
   isBookmarked: boolean;
+  /** Whether bookmark operation is in progress */
   isBookmarkLoading: boolean;
+  /** Whether to show the share button */
   enableSharing: boolean;
 }
 

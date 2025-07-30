@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -15,6 +15,7 @@ import { RootStackParamList } from '../types/navigation';
 import { Article } from '../types/supabase';
 import NewsCard from '../components/NewsCard';
 import { supabase } from '../utils/supabase';
+import { getRelativeTime } from '../utils/timeUtils';
 
 type SingleArticleViewerNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -29,7 +30,8 @@ type SingleArticleViewerRouteProp = RouteProp<
 export default function SingleArticleViewerScreen() {
   const navigation = useNavigation<SingleArticleViewerNavigationProp>();
   const route = useRoute<SingleArticleViewerRouteProp>();
-  
+  const insets = useSafeAreaInsets();
+
   const { articleId: initialArticleId, articles: initialArticles, currentIndex: initialCurrentIndex } = route.params || {};
 
   const [displayArticles, setDisplayArticles] = useState<Article[]>([]);
@@ -39,14 +41,12 @@ export default function SingleArticleViewerScreen() {
   const [error, setError] = useState<string | null>(null);
   const pagerRef = useRef<PagerView>(null);
 
-  // Date formatting function (matching newsService.ts)
-  const getFormattedDate = (date: Date): string => {
-    return date.toLocaleDateString('en-US', {
-      month: '2-digit',
-      day: '2-digit',
-      year: 'numeric'
-    });
-  };
+  // Date formatting function (matching newsService.ts) - memoized for performance
+  const getFormattedDate = useMemo(() => {
+    return (date: Date): string => {
+      return getRelativeTime(date);
+    };
+  }, []);
 
   useEffect(() => {
     const loadContent = async () => {
@@ -61,7 +61,7 @@ export default function SingleArticleViewerScreen() {
             ...article,
             formattedDate: article.formattedDate || getFormattedDate(new Date(article.created_at))
           }));
-          
+
           setDisplayArticles(articlesWithFormattedDates);
           setCurrentArticleIndex(initialCurrentIndex);
           setCurrentArticleForHeader(articlesWithFormattedDates[initialCurrentIndex]);
@@ -122,7 +122,7 @@ export default function SingleArticleViewerScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.centered}>
+      <SafeAreaView style={styles.centered} edges={['left', 'right']}>
         <ActivityIndicator size="large" color="#0066cc" />
       </SafeAreaView>
     );
@@ -130,7 +130,7 @@ export default function SingleArticleViewerScreen() {
 
   if (error || !displayArticles || displayArticles.length === 0) {
     return (
-      <SafeAreaView style={styles.centered}>
+      <SafeAreaView style={styles.centered} edges={['left', 'right']}>
         <Text style={styles.errorText}>{error || 'No article to display.'}</Text>
         <TouchableOpacity
           style={styles.backButtonExternal}
@@ -146,15 +146,15 @@ export default function SingleArticleViewerScreen() {
   const validInitialPage = Math.max(0, Math.min(currentArticleIndex, displayArticles.length - 1));
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
           <Feather name="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">
           {currentArticleForHeader?.title || 'Article'}
         </Text>
-        <View style={styles.headerButtonPlaceholder} /> 
+        <View style={styles.headerButtonPlaceholder} />
       </View>
       <PagerView
         ref={pagerRef}
@@ -204,12 +204,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   headerButton: {
-    padding: 5, 
+    padding: 5,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerButtonPlaceholder: {
-    minWidth: 34, 
+    minWidth: 34,
   },
   headerTitle: {
     flex: 1,

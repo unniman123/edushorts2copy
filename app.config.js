@@ -22,7 +22,7 @@
       ios: {
         supportsTablet: true,
         bundleIdentifier: 'com.ajilkojilgokulravi.unniman', // Updated bundle ID
-        googleServicesFile: './ios/edushorts/GoogleService-Info.plist', // Added GoogleService-Info.plist path
+        googleServicesFile: process.env.GOOGLE_SERVICES_PLIST || './ios/edushorts/GoogleService-Info.plist', // Added GoogleService-Info.plist path
         buildNumber: '1', // Adding explicit build number
         infoPlist: {
           // Branch iOS SDK configuration
@@ -56,7 +56,7 @@
           backgroundColor: '#FFFFFF'
         },
         package: 'com.ajilkojilgokulravi.unniman',
-        googleServicesFile: './android/app/google-services.json',
+        googleServicesFile: process.env.GOOGLE_SERVICES_JSON || './android/app/google-services.json',
         buildProperties: {
           appBuildGradle: {
             implementation: [
@@ -99,6 +99,7 @@
       extra: {
         supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
         supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+        expoAccessToken: process.env.EXPO_ACCESS_TOKEN,
         eas: {
           projectId: "cfa91622-46a9-49aa-86c3-177c0a05d850"
         },

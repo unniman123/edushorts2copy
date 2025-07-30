@@ -7,8 +7,9 @@ import {
   Image,
   ScrollView,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -20,8 +21,15 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function ProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const insets = useSafeAreaInsets();
   const { profile, user } = useAuth();
   const { savedArticlesCount, isLoading: statsLoading, error } = useUserStats();
+
+  const handleExternalLink = (url: string) => {
+    Linking.openURL(url).catch(err => {
+      console.error("Couldn't open URL", err);
+    });
+  };
 
   if (!profile || !user) {
     return (
@@ -32,23 +40,17 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Text style={styles.headerTitle}>Profile</Text>
-        <TouchableOpacity 
-          style={styles.settingsButton}
-          onPress={() => navigation.navigate('Settings')}
-        >
-          <Feather name="settings" size={24} color="#333" />
-        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content}>
         <View style={styles.profileSection}>
           <Image
-            source={{ 
-              uri: profile.avatar_url || 
-              `https://api.dicebear.com/7.x/initials/png?seed=${profile.username}` 
+            source={{
+              uri: profile.avatar_url ||
+                `https://api.dicebear.com/7.x/initials/png?seed=${profile.username}`
             }}
             style={styles.avatar}
           />
@@ -67,7 +69,7 @@ export default function ProfileScreen() {
                 <Text style={styles.statText}>Saved Articles</Text>
                 <Text style={styles.statCount}>{savedArticlesCount}</Text>
               </View>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.viewAllButton}
                 onPress={() => navigation.navigate('Bookmarks')}
               >
@@ -79,24 +81,52 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notification Settings</Text>
-          <TouchableOpacity 
-            style={styles.notificationSummary}
+          <Text style={styles.sectionTitle}>Support & Legal</Text>
+          <TouchableOpacity
+            style={styles.supportButton}
+            onPress={() => handleExternalLink('https://edushorts-website.vercel.app/#about')}
+          >
+            <Feather name="info" size={20} color="#666" />
+            <Text style={styles.supportButtonText}>About Us</Text>
+            <Feather name="external-link" size={16} color="#666" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.supportButton}
+            onPress={() => handleExternalLink('https://edushorts-website.vercel.app/#contact')}
+          >
+            <Feather name="mail" size={20} color="#666" />
+            <Text style={styles.supportButtonText}>Contact Us</Text>
+            <Feather name="external-link" size={16} color="#666" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.supportButton}
+            onPress={() => handleExternalLink('https://edushorts-website.vercel.app/privacy-policy.html')}
+          >
+            <Feather name="shield" size={20} color="#666" />
+            <Text style={styles.supportButtonText}>Privacy Policy</Text>
+            <Feather name="external-link" size={16} color="#666" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.supportButton}
+            onPress={() => handleExternalLink('https://edushorts-website.vercel.app/terms-conditions.html')}
+          >
+            <Feather name="file-text" size={20} color="#666" />
+            <Text style={styles.supportButtonText}>Terms & Conditions</Text>
+            <Feather name="external-link" size={16} color="#666" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>App Settings</Text>
+          <TouchableOpacity
+            style={styles.settingsButton}
             onPress={() => navigation.navigate('Settings')}
           >
-            <View style={styles.notificationIcon}>
-              <Feather 
-                name={profile.notification_preferences?.push ? 'bell' : 'bell-off'} 
-                size={20} 
-                color="#666" 
-              />
-            </View>
-            <View style={styles.notificationDetails}>
-              <Text style={styles.notificationTitle}>Push Notifications</Text>
-              <Text style={styles.notificationStatus}>
-                {profile.notification_preferences?.push ? 'Enabled' : 'Disabled'}
-              </Text>
-            </View>
+            <Feather name="settings" size={20} color="#666" />
+            <Text style={styles.settingsButtonText}>Settings</Text>
             <Feather name="chevron-right" size={20} color="#666" />
           </TouchableOpacity>
         </View>
@@ -117,7 +147,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -128,9 +158,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
-  },
-  settingsButton: {
-    padding: 8,
   },
   content: {
     flex: 1,
@@ -199,29 +226,27 @@ const styles = StyleSheet.create({
     color: '#ff0000',
     fontWeight: '600',
   },
-  notificationSummary: {
+  supportButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 12,
+    marginBottom: 8,
   },
-  notificationIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f5f5f5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  notificationDetails: {
+  supportButtonText: {
     flex: 1,
-  },
-  notificationTitle: {
+    marginLeft: 12,
     fontSize: 16,
     color: '#333',
-    marginBottom: 2,
   },
-  notificationStatus: {
-    fontSize: 14,
-    color: '#666',
+  settingsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  settingsButtonText: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 16,
+    color: '#333',
   },
 });

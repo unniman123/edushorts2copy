@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import { supabase } from '../utils/supabase';
 import { Article } from '../types/supabase';
+import { getRelativeTime } from '../utils/timeUtils';
 
 // Types
 interface FetchOptions {
@@ -53,11 +54,7 @@ const isOnline = async (): Promise<boolean> => {
 };
 
 const getFormattedDate = (date: Date): string => {
-  return date.toLocaleDateString('en-US', {
-    month: '2-digit',
-    day: '2-digit',
-    year: 'numeric'
-  });
+  return getRelativeTime(date);
 };
 
 class NewsService {

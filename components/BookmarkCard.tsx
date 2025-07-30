@@ -1,16 +1,52 @@
-import React, { memo } from 'react';
+/**
+ * BookmarkCard - Card component for displaying saved/bookmarked articles
+ * 
+ * Renders a horizontal card layout with article image, title, source information, 
+ * and timestamp showing when the article was saved. Includes a remove button for
+ * unbookmarking articles. Uses React.memo for performance optimization and memoized
+ * timestamp calculation to prevent unnecessary re-renders.
+ * 
+ * @component
+ * @param {BookmarkCardProps} props - Component properties
+ * @returns {React.ReactElement} The rendered bookmark card component
+ * 
+ * @example
+ * <BookmarkCard
+ *   item={savedArticle}
+ *   onPress={() => navigateToArticle(savedArticle.id)}
+ *   onRemove={() => removeFromBookmarks(savedArticle.id)}
+ * />
+ */
+import React, { memo, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { COLORS, BORDER_RADIUS, TYPOGRAPHY, COMPONENT_STYLES, ELEVATION } from '../constants/theme';
 import type { SavedArticle } from '../context/SavedArticlesContext';
+import { getRelativeTime } from '../utils/timeUtils';
 
+/**
+ * Props interface for BookmarkCard component
+ * @interface BookmarkCardProps
+ */
 interface BookmarkCardProps {
+  /** Saved article data containing title, image, source, and save timestamp */
   item: SavedArticle;
+  /** Callback function called when the card is pressed to view the article */
   onPress: () => void;
+  /** Callback function called when the remove button is pressed to unbookmark */
   onRemove: () => void;
 }
 
-const BookmarkCard: React.FC<BookmarkCardProps> = ({ item, onPress, onRemove }) => {
+const BookmarkCard: React.FC<BookmarkCardProps> = memo(({ item, onPress, onRemove }) => {
+  /**
+   * Memoized timestamp calculation for performance optimization
+   * Prevents unnecessary re-computation of relative time on every render
+   * @returns {string} Formatted relative time string (e.g., "2 hours ago")
+   */
+  const memoizedTimestamp = useMemo(() => {
+    return getRelativeTime(item.saved_at);
+  }, [item.saved_at]);
+
   return (
     <View style={styles.articleCard}>
       <TouchableOpacity style={styles.articleContent} onPress={onPress}>
@@ -21,7 +57,7 @@ const BookmarkCard: React.FC<BookmarkCardProps> = ({ item, onPress, onRemove }) 
           </Text>
           <View style={styles.articleMeta}>
             {item.source_name && <Text style={styles.sourceText}>{item.source_name}</Text>}
-            <Text style={styles.timeText}>{new Date(item.saved_at).toLocaleDateString()}</Text>
+            <Text style={styles.timeText}>{memoizedTimestamp}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -30,7 +66,7 @@ const BookmarkCard: React.FC<BookmarkCardProps> = ({ item, onPress, onRemove }) 
       </TouchableOpacity>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   articleCard: {
@@ -76,4 +112,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default memo(BookmarkCard); 
+export default BookmarkCard; 

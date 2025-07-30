@@ -1,3 +1,25 @@
+/**
+ * NewsCardImage - Animated image component for news cards with performance monitoring
+ * 
+ * Renders article images with double-tap zoom functionality, progressive loading,
+ * performance monitoring, and fallback handling. Features smooth animations using
+ * Animated.Value for height transitions and includes branded logo overlay.
+ * Optimized for performance with load time tracking and error handling.
+ * 
+ * @component
+ * @param {NewsCardImageProps} props - Component properties
+ * @returns {React.ReactElement} The rendered news card image component
+ * 
+ * @example
+ * <NewsCardImage
+ *   article={articleData}
+ *   isSmallDevice={isSmallDevice}
+ *   imageHeightAnim={animatedValue}
+ *   onImageDoubleTap={() => handleZoom()}
+ *   imageLoaded={isLoaded}
+ *   onImageLoad={() => setImageLoaded(true)}
+ * />
+ */
 import React, { useRef, useState, memo, useCallback } from 'react';
 import {
   View,
@@ -12,15 +34,29 @@ import { Article } from '../../types/supabase';
 import PerformanceMonitoringService from '../../services/PerformanceMonitoringService';
 import { COLORS, SPACING, BORDER_RADIUS, TYPOGRAPHY } from '../../constants/theme';
 
+/**
+ * Props interface for NewsCardImage component
+ * @interface NewsCardImageProps
+ */
 interface NewsCardImageProps {
+  /** Article data containing image path and metadata */
   article: Article;
+  /** Whether the device is considered small for responsive sizing */
   isSmallDevice: boolean;
+  /** Animated value for controlling image height transitions */
   imageHeightAnim: Animated.Value;
+  /** Callback function for double-tap zoom gesture */
   onImageDoubleTap: () => void;
+  /** Whether the image has finished loading */
   imageLoaded: boolean;
+  /** Callback function called when image finishes loading */
   onImageLoad: () => void;
 }
 
+/**
+ * Screen height constant for responsive image sizing
+ * @constant {number}
+ */
 const { height } = Dimensions.get('window');
 
 const NewsCardImage: React.FC<NewsCardImageProps> = memo(({
@@ -34,20 +70,38 @@ const NewsCardImage: React.FC<NewsCardImageProps> = memo(({
   const performanceMonitor = useRef(PerformanceMonitoringService.getInstance());
   const imageLoadStartTime = useRef(0);
 
+  /**
+   * Handles double-tap gesture for zoom functionality
+   * @returns {void}
+   */
   const handleImageDoubleTap = useCallback(() => {
     onImageDoubleTap();
   }, [onImageDoubleTap]);
 
+  /**
+   * Handles image load start for performance monitoring
+   * Records timestamp for load time calculation
+   * @returns {void}
+   */
   const handleImageLoadStart = useCallback(() => {
     imageLoadStartTime.current = Date.now();
   }, []);
 
+  /**
+   * Handles successful image load with performance tracking
+   * Records load time metrics and triggers callback
+   * @returns {void}
+   */
   const handleImageLoad = useCallback(() => {
     const loadTime = Date.now() - imageLoadStartTime.current;
     performanceMonitor.current.recordImageLoad(article.image_path!, loadTime, 0);
     onImageLoad();
   }, [article.image_path, onImageLoad]);
 
+  /**
+   * Handles image load error with graceful fallback
+   * @returns {void}
+   */
   const handleImageError = useCallback(() => {
     onImageLoad();
   }, [onImageLoad]);
@@ -76,7 +130,7 @@ const NewsCardImage: React.FC<NewsCardImageProps> = memo(({
               {
                 height: imageHeightAnim.interpolate({
                   inputRange: [1, 1.4],
-                  outputRange: [height * 0.39, height * 0.546]
+                  outputRange: [height * 0.38, height * 0.536]
                 })
               }
             ]}
@@ -92,9 +146,6 @@ const NewsCardImage: React.FC<NewsCardImageProps> = memo(({
           <Text style={styles.noImageText}>No Image Available</Text>
         </View>
       )}
-      <View style={styles.logoOverlay}>
-        <Text style={styles.logoText}>Edushorts</Text>
-      </View>
     </Animated.View>
   );
 });
@@ -114,20 +165,7 @@ const styles = StyleSheet.create({
   imageLoading: {
     opacity: 0.7,
   },
-  logoOverlay: {
-    position: 'absolute',
-    top: SPACING.LG,
-    left: SPACING.LG,
-    backgroundColor: COLORS.BACKGROUND_OVERLAY,
-    paddingHorizontal: SPACING.MD,
-    paddingVertical: SPACING.XS,
-    borderRadius: BORDER_RADIUS.SMALL,
-  },
-  logoText: {
-    color: COLORS.WHITE,
-    fontSize: TYPOGRAPHY.FONT_SIZE.SMALL,
-    fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
-  },
+
   noImage: {
     backgroundColor: COLORS.GRAY_50,
     justifyContent: 'center',

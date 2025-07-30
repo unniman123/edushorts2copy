@@ -1,3 +1,21 @@
+/**
+ * AdvertCard - Full-screen advertisement card component with interactive overlays
+ * 
+ * Renders a full-screen advertisement with image background, gradient overlay,
+ * sponsored tag, title, and call-to-action button. Automatically tracks ad impressions
+ * and handles click interactions through the advertisement service. Responsive design
+ * adapts to small devices with adjusted sizing and positioning. Uses linear gradient
+ * for better text visibility over images.
+ * 
+ * @component
+ * @param {AdvertCardProps} props - Component properties
+ * @returns {React.ReactElement} The rendered advertisement card component
+ * 
+ * @example
+ * <AdvertCard
+ *   advertisement={adData}
+ * />
+ */
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
@@ -13,7 +31,12 @@ import { Advertisement } from '../types/advertisement';
 import { advertisementService } from '../services/advertisementService';
 import { showToast } from '../utils/toast';
 
+/**
+ * Props interface for AdvertCard component
+ * @interface AdvertCardProps
+ */
 interface AdvertCardProps {
+  /** Advertisement data containing image, title, CTA text, and tracking information */
   advertisement: Advertisement;
 }
 
@@ -21,18 +44,35 @@ const AdvertCard: React.FC<AdvertCardProps> = ({ advertisement }) => {
   const { width: windowWidth } = useWindowDimensions();
   const [isSmallDevice, setIsSmallDevice] = useState(windowWidth < 375);
 
+  /**
+   * Memoized styles based on device size for responsive design
+   * @type {StyleSheet}
+   */
   const styles = React.useMemo(() => createStyleSheet(isSmallDevice), [isSmallDevice]);
 
+  /**
+   * Effect to update device size state when window dimensions change
+   * Triggers responsive layout adjustments
+   */
   useEffect(() => {
     setIsSmallDevice(windowWidth < 375);
   }, [windowWidth]);
 
+  /**
+   * Effect to track advertisement impression when component mounts
+   * Automatically records view analytics for the advertisement
+   */
   useEffect(() => {
     if (advertisement.id) {
       advertisementService.trackAdImpression(advertisement.id);
     }
   }, [advertisement.id]);
 
+  /**
+   * Handles call-to-action button press with analytics tracking
+   * @returns {Promise<void>} Promise that resolves when click is processed
+   * @throws {Error} When click handling fails
+   */
   const handleCtaPress = useCallback(async () => {
     try {
       if (advertisement.id && advertisement.cta_link) {
@@ -95,8 +135,17 @@ const AdvertCard: React.FC<AdvertCardProps> = ({ advertisement }) => {
   );
 };
 
+/**
+ * Screen dimensions for full-screen advertisement layout
+ * @constant {Object}
+ */
 const { height, width } = Dimensions.get('window');
 
+/**
+ * Creates responsive stylesheet based on device size
+ * @param {boolean} smallDevice - Whether the device is considered small (width < 375)
+ * @returns {StyleSheet} Responsive styles for the advertisement card
+ */
 const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
   fullScreenCard: {
     flex: 1,

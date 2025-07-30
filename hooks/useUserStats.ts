@@ -1,26 +1,72 @@
+/**
+ * useUserStats - Custom hook for fetching and managing user statistics
+ * 
+ * Provides user statistics including saved articles count with automatic refresh,
+ * error handling, and retry logic. Handles authentication state changes and
+ * implements exponential backoff for failed requests. Includes periodic refresh
+ * functionality and proper cleanup on unmount.
+ * 
+ * @hook
+ * @returns {UserStats} Object containing user statistics and management methods
+ * 
+ * @example
+ * const { savedArticlesCount, isLoading, error, refresh } = useUserStats();
+ * 
+ * // Display stats
+ * if (isLoading) return <LoadingSpinner />;
+ * if (error) return <ErrorMessage error={error} />;
+ * 
+ * // Manual refresh
+ * const handleRefresh = async () => {
+ *   await refresh();
+ * };
+ * 
+ * // Stats will automatically refresh every 2 minutes
+ */
 import { useState, useEffect } from 'react';
 import { PostgrestResponse, PostgrestSingleResponse, SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '../utils/supabase';
 import { useAuth } from '../context/AuthContext';
 
+/**
+ * Supabase count result type with extended properties
+ * @type {SupabaseCountResult}
+ */
 type SupabaseCountResult = {
+  /** Query result data */
   data: any[];
+  /** Error object if query failed */
   error: null | {
     message: string;
     details: string;
     code: string;
   };
+  /** Total count of matching records */
   count: number | null;
+  /** HTTP status code */
   status: number;
+  /** HTTP status text */
   statusText: string;
 };
 
+/**
+ * Combined count query response type
+ * @type {CountQueryResponse}
+ */
 type CountQueryResponse = PostgrestResponse<any[]> & Partial<SupabaseCountResult>;
 
+/**
+ * User statistics interface
+ * @interface UserStats
+ */
 interface UserStats {
+  /** Number of saved articles for the user */
   savedArticlesCount: number;
+  /** Loading state indicator */
   isLoading: boolean;
+  /** Error state if any */
   error: Error | null;
+  /** Function to manually refresh statistics */
   refresh: () => Promise<void>;
 }
 
@@ -30,6 +76,13 @@ export function useUserStats(): UserStats {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  /**
+   * Fetches user statistics from Supabase with retry logic
+   * Implements exponential backoff for failed requests and timeout handling
+   * @param {number} [retryCount=0] - Current retry attempt count
+   * @param {number} [maxRetries=2] - Maximum number of retry attempts
+   * @returns {Promise<void>} Promise that resolves when fetch is complete
+   */
   const fetchStats = async (retryCount = 0, maxRetries = 2) => {
     if (!user) {
       setIsLoading(false);
@@ -92,6 +145,10 @@ export function useUserStats(): UserStats {
   useEffect(() => {
     let isSubscribed = true;
     
+    /**
+     * Loads statistics if component is still subscribed
+     * @returns {Promise<void>} Promise that resolves when stats are loaded
+     */
     const loadStats = async () => {
       if (isSubscribed) {
         await fetchStats();

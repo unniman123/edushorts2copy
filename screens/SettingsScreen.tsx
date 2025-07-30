@@ -9,7 +9,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -22,6 +22,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Settings'>;
 
 export default function SettingsScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const insets = useSafeAreaInsets();
   const { profile, updateProfile, signOut, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -92,26 +93,26 @@ export default function SettingsScreen() {
             try {
               // Delete user profile and data
               if (!user?.id) throw new Error('User not found');
-              
+
               await Promise.all([
                 // Delete saved articles
                 supabase
                   .from('saved_articles')
                   .delete()
                   .eq('user_id', user.id),
-                
+
                 // Delete notifications
                 supabase
                   .from('notifications')
                   .delete()
                   .eq('user_id', user.id),
-                
+
                 // Delete profile
                 supabase
                   .from('profiles')
                   .delete()
                   .eq('id', user.id),
-                
+
                 // Delete user role
                 supabase
                   .from('user_roles')
@@ -144,9 +145,9 @@ export default function SettingsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity 
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
@@ -171,7 +172,7 @@ export default function SettingsScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.button}
             onPress={handleSignOut}
             disabled={isLoading}
@@ -180,7 +181,7 @@ export default function SettingsScreen() {
             <Text style={styles.buttonText}>Sign Out</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.button, styles.deleteButton]}
             onPress={handleDeleteAccount}
             disabled={isLoading}

@@ -60,7 +60,7 @@ const ArticleDetailScreen: React.FC = () => {
         message: `Check out this article: ${article.title}\n\n${branchUrl}`,
         url: branchUrl,
       });
-      
+
       analyticsService.logArticleShare({
         article_id: article.id,
         category: article.category?.name || 'Uncategorized',
@@ -91,7 +91,7 @@ const ArticleDetailScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <ArticleHeader
         onBack={() => navigation.goBack()}
         onToggleBookmark={toggleBookmark}

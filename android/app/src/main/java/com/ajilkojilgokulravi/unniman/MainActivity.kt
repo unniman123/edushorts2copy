@@ -14,8 +14,14 @@ import expo.modules.ReactActivityDelegateWrapper
 // Import Branch
 import io.branch.referral.Branch
 
+// Import for edge-to-edge support
+import androidx.core.view.WindowCompat
+
 class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
+    // Enable edge-to-edge display for Android 15 compatibility
+    WindowCompat.enableEdgeToEdge(window)
+    
     // Set the theme to AppTheme BEFORE onCreate to support
     // coloring the background, status bar, and navigation bar.
     // This is required for expo-splash-screen.

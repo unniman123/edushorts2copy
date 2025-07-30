@@ -1,3 +1,20 @@
+/**
+ * NewsCard - Full-screen interactive news article card with advanced features
+ * 
+ * A comprehensive news article display component featuring full-screen layout,
+ * responsive design, image optimization, double-tap zoom, bookmark functionality,
+ * sharing capabilities, and deep linking. Uses React.memo for performance optimization
+ * and includes adaptive text sizing, progressive image loading, and smooth animations.
+ * 
+ * @component
+ * @param {NewsCardProps} props - Component properties
+ * @returns {React.ReactElement} The rendered news card component
+ * 
+ * @example
+ * <NewsCard
+ *   article={articleData}
+ * />
+ */
 import React, { useState, memo, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   View,
@@ -21,7 +38,12 @@ import NewsCardImage from './news/NewsCardImage';
 import NewsCardContent from './news/NewsCardContent';
 import NewsCardActions from './news/NewsCardActions';
 
+/**
+ * Props interface for NewsCard component
+ * @interface NewsCardProps
+ */
 interface NewsCardProps {
+  /** Article data containing title, content, image, and metadata */
   article: Article;
 }
 
@@ -34,6 +56,11 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
   const imageHeightAnim = useRef(new Animated.Value(1)).current;
   const lastTapRef = useRef(0);
 
+  /**
+   * Calculates adaptive summary lines based on title length and device size
+   * Optimizes text display by adjusting summary line count based on title space usage
+   * @returns {number} Number of summary lines to display
+   */
   const summaryLines = useMemo(() => {
     const titleLength = article.title.length;
     // Adjusted for smaller title font size - more characters per line
@@ -50,6 +77,11 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
     return baseLines;
   }, [article.title, isSmallDevice]);
 
+  /**
+   * Calculates adaptive margins for responsive text layout
+   * Adjusts spacing based on title length and device size for optimal readability
+   * @returns {Object} Margin configuration object
+   */
   const adaptiveMargins = useMemo(() => {
     const titleLength = article.title.length;
     const avgCharsPerLine = isSmallDevice ? RESPONSIVE.CHARS_PER_LINE.SMALL.SUMMARY : RESPONSIVE.CHARS_PER_LINE.LARGE.SUMMARY;
@@ -101,6 +133,10 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
   const { savedArticles, addBookmark, removeBookmark } = useSavedArticles();
   const isSaved = savedArticles.some(saved => saved.id === article.id);
 
+  /**
+   * Handles source link press to open article in external browser
+   * @returns {void}
+   */
   const handleSourceLinkPress = useCallback(() => {
     if (article.source_url) {
       Linking.openURL(article.source_url).catch(err => {
@@ -109,6 +145,12 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
     }
   }, [article.source_url]);
 
+  /**
+   * Handles article sharing with deep link generation and tracking
+   * Creates Branch.io deep link and shares via native share API
+   * @returns {Promise<void>} Promise that resolves when sharing is complete
+   * @throws {Error} When sharing fails
+   */
   const handleShare = useCallback(async () => {
     try {
       const deepLinkHandler = DeepLinkHandler.getInstance();
@@ -131,6 +173,11 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
     }
   }, [article.id, article.title, article.summary, article.image_path]);
 
+  /**
+   * Handles bookmark toggle with user feedback
+   * Adds or removes article from saved articles with toast notifications
+   * @returns {void}
+   */
   const handleSaveToggle = useCallback(() => {
     try {
       if (isSaved) {
@@ -146,6 +193,11 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
     }
   }, [article.id, isSaved, removeBookmark, addBookmark]);
 
+  /**
+   * Handles image double-tap for zoom functionality
+   * Implements double-tap detection and smooth zoom animation with auto-reset
+   * @returns {void}
+   */
   const handleImageDoubleTap = useCallback(() => {
     const now = Date.now();
     const DOUBLE_TAP_DELAY = 300;

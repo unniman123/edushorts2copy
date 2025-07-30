@@ -1,4 +1,22 @@
-import React from 'react';
+/**
+ * ArticleResultCard - Compact card component for displaying article search results
+ * 
+ * Renders a horizontal card layout with article image, category tag, title, and source
+ * information. Used primarily in search results and article listings where space-efficient
+ * display is required. Includes fallback handling for missing images and optional source
+ * icons. Uses React.memo for performance optimization.
+ * 
+ * @component
+ * @param {ArticleResultCardProps} props - Component properties
+ * @returns {React.ReactElement} The rendered article result card component
+ * 
+ * @example
+ * <ArticleResultCard
+ *   article={articleData}
+ *   onPress={() => navigateToArticle(articleData.id)}
+ * />
+ */
+import React, { memo } from 'react';
 import {
   View,
   Text,
@@ -9,12 +27,18 @@ import {
 import { COLORS, BORDER_RADIUS, TYPOGRAPHY, COMPONENT_STYLES } from '../constants/theme';
 import { Article } from '../types/supabase';
 
+/**
+ * Props interface for ArticleResultCard component
+ * @interface ArticleResultCardProps
+ */
 interface ArticleResultCardProps {
+  /** Article data containing title, image, category, and source information */
   article: Article;
+  /** Callback function called when the card is pressed */
   onPress: () => void;
 }
 
-export const ArticleResultCard: React.FC<ArticleResultCardProps> = ({
+export const ArticleResultCard: React.FC<ArticleResultCardProps> = memo(({
   article,
   onPress,
 }) => {
@@ -52,7 +76,7 @@ export const ArticleResultCard: React.FC<ArticleResultCardProps> = ({
       </View>
     </TouchableOpacity>
   );
-};
+});
 
 const styles = StyleSheet.create({
   resultItem: {

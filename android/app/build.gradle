@@ -102,6 +102,11 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0.0"
+        
+        // Configure manifest placeholders for environment variables
+        manifestPlaceholders = [
+            BRANCH_API_KEY: System.getenv("BRANCH_API_KEY") ?: "key_live_lsvfoHjZGCGcuEseqCIYAompzweTIc13"
+        ]
     }
     signingConfigs {
         debug {

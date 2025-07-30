@@ -114,7 +114,7 @@ export default function EmailConfirmationScreen() {
     }
 
     if (confirmationStatus === 'success') {
-       return <Text style={styles.text}>Email confirmed! Redirecting to login...</Text>;
+      return <Text style={styles.text}>Email confirmed! Redirecting to login...</Text>;
     }
 
     // Default state: Show message and resend button
@@ -126,9 +126,9 @@ export default function EmailConfirmationScreen() {
           Please click the link to verify your account.
         </Text>
         {confirmationStatus === 'error' && (
-           <Text style={[styles.text, styles.errorText]}>
-             There was an issue confirming your email. Please try resending the link.
-           </Text>
+          <Text style={[styles.text, styles.errorText]}>
+            There was an issue confirming your email. Please try resending the link.
+          </Text>
         )}
         <TouchableOpacity
           style={[styles.button, isResending && styles.buttonDisabled]}
@@ -141,15 +141,15 @@ export default function EmailConfirmationScreen() {
             <Text style={styles.buttonText}>Resend Confirmation Email</Text>
           )}
         </TouchableOpacity>
-         <TouchableOpacity onPress={() => navigation.navigate('Login', {})}>
-            <Text style={styles.backToLoginText}>Back to Login</Text>
-          </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('Login', {})}>
+          <Text style={styles.backToLoginText}>Back to Login</Text>
+        </TouchableOpacity>
       </>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <View style={styles.content}>
         {renderContent()}
       </View>
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
   },
-   backToLoginText: {
+  backToLoginText: {
     marginTop: 24,
     fontSize: 14,
     color: '#ff0000',

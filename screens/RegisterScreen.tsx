@@ -113,14 +113,23 @@ export default function RegisterScreen() {
     }
   };
 
+  const handleExternalLink = (url: string) => {
+    Linking.openURL(url).catch(err => {
+      console.error("Couldn't open URL", err);
+      Alert.alert('Error', 'Unable to open the link. Please try again.');
+    });
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboard}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           <Text style={styles.header}>Sign Up</Text>
+          <Text style={styles.subHeader}>Join Edushorts - Educational News Aggregator</Text>
+
           <View style={styles.inputContainer}>
             <Feather name="user" size={20} color="#888" style={styles.inputIcon} />
             <TextInput
@@ -166,9 +175,37 @@ export default function RegisterScreen() {
             />
           </View>
 
-          <Text style={styles.termsText}>
-            By signing up, you agree to our Terms of Service and Privacy Policy
-          </Text>
+          {/* Legal Policy Links - Google Play Compliance */}
+          <View style={styles.legalLinksContainer}>
+            <Text style={styles.legalDisclaimerText}>
+              By signing up, you agree with our{' '}
+            </Text>
+            <View style={styles.legalLinksRow}>
+              <TouchableOpacity
+                onPress={() => handleExternalLink('https://edushorts-website.vercel.app/terms-conditions.html')}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={styles.legalLinkTouchable}
+              >
+                <Text style={styles.legalLinkText}>terms of use</Text>
+              </TouchableOpacity>
+              <Text style={styles.legalSeparator}> and </Text>
+              <TouchableOpacity
+                onPress={() => handleExternalLink('https://edushorts-website.vercel.app/privacy-policy.html')}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={styles.legalLinkTouchable}
+              >
+                <Text style={styles.legalLinkText}>privacy policy</Text>
+              </TouchableOpacity>
+              <Text style={styles.legalSeparator}> and for further information </Text>
+              <TouchableOpacity
+                onPress={() => handleExternalLink('https://edushorts-website.vercel.app/#contact')}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={styles.legalLinkTouchable}
+              >
+                <Text style={styles.legalLinkText}>contact us</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
 
           <TouchableOpacity
             style={[styles.button, isLoading && styles.buttonDisabled]}
@@ -211,8 +248,14 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.FONT_SIZE.XXXL,
     fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
     color: COLORS.TEXT_PRIMARY,
-    marginBottom: 24,
+    marginBottom: 8,
     textAlign: 'center'
+  },
+  subHeader: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.MEDIUM,
+    color: COLORS.TEXT_SECONDARY,
+    textAlign: 'center',
+    marginBottom: 16,
   },
   inputContainer: {
     ...COMPONENT_STYLES.INPUT_CONTAINER,
@@ -226,11 +269,37 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.FONT_SIZE.LARGE,
     color: COLORS.TEXT_PRIMARY
   },
-  termsText: {
-    fontSize: 12,
-    color: '#666',
+  // Legal Policy Links - Google Play Compliance
+  legalLinksContainer: {
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  legalDisclaimerText: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.SMALL,
+    color: COLORS.TEXT_SECONDARY,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
+  },
+  legalLinksRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  legalLinkTouchable: {
+    paddingVertical: 2,
+    paddingHorizontal: 2,
+  },
+  legalLinkText: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.SMALL,
+    color: COLORS.PRIMARY,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
+    textDecorationLine: 'underline',
+  },
+  legalSeparator: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.SMALL,
+    color: COLORS.TEXT_SECONDARY,
   },
   button: {
     ...COMPONENT_STYLES.BUTTON_PRIMARY,
