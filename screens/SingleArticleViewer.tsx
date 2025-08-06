@@ -122,7 +122,7 @@ export default function SingleArticleViewerScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.centered} edges={['left', 'right']}>
+      <SafeAreaView style={styles.centered} edges={['top', 'left', 'right', 'bottom']}>
         <ActivityIndicator size="large" color="#0066cc" />
       </SafeAreaView>
     );
@@ -130,7 +130,7 @@ export default function SingleArticleViewerScreen() {
 
   if (error || !displayArticles || displayArticles.length === 0) {
     return (
-      <SafeAreaView style={styles.centered} edges={['left', 'right']}>
+      <SafeAreaView style={styles.centered} edges={['top', 'left', 'right', 'bottom']}>
         <Text style={styles.errorText}>{error || 'No article to display.'}</Text>
         <TouchableOpacity
           style={styles.backButtonExternal}
@@ -146,8 +146,8 @@ export default function SingleArticleViewerScreen() {
   const validInitialPage = Math.max(0, Math.min(currentArticleIndex, displayArticles.length - 1));
 
   return (
-    <SafeAreaView style={styles.container} edges={['left', 'right']}>
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
+      <View style={[styles.header, { paddingTop: 12 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
           <Feather name="arrow-left" size={24} color="#333" />
         </TouchableOpacity>

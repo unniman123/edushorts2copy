@@ -30,6 +30,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { Article } from '../../types/supabase';
 import { getRelativeTime } from '../../utils/timeUtils';
+import { TYPOGRAPHY } from '../../constants/theme';
 
 /**
  * Props interface for ArticleContent component
@@ -57,7 +58,7 @@ const ArticleContent: React.FC<ArticleContentProps> = memo(({
   const memoizedTimestamp = useMemo(() => {
     return getRelativeTime(article.created_at);
   }, [article.created_at]);
-  
+
   /**
    * Article summary text (currently displays full summary without truncation)
    * @constant {string}
@@ -153,7 +154,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: TYPOGRAPHY.FONT_SIZE.LARGE, // Updated to 16sp for consistency with NewsCard titles as per industrial best practice
     fontWeight: 'bold',
     color: '#333333',
     marginBottom: 12,

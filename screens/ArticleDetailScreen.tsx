@@ -21,17 +21,20 @@ import { analyticsService } from '../services/AnalyticsService';
 
 type ArticleDetailScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
-  'SingleArticleViewer'
+  'SingleArticleViewer' | 'SavedArticlePager'
 >;
 type ArticleDetailScreenRouteProp = RouteProp<
   RootStackParamList,
-  'SingleArticleViewer'
+  'SingleArticleViewer' | 'SavedArticlePager'
 >;
 
 const ArticleDetailScreen: React.FC = () => {
   const navigation = useNavigation<ArticleDetailScreenNavigationProp>();
   const route = useRoute<ArticleDetailScreenRouteProp>();
   const { articleId } = route.params;
+
+  // Context detection: determine if accessed via SavedArticlePager route
+  const isFromSavedArticles = route.name === 'SavedArticlePager';
 
   const { config } = useRemoteConfig();
   const {
@@ -91,7 +94,7 @@ const ArticleDetailScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
       <ArticleHeader
         onBack={() => navigation.goBack()}
         onToggleBookmark={toggleBookmark}
@@ -99,6 +102,7 @@ const ArticleDetailScreen: React.FC = () => {
         isBookmarked={isBookmarked}
         isBookmarkLoading={isBookmarkLoading}
         enableSharing={config.enable_sharing}
+        hideBookmark={isFromSavedArticles}
       />
       <ScrollView
         onScroll={handleScroll}

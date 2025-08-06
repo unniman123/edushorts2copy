@@ -139,38 +139,39 @@ export const calculateOptimalWhiteExtensionHeight = (
       OPTIMIZED_SPACING.smallDevice.minWhiteExtensionHeight :
       OPTIMIZED_SPACING.largeDevice.minWhiteExtensionHeight;
   }
-};/
-  **
+};
+
+/**
  * Calculates category button positioning within the white extension area
-  * Determines the bottom position for absolute positioning
-    * 
+ * Determines the bottom position for absolute positioning
+ * 
  * @param whiteExtensionHeight - Height of the white extension area
-  * @param categoryButtonHeight - Height of the category button
-    * @param isSmallDevice - Whether the device is considered small
-      * @returns Bottom position value for absolute positioning
-        */
+ * @param categoryButtonHeight - Height of the category button
+ * @param isSmallDevice - Whether the device is considered small
+ * @returns Bottom position value for absolute positioning
+ */
 export const calculateCategoryPosition = (
-          whiteExtensionHeight: number,
-          categoryButtonHeight: number,
-          isSmallDevice: boolean
-        ): number => {
-    try {
-      // Input validation
-      if (whiteExtensionHeight <= 0 || categoryButtonHeight <= 0) {
-        return isSmallDevice ? SPACING.XXL : SPACING.XXXL; // Fallback to current positioning
-      }
-
-      // Get device-specific spacing
-      const spacing = isSmallDevice ? OPTIMIZED_SPACING.smallDevice : OPTIMIZED_SPACING.largeDevice;
-
-      // Calculate bottom position: bottom padding from white extension area
-      return spacing.bottomPadding;
-
-    } catch (error) {
-      // Fallback to current positioning
-      return isSmallDevice ? SPACING.XXL : SPACING.XXXL;
+  whiteExtensionHeight: number,
+  categoryButtonHeight: number,
+  isSmallDevice: boolean
+): number => {
+  try {
+    // Input validation
+    if (whiteExtensionHeight <= 0 || categoryButtonHeight <= 0) {
+      return isSmallDevice ? SPACING.XXL : SPACING.XXXL; // Fallback to current positioning
     }
-  };
+
+    // Get device-specific spacing
+    const spacing = isSmallDevice ? OPTIMIZED_SPACING.smallDevice : OPTIMIZED_SPACING.largeDevice;
+
+    // Calculate bottom position: bottom padding from white extension area
+    return spacing.bottomPadding;
+
+  } catch (error) {
+    // Fallback to current positioning
+    return isSmallDevice ? SPACING.XXL : SPACING.XXXL;
+  }
+};
 
 /**
  * Gets optimal spacing configuration for device type

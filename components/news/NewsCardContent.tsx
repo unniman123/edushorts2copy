@@ -22,6 +22,7 @@
  */
 import React, { memo, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { Article } from '../../types/supabase';
 import {
@@ -42,17 +43,6 @@ interface NewsCardContentProps {
   article: Article;
   /** Whether the device is considered small for responsive sizing */
   isSmallDevice: boolean;
-  /** Number of lines to display in the summary text */
-  summaryLines: number;
-  /** Adaptive margin configuration for responsive spacing */
-  adaptiveMargins: {
-    /** Bottom margin for summary text */
-    summaryMarginBottom: number;
-    /** Top margin for read more section */
-    readMoreMarginTop: number;
-    /** Bottom margin for read more section */
-    readMoreMarginBottom: number;
-  };
   /** Callback function for source link press */
   onSourceLinkPress: () => void;
 }
@@ -60,8 +50,6 @@ interface NewsCardContentProps {
 const NewsCardContent: React.FC<NewsCardContentProps> = memo(({
   article,
   isSmallDevice,
-  summaryLines,
-  adaptiveMargins,
   onSourceLinkPress,
 }) => {
   /**
@@ -94,46 +82,44 @@ const NewsCardContent: React.FC<NewsCardContentProps> = memo(({
         </View>
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        style={styles.scrollView}
-        removeClippedSubviews={true}
-        scrollEventThrottle={16}
-        overScrollMode="never"
-      >
-        <Text style={styles.title}>{article.title}</Text>
-        <Text
-          style={[
-            styles.summary,
-            { marginBottom: adaptiveMargins.summaryMarginBottom }
-          ]}
-          numberOfLines={summaryLines}
-        >
-          {article.summary}
-        </Text>
-        {article.source_url && (
-          <View style={[
-            styles.readMoreContainer,
-            {
-              marginTop: adaptiveMargins.readMoreMarginTop,
-              marginBottom: adaptiveMargins.readMoreMarginBottom,
-            }
-          ]}>
-            <TouchableOpacity
-              style={styles.readMoreButton}
-              onPress={handleSourceLinkPress}
-            >
-              <Text style={styles.readMoreText}>Read more at {article.source_name || 'Source'}</Text>
-              <Feather name="external-link" size={14} color={COLORS.PRIMARY} style={styles.linkIcon} />
-            </TouchableOpacity>
-            <Text style={styles.timestampText}>| {memoizedTimestamp}</Text>
-          </View>
-        )}
-        <View style={[
-          styles.scrollViewBottomPadding,
-          { height: adaptiveMargins.readMoreMarginBottom > 16 ? 15 : 20 }
-        ]} />
-      </ScrollView>
+      {/* Main content area with scrollable summary */}
+      <View style={styles.contentWrapper}>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>{article.title}</Text>
+        </View>
+
+        {/* Natural content flow with inline read more */}
+        <View style={styles.summaryContainer}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            style={styles.summaryScrollView}
+            contentContainerStyle={styles.summaryScrollContent}
+            removeClippedSubviews={false}
+            scrollEventThrottle={16}
+            overScrollMode="never"
+            nestedScrollEnabled={true}
+          >
+            <Text style={styles.summary}>
+              {article.summary}
+            </Text>
+
+            {/* Natural inline read more button - appears after content */}
+            {article.source_url && (
+              <View style={styles.inlineActionContainer}>
+                <TouchableOpacity
+                  style={styles.inlineReadMoreButton}
+                  onPress={handleSourceLinkPress}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.inlineReadMoreText}>Read full article</Text>
+                  <Feather name="external-link" size={10} color={COLORS.WHITE} style={styles.inlineLinkIcon} />
+                </TouchableOpacity>
+                <Text style={styles.inlineTimestamp}>{memoizedTimestamp}</Text>
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </View>
     </View>
   );
 });
@@ -147,7 +133,6 @@ const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
     backgroundColor: COLORS.WHITE,
     borderTopLeftRadius: BORDER_RADIUS.LARGE,
     borderTopRightRadius: BORDER_RADIUS.LARGE,
-    paddingBottom: SPACING.XXXXL,
     position: 'relative',
   },
   whiteExtensionArea: {
@@ -176,61 +161,83 @@ const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
     fontSize: TYPOGRAPHY.FONT_SIZE.SMALL,
     fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
   },
-  scrollView: {
+  contentWrapper: {
+    flex: 1,
     paddingHorizontal: smallDevice ? SPACING.XXL : SPACING.XXXL,
-    paddingTop: 4, // Further reduced to bring content closer to category
-    paddingBottom: SPACING.XL,
+    paddingTop: 4,
   },
-  scrollViewBottomPadding: {
-    height: SPACING.XXXL,
+  titleContainer: {
+    paddingBottom: SPACING.XS,
+  },
+  summaryContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  summaryScrollView: {
+    flex: 1,
+  },
+  summaryScrollContent: {
+    paddingBottom: SPACING.LG, // Natural spacing for inline content
   },
   title: {
-    fontSize: smallDevice ? TYPOGRAPHY.FONT_SIZE.MEDIUM : TYPOGRAPHY.FONT_SIZE.LARGE,
+    fontSize: TYPOGRAPHY.FONT_SIZE.LARGE, // Updated to 16sp for both small and large devices as per industrial best practice
     fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
     marginTop: 0,
-    marginBottom: 0, // Removed spacing to tighten layout
+    marginBottom: 2, // Minimal spacing for visual separation
     color: COLORS.GRAY_900,
-    lineHeight: smallDevice ? TYPOGRAPHY.LINE_HEIGHT.TIGHT : TYPOGRAPHY.LINE_HEIGHT.NORMAL,
+    lineHeight: smallDevice ? TYPOGRAPHY.LINE_HEIGHT.TIGHT : TYPOGRAPHY.LINE_HEIGHT.TIGHT, // Consistent tight line height
     textAlign: 'left',
-    letterSpacing: 0.2,
+    letterSpacing: 0.1, // Reduced letter spacing for more content per line
   },
   summary: {
-    fontSize: smallDevice ? TYPOGRAPHY.FONT_SIZE.MEDIUM : TYPOGRAPHY.FONT_SIZE.LARGE,
+    fontSize: smallDevice ? TYPOGRAPHY.FONT_SIZE.MEDIUM : TYPOGRAPHY.FONT_SIZE.MEDIUM, // Consistent sizing for better space utilization
     color: COLORS.GRAY_700,
-    lineHeight: smallDevice ? TYPOGRAPHY.LINE_HEIGHT.RELAXED : TYPOGRAPHY.LINE_HEIGHT.LOOSE,
+    lineHeight: smallDevice ? TYPOGRAPHY.LINE_HEIGHT.NORMAL : TYPOGRAPHY.LINE_HEIGHT.RELAXED, // Tighter line height like Inshorts
     marginTop: SPACING.XS, // Added small top margin for visual separation from title
-    marginBottom: smallDevice ? 2 : 4, // Further reduced margins while maintaining hierarchy
+    marginBottom: 2, // Minimal margin for maximum content space
     fontWeight: TYPOGRAPHY.FONT_WEIGHT.NORMAL,
     textAlign: 'left',
-    letterSpacing: 0.4,
+    letterSpacing: 0.2, // Reduced letter spacing for more content per line
   },
-  readMoreContainer: {
+  // Natural inline action container - appears after content naturally
+  inlineActionContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: SPACING.XS,
-    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+    marginTop: SPACING.MD, // Natural spacing after content
+    paddingTop: SPACING.SM, // Small padding for visual separation
   },
-  readMoreButton: {
+  inlineReadMoreButton: {
+    backgroundColor: COLORS.PRIMARY,
+    paddingHorizontal: SPACING.XS, // Compact padding
+    paddingVertical: 2, // Minimal vertical padding
+    borderRadius: 12, // Compact rounded corners
     flexDirection: 'row',
     alignItems: 'center',
-    flexShrink: 1,
+    justifyContent: 'center',
+    marginRight: SPACING.SM, // Space between button and timestamp
+    // Subtle shadow for depth
+    shadowColor: COLORS.BLACK,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
-  readMoreText: {
-    fontSize: smallDevice ? TYPOGRAPHY.FONT_SIZE.TINY : TYPOGRAPHY.FONT_SIZE.SMALL,
-    color: COLORS.PRIMARY,
+  inlineReadMoreText: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.TINY, // Compact text size
+    color: COLORS.WHITE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
-    letterSpacing: 0.1,
+    letterSpacing: 0.1, // Tight letter spacing
   },
-  linkIcon: {
-    marginLeft: SPACING.MD,
-    marginRight: SPACING.MD,
+  inlineLinkIcon: {
+    marginLeft: SPACING.XS, // Compact icon spacing
   },
-  timestampText: {
-    fontSize: smallDevice ? TYPOGRAPHY.FONT_SIZE.TINY : TYPOGRAPHY.FONT_SIZE.SMALL,
-    color: COLORS.GRAY_700,
+  inlineTimestamp: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.TINY,
+    color: COLORS.GRAY_500,
+    textAlign: 'left',
     fontWeight: TYPOGRAPHY.FONT_WEIGHT.NORMAL,
-    marginLeft: SPACING.XS,
-    flexShrink: 0,
+    flex: 1, // Take remaining space
   },
 });
 

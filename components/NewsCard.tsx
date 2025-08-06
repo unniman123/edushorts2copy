@@ -57,8 +57,8 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
   const lastTapRef = useRef(0);
 
   /**
-   * Calculates adaptive summary lines based on title length and device size
-   * Optimizes text display by adjusting summary line count based on title space usage
+   * Calculates adaptive summary lines based on title length, device size, and available screen height
+   * Optimizes text display by adjusting summary line count based on title space usage and screen real estate
    * @returns {number} Number of summary lines to display
    */
   const summaryLines = useMemo(() => {
@@ -66,42 +66,66 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
     // Adjusted for smaller title font size - more characters per line
     const avgCharsPerLine = isSmallDevice ? RESPONSIVE.CHARS_PER_LINE.SMALL.TITLE : RESPONSIVE.CHARS_PER_LINE.LARGE.TITLE;
     const estimatedTitleLines = Math.ceil(titleLength / avgCharsPerLine);
-    // Increased base lines due to title size reduction freeing up space
+
+    // Enhanced calculation with screen height consideration
+    const availableHeight = windowHeight - 400; // Subtract fixed elements height (image, category, buttons)
+    const lineHeight = isSmallDevice ? 25 : 27;
+    const maxPossibleLines = Math.floor(availableHeight / lineHeight);
+
+    // Base lines with screen height adaptation
     const baseLines = isSmallDevice ? RESPONSIVE.BASE_LINES.SMALL : RESPONSIVE.BASE_LINES.LARGE;
-    
+    const adaptiveBaseLines = Math.max(baseLines, Math.min(20, maxPossibleLines));
+
     if (estimatedTitleLines > 2) {
       const reduction = Math.min(1, estimatedTitleLines - 2);
-      return Math.max(12, baseLines - reduction);
+      return Math.max(12, adaptiveBaseLines - reduction);
     }
-    
-    return baseLines;
-  }, [article.title, isSmallDevice]);
+
+    return adaptiveBaseLines;
+  }, [article.title, isSmallDevice, windowHeight]);
 
   /**
-   * Calculates adaptive margins for responsive text layout
-   * Adjusts spacing based on title length and device size for optimal readability
+   * Simplified adaptive margins for responsive text layout
+   * Since read more button is now fixed position, we only need summary margin
    * @returns {Object} Margin configuration object
    */
   const adaptiveMargins = useMemo(() => {
-    const titleLength = article.title.length;
-    const avgCharsPerLine = isSmallDevice ? RESPONSIVE.CHARS_PER_LINE.SMALL.SUMMARY : RESPONSIVE.CHARS_PER_LINE.LARGE.SUMMARY;
-    const estimatedTitleLines = Math.ceil(titleLength / avgCharsPerLine);
-    
-    // Since read more button is now positioned absolutely, we need less bottom margin
-    if (estimatedTitleLines > 3) {
-      return {
-        summaryMarginBottom: isSmallDevice ? 4 : 6,
-        readMoreMarginTop: 0, // Not used anymore
-        readMoreMarginBottom: isSmallDevice ? 4 : 6,
-      };
-    }
-    
     return {
-      summaryMarginBottom: isSmallDevice ? 6 : 8,
-      readMoreMarginTop: 0, // Not used anymore  
-      readMoreMarginBottom: isSmallDevice ? 6 : 8,
+      summaryMarginBottom: isSmallDevice ? 8 : 12,
+      readMoreMarginTop: 0, // Not used with fixed positioning
+      readMoreMarginBottom: 0, // Not used with fixed positioning
     };
-  }, [article.title, isSmallDevice]);
+  }, [isSmallDevice]);
+
+  /**
+   * Simplified space calculation for fixed button layout
+   * Calculates optimal summary lines based on available space above fixed button
+   * @returns {Object} Smart spacing configuration with enhanced summary lines
+   */
+  const smartSpaceCalculation = useMemo(() => {
+    const screenHeight = windowHeight;
+    const fixedButtonHeight = 40; // Reduced button area height
+    const fixedElementsHeight = 280; // Optimized fixed elements (image, category, minimal margins)
+
+    // Calculate available space for content with aggressive space utilization
+    const availableContentHeight = screenHeight - fixedElementsHeight - fixedButtonHeight;
+    const lineHeight = isSmallDevice ? 22 : 24; // Tighter line height like Inshorts
+    const titleLines = Math.ceil(article.title.length / (isSmallDevice ? 35 : 40)); // More characters per line
+    const titleHeight = titleLines * (isSmallDevice ? 20 : 22); // Reduced title line height
+
+    // Calculate maximum summary lines with minimal margins
+    const availableSummaryHeight = availableContentHeight - titleHeight - 20; // Reduced margins
+    const maxSummaryLines = Math.floor(availableSummaryHeight / lineHeight);
+
+    // More aggressive line calculation - prioritize content over whitespace
+    const enhancedSummaryLines = Math.max(12, Math.min(maxSummaryLines, summaryLines + 4));
+
+    return {
+      adaptiveBottomPadding: 0, // Not needed with fixed positioning
+      bonusSummaryLines: 0, // Calculated differently now
+      enhancedSummaryLines
+    };
+  }, [windowHeight, article.title.length, summaryLines, isSmallDevice]);
 
   const styles = useMemo(() => createStyleSheet(windowWidth, windowHeight), [windowWidth, windowHeight]);
 
@@ -201,7 +225,7 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
   const handleImageDoubleTap = useCallback(() => {
     const now = Date.now();
     const DOUBLE_TAP_DELAY = 300;
-    
+
     if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
       const toValue = isImageExpanded ? 1 : 1.4;
       if (!isImageExpanded) setIsImageExpanded(true);
@@ -243,12 +267,10 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
         imageLoaded={imageLoaded}
         onImageLoad={() => setImageLoaded(true)}
       />
-      
+
       <NewsCardContent
         article={article}
         isSmallDevice={isSmallDevice}
-        summaryLines={summaryLines}
-        adaptiveMargins={adaptiveMargins}
         onSourceLinkPress={handleSourceLinkPress}
       />
 
@@ -265,10 +287,10 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
 
 const createStyleSheet = (width: number, height: number) => StyleSheet.create({
   fullScreenCard: {
-    flex: 1, 
+    flex: 1,
     backgroundColor: COLORS.WHITE,
-    height: height, 
-    width: width,   
+    height: height,
+    width: width,
   },
 });
 

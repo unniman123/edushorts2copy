@@ -7,7 +7,6 @@ import messaging from '@react-native-firebase/messaging';
 import { RootStackParamList } from './types/navigation';
 import { StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
 import { Toaster } from 'sonner-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -419,7 +418,6 @@ export default function App() {
   return (
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider style={styles.container}>
-        <StatusBar style="auto" translucent={true} />
         <AuthProvider>
           <NewsProvider>
             <SavedArticlesProvider>
