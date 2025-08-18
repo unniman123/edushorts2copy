@@ -39,31 +39,39 @@ class MainActivity : ReactActivity() {
    * Configure status bar appearance natively using WindowInsetsController
    * This replaces expo-status-bar to avoid deprecated Window color API calls
    * Equivalent to <StatusBar style="light" translucent={true} />
+   * Enhanced based on Android 15 edge-to-edge video guidelines
    */
   private fun configureStatusBarAppearance() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
       // Android 11+ (API 30+) - Use WindowInsetsController (modern approach)
-      window.insetsController?.setSystemBarsAppearance(
-        WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
-        WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
-      )
-      
-      // Also configure navigation bar to prevent Material components from using deprecated APIs
-      window.insetsController?.setSystemBarsAppearance(
-        0, // Clear any navigation bar appearance flags
-        WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
-      )
+      window.insetsController?.apply {
+        // Set light status bar icons for better visibility on light backgrounds
+        setSystemBarsAppearance(
+          0, // Clear light status bar flags for dark icons on light background
+          WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+        )
+        
+        // For three-button navigation: make navigation bar transparent
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+          isNavigationBarContrastEnforced = false
+        }
+      }
     } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       // Android 6+ (API 23+) - Use systemUiVisibility (fallback)
       @Suppress("DEPRECATION")
       window.decorView.systemUiVisibility = 
-        window.decorView.systemUiVisibility or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        window.decorView.systemUiVisibility and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
         
       // Configure navigation bar for Android 8+ (API 26+)
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         @Suppress("DEPRECATION")
         window.decorView.systemUiVisibility = 
-          window.decorView.systemUiVisibility or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+          window.decorView.systemUiVisibility and View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR.inv()
+      }
+      
+      // Make navigation bar transparent for three-button navigation (Android 10+)
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        window.isNavigationBarContrastEnforced = false
       }
     }
     // For Android versions below API 23, light status bar is not supported

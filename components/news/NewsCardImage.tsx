@@ -140,10 +140,24 @@ const NewsCardImage: React.FC<NewsCardImageProps> = memo(({
             onLoad={handleImageLoad}
             onError={handleImageError}
           />
+          
+          {/* Category overlay positioned on image */}
+          <View style={[styles.categoryOverlay, isSmallDevice && styles.categoryOverlaySmall]}>
+            <Text style={styles.categoryOverlayText} numberOfLines={1}>
+              {article.category?.name || 'General'}
+            </Text>
+          </View>
         </TouchableOpacity>
       ) : (
         <View style={[styles.cardImage, styles.noImage]}>
           <Text style={styles.noImageText}>No Image Available</Text>
+          
+          {/* Category overlay for no-image state */}
+          <View style={[styles.categoryOverlay, isSmallDevice && styles.categoryOverlaySmall, styles.categoryOverlayNoImage]}>
+            <Text style={styles.categoryOverlayText} numberOfLines={1}>
+              {article.category?.name || 'General'}
+            </Text>
+          </View>
         </View>
       )}
     </Animated.View>
@@ -165,7 +179,6 @@ const styles = StyleSheet.create({
   imageLoading: {
     opacity: 0.7,
   },
-
   noImage: {
     backgroundColor: COLORS.GRAY_50,
     justifyContent: 'center',
@@ -180,6 +193,39 @@ const styles = StyleSheet.create({
   imageWrapper: {
     width: '100%',
     height: '100%',
+  },
+  // Category overlay styles - positioned on image for space optimization
+  categoryOverlay: {
+    position: 'absolute',
+    top: SPACING.XXL,
+    left: SPACING.XXXL,
+    backgroundColor: COLORS.PRIMARY,
+    paddingHorizontal: SPACING.SM,
+    paddingVertical: SPACING.XS,
+    borderRadius: BORDER_RADIUS.MEDIUM,
+    maxWidth: '60%',
+    // Enhanced visibility with shadow
+    shadowColor: COLORS.BLACK,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  categoryOverlaySmall: {
+    top: SPACING.XXL,
+    left: SPACING.XXL,
+    paddingHorizontal: SPACING.XS,
+    paddingVertical: 2,
+  },
+  categoryOverlayText: {
+    color: COLORS.WHITE,
+    fontSize: TYPOGRAPHY.FONT_SIZE.SMALL,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
+    textAlign: 'center',
+  },
+  categoryOverlayNoImage: {
+    // Darker background for better contrast on gray background
+    backgroundColor: COLORS.PRIMARY_DARK,
   },
 });
 

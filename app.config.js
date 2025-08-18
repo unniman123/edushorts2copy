@@ -127,7 +127,20 @@ module.exports = ({ config }) => {
             compileSdkVersion: 35,
             targetSdkVersion: 35,
             minSdkVersion: 24,
-            ndkVersion: "26.0.10792818"
+            ndkVersion: "26.1.10909125",
+            packagingOptions: {
+              jniLibs: {
+                useLegacyPackaging: false
+              }
+            },
+            // Configure 16KB page size alignment for Android 15+ devices
+            proguardMinifyEnabled: true,
+            enableProguardInReleaseBuilds: true,
+            // Add explicit 16KB alignment flags for NDK 26.x
+            unstable_enableAndroidJni: true,
+            unstable_androidJniBuildAbi: ["arm64-v8a", "armeabi-v7a"],
+            // 16KB alignment linker flags
+            androidGradlePluginVersion: "8.5.1"
           }
         }
       ],

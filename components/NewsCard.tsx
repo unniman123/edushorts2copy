@@ -291,6 +291,8 @@ const createStyleSheet = (width: number, height: number) => StyleSheet.create({
     backgroundColor: COLORS.WHITE,
     height: height,
     width: width,
+    overflow: 'hidden', // Ensure clean edges and prevent content overflow
+    borderRadius: 0, // No border radius on main container to avoid edge conflicts
   },
 });
 

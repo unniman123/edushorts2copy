@@ -23,7 +23,6 @@
 import React, { memo, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Feather } from '@expo/vector-icons';
 import { Article } from '../../types/supabase';
 import {
   COLORS,
@@ -45,12 +44,17 @@ interface NewsCardContentProps {
   isSmallDevice: boolean;
   /** Callback function for source link press */
   onSourceLinkPress: () => void;
+  /** Available content height for ScrollView constraints */
+  availableContentHeight?: number;
+  /** Maximum summary lines to display before showing read more */
+  maxSummaryLines?: number;
 }
 
 const NewsCardContent: React.FC<NewsCardContentProps> = memo(({
   article,
   isSmallDevice,
   onSourceLinkPress,
+  // availableContentHeight and maxSummaryLines kept in interface for future use
 }) => {
   /**
    * Handles source link press with callback optimization
@@ -73,16 +77,7 @@ const NewsCardContent: React.FC<NewsCardContentProps> = memo(({
 
   return (
     <View style={styles.cardContentContainer}>
-      {/* White extension area that overlaps the image - similar to Inshorts pattern */}
-      <View style={styles.whiteExtensionArea}>
-        <View style={styles.categoryContainer}>
-          <Text style={styles.categoryText} numberOfLines={1}>
-            {article.category?.name || 'General'}
-          </Text>
-        </View>
-      </View>
-
-      {/* Main content area with scrollable summary */}
+      {/* Main content area with scrollable summary - no white extension needed */}
       <View style={styles.contentWrapper}>
         <View style={styles.titleContainer}>
           <Text style={styles.title}>{article.title}</Text>
@@ -102,19 +97,18 @@ const NewsCardContent: React.FC<NewsCardContentProps> = memo(({
             <Text style={styles.summary}>
               {article.summary}
             </Text>
-
-            {/* Natural inline read more button - appears after content */}
+            
+            {/* Actions positioned immediately below summary */}
             {article.source_url && (
-              <View style={styles.inlineActionContainer}>
+              <View style={styles.belowSummaryActions}>
                 <TouchableOpacity
-                  style={styles.inlineReadMoreButton}
+                  style={styles.readMoreButton}
                   onPress={handleSourceLinkPress}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.inlineReadMoreText}>Read full article</Text>
-                  <Feather name="external-link" size={10} color={COLORS.WHITE} style={styles.inlineLinkIcon} />
+                  <Text style={styles.readMoreText}>Read full article</Text>
                 </TouchableOpacity>
-                <Text style={styles.inlineTimestamp}>{memoizedTimestamp}</Text>
+                <Text style={styles.timestamp}>{memoizedTimestamp}</Text>
               </View>
             )}
           </ScrollView>
@@ -128,46 +122,29 @@ NewsCardContent.displayName = 'NewsCardContent';
 
 const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
   cardContentContainer: {
-    flex: 1.48,
-    marginTop: -22, // Further increased negative margin to pull content up more
+    flex: 1,
     backgroundColor: COLORS.WHITE,
     borderTopLeftRadius: BORDER_RADIUS.LARGE,
     borderTopRightRadius: BORDER_RADIUS.LARGE,
     position: 'relative',
-  },
-  whiteExtensionArea: {
-    position: 'absolute',
-    top: -30,
-    left: 0,
-    right: 0,
-    height: 40, // Reduced height to minimize white space
-    backgroundColor: COLORS.WHITE,
-    borderTopLeftRadius: BORDER_RADIUS.LARGE,
-    borderTopRightRadius: BORDER_RADIUS.LARGE,
-    zIndex: 5,
-  },
-  categoryContainer: {
-    position: 'absolute',
-    bottom: SPACING.LG, // Further reduced to move closer to image border
-    left: smallDevice ? SPACING.XXL : SPACING.XXXL,
-    backgroundColor: COLORS.PRIMARY,
-    paddingHorizontal: 2, // Reduced from SPACING.XS to 2px for minimal whitespace
-    paddingVertical: 2,
-    borderRadius: BORDER_RADIUS.MEDIUM,
-    maxWidth: '60%',
-  },
-  categoryText: {
-    color: COLORS.WHITE,
-    fontSize: TYPOGRAPHY.FONT_SIZE.SMALL,
-    fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
+    marginTop: -BORDER_RADIUS.LARGE, // Perfect overlap matching border radius for seamless transition
+    // Add subtle shadow for depth and clean edge definition
+    shadowColor: COLORS.BLACK,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   contentWrapper: {
     flex: 1,
-    paddingHorizontal: smallDevice ? SPACING.XXL : SPACING.XXXL,
-    paddingTop: 4,
+    paddingTop: SPACING.LG, // Adequate top padding for clean content start
+    paddingBottom: SPACING.XS, // Minimal bottom padding to maximize content space
+    paddingLeft: smallDevice ? SPACING.XXL : SPACING.XXXL, // Responsive left padding for consistent edges
+    paddingRight: smallDevice ? SPACING.XXL : SPACING.XXXL, // Responsive right padding for consistent edges
+    minHeight: 200, // Ensure minimum content area height
   },
   titleContainer: {
-    paddingBottom: SPACING.XS,
+    paddingBottom: SPACING.XS, // Restored proper spacing for readability
   },
   summaryContainer: {
     flex: 1,
@@ -175,9 +152,11 @@ const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
   },
   summaryScrollView: {
     flex: 1,
+    minHeight: 120, // Ensure minimum space for content and read more button
   },
   summaryScrollContent: {
-    paddingBottom: SPACING.LG, // Natural spacing for inline content
+    paddingBottom: SPACING.XLARGE, // Generous padding to ensure read more button is always visible
+    minHeight: 100, // Minimum content height to guarantee scroll space for read more
   },
   title: {
     fontSize: TYPOGRAPHY.FONT_SIZE.LARGE, // Updated to 16sp for both small and large devices as per industrial best practice
@@ -194,50 +173,39 @@ const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
     color: COLORS.GRAY_700,
     lineHeight: smallDevice ? TYPOGRAPHY.LINE_HEIGHT.NORMAL : TYPOGRAPHY.LINE_HEIGHT.RELAXED, // Tighter line height like Inshorts
     marginTop: SPACING.XS, // Added small top margin for visual separation from title
-    marginBottom: 2, // Minimal margin for maximum content space
+    marginBottom: 0, // No bottom margin to ensure actions appear immediately below
     fontWeight: TYPOGRAPHY.FONT_WEIGHT.NORMAL,
     textAlign: 'left',
     letterSpacing: 0.2, // Reduced letter spacing for more content per line
   },
-  // Natural inline action container - appears after content naturally
-  inlineActionContainer: {
+
+  // Actions positioned below summary with minimal spacing
+  belowSummaryActions: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    marginTop: SPACING.MD, // Natural spacing after content
-    paddingTop: SPACING.SM, // Small padding for visual separation
+    marginTop: 4, // Minimal spacing - immediately below summary
+    paddingHorizontal: 0, // No horizontal padding to align with content edges
   },
-  inlineReadMoreButton: {
-    backgroundColor: COLORS.PRIMARY,
-    paddingHorizontal: SPACING.XS, // Compact padding
-    paddingVertical: 2, // Minimal vertical padding
-    borderRadius: 12, // Compact rounded corners
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  readMoreButton: {
+    backgroundColor: 'transparent',
+    paddingHorizontal: 0, // No padding for clean text appearance
+    paddingVertical: 0,
     marginRight: SPACING.SM, // Space between button and timestamp
-    // Subtle shadow for depth
-    shadowColor: COLORS.BLACK,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
   },
-  inlineReadMoreText: {
-    fontSize: TYPOGRAPHY.FONT_SIZE.TINY, // Compact text size
-    color: COLORS.WHITE,
-    fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
-    letterSpacing: 0.1, // Tight letter spacing
+  readMoreText: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.TINY, // Same size as timestamp
+    color: COLORS.PRIMARY, // Use primary color to indicate interactivity
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD, // Slightly bolder to distinguish from timestamp
+    letterSpacing: 0.1, // Consistent with timestamp
+    textDecorationLine: 'underline', // Add underline to indicate link
   },
-  inlineLinkIcon: {
-    marginLeft: SPACING.XS, // Compact icon spacing
-  },
-  inlineTimestamp: {
+  timestamp: {
     fontSize: TYPOGRAPHY.FONT_SIZE.TINY,
     color: COLORS.GRAY_500,
     textAlign: 'left',
     fontWeight: TYPOGRAPHY.FONT_WEIGHT.NORMAL,
-    flex: 1, // Take remaining space
+    letterSpacing: 0.1,
   },
 });
 
