@@ -2,6 +2,7 @@ import { Article } from './supabase'; // Assuming supabase types are in the same
 
 export type RootStackParamList = {
   Main: { screen: keyof MainTabParamList } | undefined;
+  Guest: { screen: keyof GuestTabParamList } | undefined;
   SingleArticleViewer: { articleId: string; articles?: Article[]; currentIndex?: number; source?: string; branch?: boolean; notification?: boolean; };
   SavedArticlePager: { articleId: string }; // Added for saved articles PagerView
   Discover: undefined;
@@ -11,6 +12,8 @@ export type RootStackParamList = {
   Login: { 
     emailConfirmed?: boolean; 
     pendingConfirmation?: boolean;
+    returnTo?: string; // Where to navigate after successful login
+    context?: string; // Context for why login is required
   };
   Register: undefined;
   EmailConfirmation: {
@@ -29,6 +32,14 @@ export type MainTabParamList = {
   DiscoverTab: undefined;
   BookmarksTab: undefined; // This is the screen that lists bookmarks
   ProfileTab: undefined;
+};
+
+// Guest mode tab navigation - read-only access
+export type GuestTabParamList = {
+  HomeTab: undefined;
+  DiscoverTab: undefined;
+  LoginPrompt: { context?: string; feature?: string; }; // Replaces Bookmarks for guests
+  ProfilePrompt: { context?: string; }; // Replaces Profile for guests
 };
 
 // Define route params for easier type checking

@@ -121,9 +121,10 @@ export default function SingleArticleViewerScreen() {
   };
 
   if (loading) {
+    const SkeletonReader = require('../components/SkeletonReader').default;
     return (
       <SafeAreaView style={styles.centered} edges={['top', 'left', 'right', 'bottom']}>
-        <ActivityIndicator size="large" color="#0066cc" />
+        <SkeletonReader />
       </SafeAreaView>
     );
   }

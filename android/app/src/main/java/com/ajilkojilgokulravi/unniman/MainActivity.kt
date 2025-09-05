@@ -53,7 +53,7 @@ class MainActivity : ReactActivity() {
         
         // For three-button navigation: make navigation bar transparent
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-          isNavigationBarContrastEnforced = false
+          window.isNavigationBarContrastEnforced = false
         }
       }
     } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

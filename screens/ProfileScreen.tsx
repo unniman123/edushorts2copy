@@ -32,9 +32,10 @@ export default function ProfileScreen() {
   };
 
   if (!profile || !user) {
+    const SkeletonProfile = require('../components/SkeletonNewsCard').default;
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#ff0000" />
+        <SkeletonProfile />
       </View>
     );
   }

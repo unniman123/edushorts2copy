@@ -84,6 +84,17 @@ export default function DiscoverScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleSearch]);
 
+  // Lazy-require skeleton to avoid bundler issues when not used
+  const RequireSkeleton = React.useMemo(() => {
+    try {
+      // eslint-disable-next-line global-require
+      return require('../components/SkeletonArticleResult').default;
+    } catch (e) {
+      // Fallback to a minimal inline placeholder
+      return () => <View style={{ height: 120, backgroundColor: '#eee', borderRadius: 12, marginBottom: 16 }} />;
+    }
+  }, []);
+
   const renderItem = useCallback(({ item, index }: { item: Article; index: number }) => (
     <ArticleResultCard
       article={item}
@@ -138,7 +149,14 @@ export default function DiscoverScreen() {
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0066cc" />
+          {/* Use skeleton placeholders for discover results */}
+          <View style={{ width: '100%', paddingHorizontal: 16 }}>
+            <View style={{ height: 12 }} />
+            {/* Render a few skeleton rows */}
+            <RequireSkeleton />
+            <RequireSkeleton />
+            <RequireSkeleton />
+          </View>
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>

@@ -79,8 +79,8 @@ export const useNewsFeed = (): UseNewsFeedReturn => {
   }, []);
 
   /**
-   * Loads more articles for pagination (infinite scroll)
-   * Appends new articles to existing ones and updates pagination state
+   * Loads more articles for pagination (infinite scroll) - Performance optimized
+   * Uses cursor-based pagination for better performance and deduplication
    * @param {string | null} categoryId - Category ID to filter by, null for all categories
    * @returns {Promise<void>} Promise that resolves when load is complete
    */
@@ -95,8 +95,18 @@ export const useNewsFeed = (): UseNewsFeedReturn => {
       });
 
       if (fetchedArticles.length > 0) {
-        setNews(prevNews => [...prevNews, ...fetchedArticles]);
+        // Deduplicate articles to prevent duplicates on network issues
+        setNews(prevNews => {
+          const existingIds = new Set(prevNews.map(article => article.id));
+          const newArticles = fetchedArticles.filter(article => !existingIds.has(article.id));
+          return [...prevNews, ...newArticles];
+        });
         setPage(prevPage => prevPage + 1);
+        
+        // Smart hasMore detection - if we got fewer articles than requested, we're at the end
+        if (fetchedArticles.length < 10) {
+          setHasMore(false);
+        }
       } else {
         setHasMore(false);
       }

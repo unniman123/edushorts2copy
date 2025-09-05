@@ -18,6 +18,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { RootStackParamList, MainTabParamList } from '../types/navigation';
 import BookmarkCard from '../components/BookmarkCard';
+// Lazy skeletons
+const SkeletonBookmarkItem = require('../components/SkeletonBookmarkItem').default;
 import { COLORS, BORDER_RADIUS, TYPOGRAPHY, COMPONENT_STYLES } from '../constants/theme';
 
 type NavigationProp = CompositeNavigationProp<

@@ -214,4 +214,105 @@ export const getResponsiveSpacing = (
   smallSpacing: number,
   largeSpacing: number,
   deviceWidth: number
-): number => isSmallDevice(deviceWidth) ? smallSpacing : largeSpacing; 
+): number => isSmallDevice(deviceWidth) ? smallSpacing : largeSpacing;
+
+// Static NewsCard styles - Performance optimized
+export const NEWSCARD_STATIC_STYLES = {
+  fullScreenCard: {
+    flex: 1,
+    backgroundColor: COLORS.WHITE,
+    overflow: 'hidden' as const,
+    borderRadius: 0,
+    margin: 0,
+    padding: 0,
+  },
+} as const;
+
+// Static NewsCardContent styles - Performance optimized
+export const NEWSCARD_CONTENT_STATIC_STYLES = {
+  cardContentContainer: {
+    flex: 1,
+    backgroundColor: COLORS.WHITE,
+    borderTopLeftRadius: BORDER_RADIUS.LARGE,
+    borderTopRightRadius: BORDER_RADIUS.LARGE,
+    position: 'relative' as const,
+    marginTop: -BORDER_RADIUS.LARGE,
+    shadowColor: COLORS.BLACK,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  contentWrapperBase: {
+    flex: 1,
+    paddingTop: SPACING.MD,
+    paddingBottom: SPACING.XS,
+    minHeight: 200,
+  },
+  categoryContainer: {
+    paddingBottom: 2,
+    alignItems: 'flex-start' as const,
+  },
+  categoryButton: {
+    backgroundColor: COLORS.PRIMARY,
+    paddingHorizontal: 2,
+    paddingVertical: 1,
+    borderRadius: BORDER_RADIUS.SMALL,
+    maxWidth: '35%',
+    alignSelf: 'flex-start' as const,
+    shadowColor: COLORS.BLACK,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  belowSummaryActions: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'flex-start' as const,
+    marginTop: 4,
+    paddingHorizontal: 0,
+  },
+  readMoreButton: {
+    backgroundColor: 'transparent',
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    marginRight: SPACING.SM,
+  },
+  categoryText: {
+    color: COLORS.WHITE,
+    fontSize: TYPOGRAPHY.FONT_SIZE.TINY,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
+    textAlign: 'center' as const,
+    letterSpacing: 0.5,
+  },
+  readMoreText: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.TINY,
+    color: COLORS.PRIMARY,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
+    letterSpacing: 0.1,
+    textDecorationLine: 'underline' as const,
+  },
+  timestamp: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.TINY,
+    color: COLORS.GRAY_500,
+    textAlign: 'left' as const,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.NORMAL,
+    letterSpacing: 0.1,
+  },
+  titleContainer: {
+    paddingBottom: SPACING.XS,
+  },
+  summaryContainer: {
+    flex: 1,
+    position: 'relative' as const,
+  },
+  summaryScrollView: {
+    flex: 1,
+    minHeight: 120,
+  },
+  summaryScrollContent: {
+    paddingBottom: SPACING.XLARGE,
+    minHeight: 100,
+  },
+} as const; 

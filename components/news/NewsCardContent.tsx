@@ -20,7 +20,7 @@
  *   onSourceLinkPress={() => openSourceLink()}
  * />
  */
-import React, { memo, useCallback, useMemo } from 'react';
+import React, { memo, useCallback, useMemo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Article } from '../../types/supabase';
@@ -32,6 +32,7 @@ import {
   getResponsiveFontSize,
   getResponsiveSpacing
 } from '../../constants/theme';
+// logger import removed after debugging
 
 /**
  * Props interface for NewsCardContent component
@@ -72,13 +73,29 @@ const NewsCardContent: React.FC<NewsCardContentProps> = memo(({
   const memoizedTimestamp = useMemo(() => {
     return article.formattedDate;
   }, [article.formattedDate]);
-
   const styles = createStyleSheet(isSmallDevice);
+
+  // Threshold (px) under which we keep generous bottom padding to ensure CTA visibility
+  const PADDING_THRESHOLD = 220;
+  const [scrollContentHeight, setScrollContentHeight] = useState<number>(0);
+
+  useEffect(() => {
+    // no-op: debug logging removed after investigation
+  }, [scrollContentHeight, article.id]);
 
   return (
     <View style={styles.cardContentContainer}>
       {/* Main content area with scrollable summary - no white extension needed */}
       <View style={styles.contentWrapper}>
+        {/* Category button positioned above title */}
+        <View style={styles.categoryContainer}>
+          <View style={styles.categoryButton}>
+            <Text style={styles.categoryText} numberOfLines={1}>
+              {article.category?.name || 'General'}
+            </Text>
+          </View>
+        </View>
+
         <View style={styles.titleContainer}>
           <Text style={styles.title}>{article.title}</Text>
         </View>
@@ -88,7 +105,11 @@ const NewsCardContent: React.FC<NewsCardContentProps> = memo(({
           <ScrollView
             showsVerticalScrollIndicator={false}
             style={styles.summaryScrollView}
-            contentContainerStyle={styles.summaryScrollContent}
+            contentContainerStyle={[
+              styles.summaryScrollContent,
+              { paddingBottom: scrollContentHeight < PADDING_THRESHOLD ? SPACING.XLARGE : SPACING.MD }
+            ]}
+            onContentSizeChange={(_, h) => setScrollContentHeight(h)}
             removeClippedSubviews={false}
             scrollEventThrottle={16}
             overScrollMode="never"
@@ -97,7 +118,7 @@ const NewsCardContent: React.FC<NewsCardContentProps> = memo(({
             <Text style={styles.summary}>
               {article.summary}
             </Text>
-            
+
             {/* Actions positioned immediately below summary */}
             {article.source_url && (
               <View style={styles.belowSummaryActions}>
@@ -114,6 +135,7 @@ const NewsCardContent: React.FC<NewsCardContentProps> = memo(({
           </ScrollView>
         </View>
       </View>
+      {/* External actions container removed in favor of conditional bottom padding approach */}
     </View>
   );
 });
@@ -143,6 +165,31 @@ const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
     paddingRight: smallDevice ? SPACING.XXL : SPACING.XXXL, // Responsive right padding for consistent edges
     minHeight: 200, // Ensure minimum content area height
   },
+  categoryContainer: {
+    paddingBottom: 0, // remove extra space so button touches title area cleanly
+    alignItems: 'flex-start', // Align category to left
+  },
+  categoryButton: {
+    backgroundColor: COLORS.PRIMARY,
+    paddingHorizontal: SPACING.XS, // small horizontal padding so text fits neatly
+    paddingVertical: SPACING.XS / 2, // subtle vertical padding for balanced look
+    borderRadius: BORDER_RADIUS.SMALL,
+    maxWidth: '36%', // slightly increased width for better text fit
+    alignSelf: 'flex-start', // Ensure button only takes needed space
+    // Keep subtle shadow but minimal to avoid extra perceived spacing
+    shadowColor: COLORS.BLACK,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 1.5,
+    elevation: 2,
+  },
+  categoryText: {
+    color: COLORS.WHITE,
+    fontSize: TYPOGRAPHY.FONT_SIZE.TINY, // Reduced font size for smaller button
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
+    textAlign: 'center',
+    letterSpacing: 0.5, // Slight letter spacing for better readability at smaller size
+  },
   titleContainer: {
     paddingBottom: SPACING.XS, // Restored proper spacing for readability
   },
@@ -152,11 +199,11 @@ const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
   },
   summaryScrollView: {
     flex: 1,
-    minHeight: 120, // Ensure minimum space for content and read more button
+    minHeight: 0, // relaxed: allow content to size naturally
   },
   summaryScrollContent: {
     paddingBottom: SPACING.XLARGE, // Generous padding to ensure read more button is always visible
-    minHeight: 100, // Minimum content height to guarantee scroll space for read more
+    minHeight: 0, // allow content to size naturally; conditional padding handles short content
   },
   title: {
     fontSize: TYPOGRAPHY.FONT_SIZE.LARGE, // Updated to 16sp for both small and large devices as per industrial best practice
@@ -187,6 +234,7 @@ const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
     marginTop: 4, // Minimal spacing - immediately below summary
     paddingHorizontal: 0, // No horizontal padding to align with content edges
   },
+  // actionsContainerOutside removed - using conditional padding inside ScrollView instead
   readMoreButton: {
     backgroundColor: 'transparent',
     paddingHorizontal: 0, // No padding for clean text appearance

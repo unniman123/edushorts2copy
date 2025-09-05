@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { NavigationContainer, LinkingOptions, useNavigation } from '@react-navigation/native';
+import { createNativeStackNavigator, NativeStackNavigationOptions } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { getApp } from '@react-native-firebase/app';
 import messaging from '@react-native-firebase/messaging';
 import { RootStackParamList } from './types/navigation';
-import { StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { StyleSheet, TouchableOpacity, Platform, StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Toaster } from 'sonner-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,21 +30,44 @@ import PerformanceMonitoringService from './services/PerformanceMonitoringServic
 import { NativeModules } from 'react-native';
 import { COLORS } from './constants/theme';
 
+// Core screens - Always loaded for performance
 import LoadingScreen from './screens/LoadingScreen';
 import HomeScreen from './screens/HomeScreen';
 import DiscoverScreen from './screens/DiscoverScreen';
 import ArticleDetailScreen from './screens/ArticleDetailScreen';
-import SingleArticleViewer from './screens/SingleArticleViewer';
 import BookmarksScreen from './screens/BookmarksScreen';
+import LoginPromptScreen from './screens/LoginPromptScreen';
+
+// Performance-optimized screens with conditional loading
 import ProfileScreen from './screens/ProfileScreen';
+import SettingsScreen from './screens/SettingsScreen';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
-import SettingsScreen from './screens/SettingsScreen';
 import EmailConfirmationScreen from './screens/EmailConfirmationScreen';
 import ResetPasswordScreen from './screens/ResetPasswordScreen';
+import SingleArticleViewer from './screens/SingleArticleViewer';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+
+// Performance optimization: Memoized screen components
+const MemoizedProfileScreen = React.memo(ProfileScreen);
+const MemoizedSettingsScreen = React.memo(SettingsScreen);
+const MemoizedLoginScreen = React.memo(LoginScreen);
+const MemoizedRegisterScreen = React.memo(RegisterScreen);
+const MemoizedEmailConfirmationScreen = React.memo(EmailConfirmationScreen);
+const MemoizedResetPasswordScreen = React.memo(ResetPasswordScreen);
+const MemoizedSingleArticleViewer = React.memo(SingleArticleViewer);
+
+// Simple lazy-loading style transition
+const getAuthScreenOptions = (): NativeStackNavigationOptions => {
+  return {
+    headerShown: false,
+    animation: 'fade',
+    animationDuration: 250,
+    gestureEnabled: true,
+  };
+};
 
 function MainTabs() {
   const homeScreenRef = React.useRef<{ scrollToTop: () => void }>(null);
@@ -136,9 +159,140 @@ function MainTabs() {
       />
       <Tab.Screen
         name="ProfileTab"
-        component={ProfileScreen}
         options={{ tabBarLabel: 'Profile' }}
+      >
+        {() => <MemoizedProfileScreen />}
+      </Tab.Screen>
+    </Tab.Navigator>
+  );
+}
+
+function GuestTabs() {
+  const homeScreenRef = React.useRef<{ scrollToTop: () => void }>(null);
+  const { refreshNews } = useNews();
+  const navigation = useNavigation<any>();
+
+  const handleGuestTabPress = (tabName: string) => {
+    console.log('Guest tab pressed:', tabName);
+
+    if (tabName === 'HomeTab') {
+      navigation.navigate('Guest', { screen: 'HomeTab' });
+      if (navigation.isFocused()) {
+        refreshNews()
+          .then(() => {
+            homeScreenRef.current?.scrollToTop();
+          })
+          .catch((error) => {
+            console.error('Guest refresh failed:', error);
+          });
+      }
+    } else if (tabName === 'DiscoverTab') {
+      navigation.navigate('Guest', { screen: 'DiscoverTab' });
+    } else if (tabName === 'LoginPrompt') {
+      // Navigate to login with context about why login is needed
+      navigation.navigate('Login', { 
+        returnTo: 'Guest',
+        context: 'bookmarks'
+      });
+    } else if (tabName === 'ProfilePrompt') {
+      // Navigate to login with profile context
+      navigation.navigate('Login', { 
+        returnTo: 'Guest',
+        context: 'profile'
+      });
+    }
+  };
+
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName: typeof Ionicons.defaultProps.name;
+
+          switch (route.name) {
+            case 'HomeTab':
+              iconName = focused ? 'home' : 'home-outline';
+              break;
+            case 'DiscoverTab':
+              iconName = focused ? 'compass' : 'compass-outline';
+              break;
+            case 'LoginPrompt':
+              iconName = focused ? 'bookmark' : 'bookmark-outline';
+              break;
+            case 'ProfilePrompt':
+              iconName = focused ? 'person' : 'person-outline';
+              break;
+            default:
+              iconName = 'help-outline';
+          }
+
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: COLORS.PRIMARY,
+        tabBarInactiveTintColor: '#888',
+        headerShown: false,
+        tabBarStyle: {
+          borderTopWidth: 1,
+          borderTopColor: '#eeeeee',
+          elevation: 0,
+        },
+      })}
+    >
+      <Tab.Screen
+        name="HomeTab"
+        options={{
+          tabBarLabel: 'Home',
+          tabBarButton: (props) => (
+            <TouchableOpacity
+              {...props}
+              onPress={() => handleGuestTabPress('HomeTab')}
+            />
+          )
+        }}
+      >
+        {() => <HomeScreen ref={homeScreenRef} />}
+      </Tab.Screen>
+      <Tab.Screen
+        name="DiscoverTab"
+        component={DiscoverScreen}
+        options={{ 
+          tabBarLabel: 'Discover',
+          tabBarButton: (props) => (
+            <TouchableOpacity
+              {...props}
+              onPress={() => handleGuestTabPress('DiscoverTab')}
+            />
+          )
+        }}
       />
+      <Tab.Screen
+        name="LoginPrompt"
+        options={{ 
+          tabBarLabel: 'Saved',
+          tabBarButton: (props) => (
+            <TouchableOpacity
+              {...props}
+              onPress={() => handleGuestTabPress('LoginPrompt')}
+            />
+          )
+        }}
+      >
+        {() => <LoginPromptScreen context="bookmarks" />}
+      </Tab.Screen>
+      <Tab.Screen
+        name="ProfilePrompt"
+        options={{ 
+          tabBarLabel: 'Profile',
+          tabBarButton: (props) => (
+            <TouchableOpacity
+              {...props}
+              onPress={() => handleGuestTabPress('ProfilePrompt')}
+            />
+          )
+        }}
+      >
+        {() => <LoginPromptScreen context="profile" />}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 }
@@ -146,13 +300,21 @@ function MainTabs() {
 function RootStackNavigator() {
   const { isLoading, session } = useAuth();
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [appMode, setAppMode] = useState<'guest' | 'auth' | 'authenticated'>('guest');
 
   useEffect(() => {
     // Mark as initialized after first auth check
     if (!isLoading) {
       setHasInitialized(true);
+      // Determine app mode based on session
+      if (session) {
+        setAppMode('authenticated');
+      } else {
+        // Default to guest mode instead of forcing auth
+        setAppMode('guest');
+      }
     }
-  }, [isLoading]);
+  }, [isLoading, session]);
 
   // Only show loading screen on initial load or if explicitly loading after init
   if (!hasInitialized || (hasInitialized && isLoading)) {
@@ -165,24 +327,55 @@ function RootStackNavigator() {
         headerShown: false,
       }}
     >
-      {session ? (
-        // Authenticated stack
+      {appMode === 'authenticated' ? (
+        // Authenticated stack - Full access with memoized components
         <>
           <Stack.Screen name="Main" component={MainTabs} />
-          <Stack.Screen name="SingleArticleViewer" component={SingleArticleViewer} />
+          <Stack.Screen name="SingleArticleViewer" component={MemoizedSingleArticleViewer} />
           <Stack.Screen name="SavedArticlePager" component={ArticleDetailScreen} />
           <Stack.Screen name="Discover" component={DiscoverScreen} />
           <Stack.Screen name="Bookmarks" component={BookmarksScreen} />
-          <Stack.Screen name="Profile" component={ProfileScreen} />
-          <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="Profile" component={MemoizedProfileScreen} />
+          <Stack.Screen name="Settings" component={MemoizedSettingsScreen} />
+          <Stack.Screen name="Login" component={MemoizedLoginScreen} />
+          <Stack.Screen name="Register" component={MemoizedRegisterScreen} />
+          <Stack.Screen name="EmailConfirmation" component={MemoizedEmailConfirmationScreen} />
+          <Stack.Screen name="ResetPassword" component={MemoizedResetPasswordScreen} />
+        </>
+      ) : appMode === 'guest' ? (
+        // Guest stack - Browse with auth prompts and memoized components
+        <>
+          <Stack.Screen name="Guest" component={GuestTabs} />
+          <Stack.Screen name="SingleArticleViewer" component={MemoizedSingleArticleViewer} />
+          <Stack.Screen name="Discover" component={DiscoverScreen} />
+          <Stack.Screen 
+            name="Login" 
+            component={MemoizedLoginScreen}
+            options={getAuthScreenOptions()}
+          />
+          <Stack.Screen 
+            name="Register" 
+            component={MemoizedRegisterScreen}
+            options={getAuthScreenOptions()}
+          />
+          <Stack.Screen 
+            name="EmailConfirmation" 
+            component={MemoizedEmailConfirmationScreen}
+            options={getAuthScreenOptions()}
+          />
+          <Stack.Screen 
+            name="ResetPassword" 
+            component={MemoizedResetPasswordScreen}
+            options={getAuthScreenOptions()}
+          />
         </>
       ) : (
-        // Auth stack
+        // Auth stack - Login required mode with memoized components
         <>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="EmailConfirmation" component={EmailConfirmationScreen} />
-          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+          <Stack.Screen name="Login" component={MemoizedLoginScreen} />
+          <Stack.Screen name="Register" component={MemoizedRegisterScreen} />
+          <Stack.Screen name="EmailConfirmation" component={MemoizedEmailConfirmationScreen} />
+          <Stack.Screen name="ResetPassword" component={MemoizedResetPasswordScreen} />
         </>
       )}
     </Stack.Navigator>
@@ -417,7 +610,12 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={styles.container}>
-      <SafeAreaProvider style={styles.container}>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent={true}
+      />
+      <SafeAreaProvider>
         <AuthProvider>
           <NewsProvider>
             <SavedArticlesProvider>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,11 +9,14 @@ import {
   Platform,
   ScrollView,
   Alert,
+  Animated,
+  Easing,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, BORDER_RADIUS, TYPOGRAPHY } from '../constants/theme';
 import { COMMON_STYLES } from '../constants/commonStyles';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import { useAuth } from '../context/AuthContext';
@@ -28,10 +31,47 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
 export default function LoginScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<any>();
   const { isLoading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Get navigation context from route params
+  const { returnTo, context } = route.params || {};
+
+  // Entrance animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(8)).current; // small upward motion
+  const scale = useRef(new Animated.Value(0.995)).current; // subtle pop
+
+  useEffect(() => {
+    // Composite entrance animation for smoother visual transition
+    // Slower duration and easing for a gentler appearance
+    const duration = 420;
+    const ease = Easing.out(Easing.cubic);
+
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration,
+        easing: ease,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration,
+        easing: ease,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scale, {
+        toValue: 1,
+        duration,
+        easing: ease,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -54,7 +94,14 @@ export default function LoginScreen() {
           throw error;
         }
       } else if (user) {
-        navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+        // Navigate based on where user came from
+        if (returnTo === 'Guest') {
+          // User came from guest mode, send them to authenticated main
+          navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+        } else {
+          // Default navigation for direct login
+          navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+        }
       }
     } catch (error: unknown) {
       const errorMessage = handleAuthError(error, {
@@ -116,25 +163,51 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.backgroundImage}>
-      <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardAvoidingView}
-        >
+    <LinearGradient
+      colors={['#ffffff', '#f8f8f8', '#f0f0f0']}
+      style={styles.backgroundImage}
+    >
+      <Animated.View 
+        style={[
+          styles.animatedContainer,
+          {
+            opacity: fadeAnim,
+            transform: [
+              { translateY: translateY },
+              { scale: scale },
+            ],
+          }
+        ]}
+      >
+        <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
+        {/* Fixed Logo Section - Not affected by keyboard */}
+        <View style={styles.logoSection}>
+                      <View style={styles.logoContainer}>
+              <Image
+                source={require('../assets/adaptive-icon-foreground.png')}
+                style={styles.logo}
+                onError={(error) => console.error('LoginScreen: Error loading logo:', error)}
+              />
+              <Text style={styles.logoText}>Edushorts</Text>
+              <Text style={styles.taglineText}>
+                {context === 'bookmarks' 
+                  ? 'Sign in to save articles and access them anywhere, anytime.'
+                  : context === 'profile' 
+                  ? 'Sign in to access your personalized education hub'
+                  : context === 'notifications'
+                  ? 'Sign in to receive personalized education alerts'
+                  : 'One simplified feed for the latest trusted foreign education and visa insights'
+                }
+              </Text>
+            </View>
+        </View>
+
+        {/* Keyboard-Responsive Form Section */}
+        <View style={styles.keyboardAvoidingView}>
           <ScrollView
             contentContainerStyle={styles.scrollContainer}
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.logoContainer}>
-              <Image
-                source={require('../assets/app-logo.png')}
-                style={styles.logo}
-              />
-              <Text style={styles.logoText}>Edushorts</Text>
-              <Text style={styles.taglineText}>One simplified feed for the latest trusted foreign education and visa insights</Text>
-            </View>
-
             <View style={styles.formContainer}>
               <AuthForm
                 email={email}
@@ -185,9 +258,10 @@ export default function LoginScreen() {
               </View>
             </View>
           </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </View>
+        </View>
+        </SafeAreaView>
+      </Animated.View>
+    </LinearGradient>
   );
 }
 
@@ -196,19 +270,28 @@ const styles = StyleSheet.create({
     ...COMMON_STYLES.flex1,
     backgroundColor: COLORS.WHITE,
   },
+  animatedContainer: {
+    ...COMMON_STYLES.flex1,
+  },
   container: {
-    ...COMMON_STYLES.flexCenter,
+    ...COMMON_STYLES.flex1,
+  },
+  logoSection: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 15,
+    ...COMMON_STYLES.centerHorizontal,
   },
   keyboardAvoidingView: COMMON_STYLES.flex1,
   scrollContainer: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingVertical: 24,
-    ...COMMON_STYLES.centerVertical,
+    paddingBottom: 24,
+    justifyContent: 'flex-start',
   },
   logoContainer: {
     ...COMMON_STYLES.centerHorizontal,
-    marginBottom: 20,
+    marginBottom: 10,
   },
   logo: {
     width: 80,
@@ -229,7 +312,7 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.FONT_SIZE.MEDIUM,
     color: COLORS.TEXT_SECONDARY,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   formContainer: {
     marginBottom: 16,

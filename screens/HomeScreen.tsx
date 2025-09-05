@@ -9,9 +9,8 @@ import {
   FlatList,
   RefreshControl,
   Alert,
-  Platform,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNews } from '../context/NewsContext';
 import { useAdvertisements } from '../context/AdvertisementContext';
 import NewsCard from '../components/NewsCard';
@@ -40,17 +39,6 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
   const { news, loading: newsLoading, error: newsError, refreshNews, loadMoreNews } = useNews();
   const { advertisements } = useAdvertisements();
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const insets = useSafeAreaInsets();
-
-  // Apply top/bottom safe area only on Android 15+ (API 35+) where edge-to-edge is default.
-  // This preserves current layout on older Android versions and iOS.
-  const containerPadding = React.useMemo(() => {
-    const isAndroid15OrHigher = Platform.OS === 'android' && Number(Platform.Version) >= 35;
-    if (isAndroid15OrHigher) {
-      return { paddingTop: insets.top, paddingBottom: insets.bottom };
-    }
-    return null;
-  }, [insets.top, insets.bottom]);
 
   // Function to merge news and ads
   const getMergedContent = useCallback((): ContentItem[] => {
@@ -124,7 +112,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
 
   if (newsError) {
     return (
-      <SafeAreaView testID="home-safe-area" style={[styles.container, containerPadding]} edges={['left', 'right']}>
+      <SafeAreaView style={styles.container} edges={['left', 'right']}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Error: {newsError}</Text>
           <TouchableOpacity onPress={refreshNews} style={styles.retryButton}>
@@ -136,10 +124,12 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
   }
 
   if (newsLoading && news.length === 0) {
+    // Show a skeleton-based placeholder while initial news load is in progress
+    const SkeletonNewsCard = require('../components/SkeletonNewsCard').default;
     return (
-      <SafeAreaView testID="home-safe-area" style={[styles.container, containerPadding]} edges={['left', 'right']}>
+      <SafeAreaView style={styles.container} edges={['left', 'right']}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+          <SkeletonNewsCard />
         </View>
       </SafeAreaView>
     );
@@ -147,7 +137,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
 
   if (!newsLoading && news.length === 0 && !newsError) {
     return (
-      <SafeAreaView testID="home-safe-area" style={[styles.container, containerPadding]} edges={['left', 'right']}>
+      <SafeAreaView style={styles.container} edges={['left', 'right']}>
         <View style={styles.emptyList}>
           <Text>No news available.</Text>
         </View>
@@ -171,7 +161,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
   });
 
   return (
-    <SafeAreaView testID="home-safe-area" style={[styles.container, containerPadding]} edges={['left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <PagerView
         // @ts-ignore - Ignoring the ref TypeScript error
         ref={pagerRef}

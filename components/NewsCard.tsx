@@ -32,6 +32,8 @@ import { Article } from '../types/supabase';
 import { useSavedArticles } from '../context/SavedArticlesContext';
 import { showToast } from '../utils/toast';
 import DeepLinkHandler from '../services/DeepLinkHandler';
+import { useGuestAuth } from '../hooks/useGuestAuth';
+import AuthPromptModal from './AuthPromptModal';
 import { COLORS, RESPONSIVE } from '../constants/theme';
 
 import NewsCardImage from './news/NewsCardImage';
@@ -155,6 +157,15 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
 
   const [showIcons, setShowIcons] = useState(false);
   const { savedArticles, addBookmark, removeBookmark } = useSavedArticles();
+  const { 
+    isGuest, 
+    promptForAuth, 
+    modalVisible, 
+    modalContent, 
+    closeModal, 
+    handleModalSignIn, 
+    handleModalCreateAccount 
+  } = useGuestAuth();
   const isSaved = savedArticles.some(saved => saved.id === article.id);
 
   /**
@@ -199,10 +210,16 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
 
   /**
    * Handles bookmark toggle with user feedback
-   * Adds or removes article from saved articles with toast notifications
+   * Shows auth prompt for guests, adds/removes article from saved articles for authenticated users
    * @returns {void}
    */
   const handleSaveToggle = useCallback(() => {
+    if (isGuest) {
+      // Show contextual auth prompt for guest users
+      promptForAuth('bookmarks', `Sign in to save "${article.title}" and access it anywhere.`);
+      return;
+    }
+
     try {
       if (isSaved) {
         removeBookmark(article.id);
@@ -215,7 +232,7 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
       console.error('Error saving/unsaving article:', error.message);
       showToast('error', 'Error updating bookmarks');
     }
-  }, [article.id, isSaved, removeBookmark, addBookmark]);
+  }, [article.id, article.title, isSaved, removeBookmark, addBookmark, isGuest, promptForAuth]);
 
   /**
    * Handles image double-tap for zoom functionality
@@ -281,6 +298,18 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
           onShare={handleShare}
         />
       )}
+
+      {/* Auth Prompt Modal */}
+      <AuthPromptModal
+        visible={modalVisible}
+        onClose={closeModal}
+        onSignIn={handleModalSignIn}
+        onCreateAccount={handleModalCreateAccount}
+        context={modalContent.context}
+        title={modalContent.title}
+        message={modalContent.message}
+        loginText={modalContent.loginText}
+      />
     </TouchableOpacity>
   );
 });
@@ -293,6 +322,8 @@ const createStyleSheet = (width: number, height: number) => StyleSheet.create({
     width: width,
     overflow: 'hidden', // Ensure clean edges and prevent content overflow
     borderRadius: 0, // No border radius on main container to avoid edge conflicts
+    margin: 0, // Ensure no margins prevent edge-to-edge display
+    padding: 0, // Ensure no padding prevents edge-to-edge display
   },
 });
 

@@ -137,9 +137,10 @@ export default function SettingsScreen() {
   };
 
   if (!profile) {
+    const SkeletonSettings = require('../components/SkeletonSettings').default;
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#ff0000" />
+        <SkeletonSettings />
       </View>
     );
   }

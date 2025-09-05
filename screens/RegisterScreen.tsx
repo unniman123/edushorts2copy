@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,9 @@ import {
   Platform,
   StyleSheet,
   ScrollView,
-  Alert
+  Alert,
+  Animated,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -28,6 +30,17 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Simple lazy-loading style fade
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, []);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSignUp = async () => {
@@ -121,12 +134,24 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
+    <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboard}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+          <View style={styles.logoSection}>
+            <View style={styles.logoContainer}>
+              <Image
+                source={require('../assets/adaptive-icon-foreground.png')}
+                style={styles.logo}
+                onError={() => { /* keep silent; image is non-critical */ }}
+              />
+              <Text style={styles.logoText}>Edushorts</Text>
+            </View>
+          </View>
+
           <Text style={styles.header}>Sign Up</Text>
           <Text style={styles.subHeader}>Join Edushorts - Educational News Aggregator</Text>
 
@@ -227,7 +252,8 @@ export default function RegisterScreen() {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </Animated.View>
   );
 }
 
@@ -235,6 +261,27 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.WHITE
+  },
+  logoSection: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 8,
+    alignItems: 'center',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  logo: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+  },
+  logoText: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.TITLE,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.EXTRA_BOLD,
+    color: COLORS.PRIMARY,
+    marginTop: 8,
   },
   keyboard: {
     flex: 1

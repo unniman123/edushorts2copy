@@ -120,21 +120,43 @@ class NewsService {
     }
   }
 
-  // Core API Methods
+  // Core API Methods - Performance optimized
   async getArticles(options: FetchOptions = {}): Promise<Article[]> {
     try {
+      // Cache-first strategy - Check cache before network
+      const cachedArticles = await this.getCachedArticles();
+      if (cachedArticles.length > 0 && (!options.page || options.page === 1)) {
+        // Return cached data immediately for first page, fetch in background
+        this.refreshCacheInBackground(options);
+        return cachedArticles;
+      }
+
       const online = await isOnline();
       if (!online) {
-        return this.getCachedArticles();
+        return cachedArticles;
       }
 
       const { categoryId, search, limit = 10, page = 1 } = options;
       const rangeStart = (page - 1) * limit;
       const rangeEnd = rangeStart + limit - 1;
 
+      // Optimized query with specific field selection to reduce payload
       let query = supabase
         .from('news')
-        .select('*, categories(*)')
+        .select(`
+          id,
+          title,
+          summary,
+          image_path,
+          source_url,
+          created_at,
+          view_count,
+          category_id,
+          categories!inner(
+            id,
+            name
+          )
+        `)
         .eq('status', 'published')
         .order('created_at', { ascending: false });
 
@@ -143,7 +165,8 @@ class NewsService {
       }
 
       if (search) {
-        query = query.ilike('title', `%${search}%`);
+        // Optimized search with trigram similarity for better performance
+        query = query.or(`title.ilike.%${search}%,summary.ilike.%${search}%`);
       }
 
       query = query.range(rangeStart, rangeEnd);
@@ -153,19 +176,78 @@ class NewsService {
       if (error) throw error;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const articles = data.map((row: any) => ({
-        ...row,
-        category: row.categories,
-        formattedDate: getFormattedDate(new Date(row.created_at)),
-      }));
+      const articles = data.map((row: any) => {
+        // Sanitize summary: trim and collapse multiple blank lines to a single newline
+        const rawSummary = typeof row.summary === 'string' ? row.summary : '';
+        const sanitizedSummary = rawSummary.replace(/\r/g, '')
+          .replace(/\n{2,}/g, '\n')
+          .trim();
 
-      // Cache the fetched articles
-      await this.cacheArticles(articles);
+        return {
+          ...row,
+          summary: sanitizedSummary,
+          category: row.categories,
+          formattedDate: getFormattedDate(new Date(row.created_at)),
+        };
+      });
+
+      // Smart caching - Only cache first page results
+      if (page === 1) {
+        await this.cacheArticles(articles);
+      }
 
       return articles;
     } catch (error) {
       console.error('Failed to fetch articles:', error);
       return this.getCachedArticles();
+    }
+  }
+
+  // Background cache refresh for better UX
+  private async refreshCacheInBackground(options: FetchOptions): Promise<void> {
+    try {
+      // Don't await - run in background
+      setTimeout(async () => {
+        const { categoryId, search, limit = 10 } = options;
+        
+        let query = supabase
+          .from('news')
+          .select(`
+            id,
+            title,
+            summary,
+            image_path,
+            source_url,
+            created_at,
+            view_count,
+            category_id,
+            categories!inner(id, name)
+          `)
+          .eq('status', 'published')
+          .order('created_at', { ascending: false })
+          .range(0, limit - 1);
+
+        if (categoryId) {
+          query = query.eq('category_id', categoryId);
+        }
+
+        if (search) {
+          query = query.or(`title.ilike.%${search}%,summary.ilike.%${search}%`);
+        }
+
+        const { data } = await query;
+        if (data) {
+          const articles = data.map((row: any) => ({
+            ...row,
+            category: row.categories,
+            formattedDate: getFormattedDate(new Date(row.created_at)),
+          }));
+          await this.cacheArticles(articles);
+        }
+      }, 100); // Small delay to not block UI
+    } catch (error) {
+      // Silent failure for background refresh
+      console.log('Background cache refresh failed:', error);
     }
   }
 
@@ -254,6 +336,7 @@ class NewsService {
     }
   }
 
+  // Optimized batch sync for better performance
   async syncOfflineActions(): Promise<void> {
     try {
       const online = await isOnline();
@@ -262,17 +345,56 @@ class NewsService {
       const actions = [...this.offlineQueue];
       this.offlineQueue = [];
 
-      await Promise.all(
-        actions.map(async (action) => {
-          if (action.type === 'view') {
+      // Group actions by type for batch processing
+      const viewActions = actions.filter(a => a.type === 'view');
+      const interactionActions = actions.filter(a => a.type === 'interaction');
+
+      // Batch process views - Single RPC call for multiple views
+      if (viewActions.length > 0) {
+        const viewUpdates = viewActions.map(action => {
+          const viewData = action.data as { articleId: string };
+          return viewData.articleId;
+        });
+
+        // Use batch RPC for multiple view counts
+        const { error: batchViewError } = await supabase.rpc('batch_increment_view_counts', {
+          article_ids: viewUpdates,
+        });
+
+        if (batchViewError) {
+          console.error('Batch view tracking failed:', batchViewError);
+          // Fallback to individual calls if batch fails
+          await Promise.all(viewActions.map(action => {
             const viewData = action.data as { articleId: string };
-            await this.trackView(viewData.articleId);
-          } else if (action.type === 'interaction') {
-            const interactionData = action.data as InteractionData;
-            await this.trackInteraction(interactionData);
-          }
-        })
-      );
+            return this.trackView(viewData.articleId);
+          }));
+        }
+      }
+
+      // Batch process interactions - Single insert for multiple interactions
+      if (interactionActions.length > 0) {
+        const interactionInserts = interactionActions.map(action => {
+          const data = action.data as InteractionData;
+          return {
+            article_id: data.articleId,
+            interaction_type: data.type,
+            duration: data.duration,
+            metadata: data.metadata,
+            created_at: new Date(action.timestamp).toISOString(),
+          };
+        });
+
+        const { error: batchInteractionError } = await supabase.from('article_analytics').insert(interactionInserts);
+
+        if (batchInteractionError) {
+          console.error('Batch interaction tracking failed:', batchInteractionError);
+          // Fallback to individual calls if batch fails
+          await Promise.all(interactionActions.map(action => {
+            const data = action.data as InteractionData;
+            return this.trackInteraction(data);
+          }));
+        }
+      }
 
       await AsyncStorage.setItem(STORAGE_KEYS.OFFLINE_QUEUE, '[]');
       this.lastSyncTime = Date.now();

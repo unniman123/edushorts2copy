@@ -12,7 +12,7 @@ module.exports = ({ config }) => {
     icon: './assets/adaptive-icon-foreground.png',
     userInterfaceStyle: 'light',
     splash: {
-      image: './assets/splash icon.png', // Updated splash icon
+      image: './assets/adaptive-icon-foreground.png', // Updated splash icon for consistency
       resizeMode: 'cover', // Changed from 'contain' to 'cover'
       backgroundColor: '#ffffff'
     },

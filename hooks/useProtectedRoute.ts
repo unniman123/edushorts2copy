@@ -22,6 +22,7 @@
  * if (!isAuthorized) return <UnauthorizedScreen />;
  */
 import { useEffect } from 'react';
+import { InteractionManager } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
@@ -50,7 +51,7 @@ interface UseProtectedRouteReturn {
   userRole: string | null;
 }
 
-export function useProtectedRoute(requiredRole?: AllowedRoles): UseProtectedRouteReturn {
+export function useProtectedRoute(requiredRole?: AllowedRoles, enableGuestMode: boolean = true): UseProtectedRouteReturn {
   const navigation = useNavigation<NavigationProp>();
   const { session, userRole, isLoading } = useAuth();
 
@@ -58,11 +59,22 @@ export function useProtectedRoute(requiredRole?: AllowedRoles): UseProtectedRout
     // Don't redirect while loading
     if (isLoading) return;
 
-    // Redirect to login if not authenticated
-    if (!session) {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Login' }],
+    // If guest mode is enabled, don't force redirect to login
+    if (!session && !enableGuestMode) {
+      // Schedule a gentle transition to Login so the UI doesn't abruptly jump.
+      // Use InteractionManager to wait for animations/gestures to finish, then
+      // navigate to Login and reset after a short timeout to allow the screen
+      // to animate in gracefully.
+      InteractionManager.runAfterInteractions(() => {
+        // Provide empty params to satisfy navigation typing for Login screen
+        navigation.navigate('Login', {});
+
+        // Keep app responsive — perform a reset after a short delay so back
+        // history is clean for auth flow. This matches existing behaviour
+        // while avoiding an immediate hard jump.
+        setTimeout(() => {
+          navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+        }, 220);
       });
       return;
     }

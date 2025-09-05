@@ -78,9 +78,10 @@ const ArticleDetailScreen: React.FC = () => {
   };
 
   if (loading) {
+    const SkeletonArticleDetail = require('../components/SkeletonArticleDetail').default;
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#0066cc" />
+        <SkeletonArticleDetail />
       </View>
     );
   }

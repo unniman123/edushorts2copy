@@ -20,7 +20,7 @@
  * 
  * // Real-time updates will automatically sync with the news state
  */
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { supabase, createChannel } from '../utils/supabase';
 import { Article, NewsRow } from '../types/supabase';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
@@ -40,31 +40,72 @@ export const useNewsRealtime = (
   setNews: React.Dispatch<React.SetStateAction<Article[]>>,
   currentCategoryId: string | null
 ): void => {
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingUpdatesRef = useRef<Map<string, Article>>(new Map());
+
   useEffect(() => {
     /**
-     * Handles real-time database events for news articles
-     * Processes INSERT, UPDATE, and DELETE operations with category filtering
+     * Debounced batch handler for real-time updates - Performance optimized
+     * Groups multiple rapid updates into batches to prevent excessive re-renders
+     * @returns {void}
+     */
+    const flushPendingUpdates = () => {
+      if (pendingUpdatesRef.current.size === 0) return;
+
+      const updates = Array.from(pendingUpdatesRef.current.values());
+      pendingUpdatesRef.current.clear();
+
+      setNews(prev => {
+        let newNews = [...prev];
+
+        updates.forEach(article => {
+          const existingIndex = newNews.findIndex(a => a.id === article.id);
+          if (existingIndex >= 0) {
+            newNews[existingIndex] = article;
+          } else {
+            // Insert new articles at the beginning, maintaining sort order
+            newNews = [article, ...newNews];
+          }
+        });
+
+        return newNews;
+      });
+    };
+
+    /**
+     * Handles real-time database events with debouncing for better performance
      * @param {RealtimePostgresChangesPayload<NewsRow>} payload - Real-time event payload
      * @returns {void}
      */
     const handleRealtimeEvent = (
       payload: RealtimePostgresChangesPayload<NewsRow>
     ) => {
-      if (payload.eventType === 'INSERT' && payload.new) {
-        const newArticle = newsRowToArticle(payload.new);
-        // Only add to state if no category filter or article matches current category
-        if (!currentCategoryId || newArticle.category_id === currentCategoryId) {
-          setNews(prev => [newArticle, ...prev.filter(a => a.id !== newArticle.id)]);
+      try {
+        if (payload.eventType === 'INSERT' && payload.new) {
+          const newArticle = newsRowToArticle(payload.new);
+          // Only process if no category filter or article matches current category
+          if (!currentCategoryId || newArticle.category_id === currentCategoryId) {
+            pendingUpdatesRef.current.set(newArticle.id, newArticle);
+          }
+        } else if (payload.eventType === 'UPDATE' && payload.new) {
+          const updatedArticle = newsRowToArticle(payload.new);
+          pendingUpdatesRef.current.set(updatedArticle.id, updatedArticle);
+        } else if (payload.eventType === 'DELETE' && payload.old) {
+          const deletedId = (payload.old as NewsRow).id;
+          // Remove from pending updates if exists
+          pendingUpdatesRef.current.delete(deletedId);
+          // Immediately remove deleted articles
+          setNews(prev => prev.filter(article => article.id !== deletedId));
+          return; // Don't debounce deletes
         }
-      } else if (payload.eventType === 'UPDATE' && payload.new) {
-        const updatedArticle = newsRowToArticle(payload.new);
-        setNews(prev =>
-          prev.map(article =>
-            article.id === updatedArticle.id ? updatedArticle : article
-          )
-        );
-      } else if (payload.eventType === 'DELETE' && payload.old) {
-        setNews(prev => prev.filter(article => article.id !== (payload.old as NewsRow).id));
+
+        // Debounce updates for better performance
+        if (updateTimeoutRef.current) {
+          clearTimeout(updateTimeoutRef.current);
+        }
+        updateTimeoutRef.current = setTimeout(flushPendingUpdates, 300);
+      } catch (error) {
+        console.error('Error handling realtime event:', error);
       }
     };
 
@@ -76,6 +117,11 @@ export const useNewsRealtime = (
       );
 
     return () => {
+      // Cleanup timeouts and pending updates
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+      pendingUpdatesRef.current.clear();
       cleanup();
     };
   }, [currentCategoryId, setNews]);
