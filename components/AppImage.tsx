@@ -1,5 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ImageSourcePropType, Image, Animated, Easing } from 'react-native';
+// Use expo-image when available for native performance
+let ExpoImage: any = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const mod = require('expo-image');
+  ExpoImage = mod.Image || mod.default || mod;
+} catch (e) {
+  ExpoImage = null;
+}
 import SkeletonLoader from './SkeletonLoader';
 
 interface AppImageProps {
@@ -46,14 +55,26 @@ const AppImage: React.FC<AppImageProps> = ({
 
   return (
     <View style={[styles.container, style]}>
-      <AnimatedImage
-        source={source as any}
-        style={[styles.image, { opacity: opacity }, style]}
-        resizeMethod={resizeMethod}
-        progressiveRenderingEnabled={progressiveRenderingEnabled}
-        onLoad={handleLoad}
-        onError={handleError}
-      />
+      {ExpoImage ? (
+        <ExpoImage
+          source={source as any}
+          style={[styles.image, { opacity: opacity }, style]}
+          contentFit="cover"
+          cachePolicy="disk"
+          onLoad={handleLoad}
+          onError={handleError}
+          transition={250}
+        />
+      ) : (
+        <AnimatedImage
+          source={source as any}
+          style={[styles.image, { opacity: opacity }, style]}
+          resizeMethod={resizeMethod}
+          progressiveRenderingEnabled={progressiveRenderingEnabled}
+          onLoad={handleLoad}
+          onError={handleError}
+        />
+      )}
 
       {!loaded && (
         placeholder ? (

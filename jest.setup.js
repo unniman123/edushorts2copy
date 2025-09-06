@@ -100,7 +100,11 @@ jest.mock('react-native/Libraries/Utilities/Platform', () => ({
 }));
 
 // Silence the warning: Animated: `useNativeDriver` is not supported
-jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
+try {
+  jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
+} catch (e) {
+  // If module isn't resolvable in the test environment, ignore - it's only used to suppress warnings.
+}
 
 // Mock console.error to ignore specific warnings
 const originalConsoleError = console.error;
