@@ -25,6 +25,7 @@ import {
   Image,
 } from 'react-native';
 import { COLORS, BORDER_RADIUS, TYPOGRAPHY, COMPONENT_STYLES } from '../constants/theme';
+import AppImage from './AppImage';
 import { Article } from '../types/supabase';
 
 /**
@@ -49,8 +50,8 @@ export const ArticleResultCard: React.FC<ArticleResultCardProps> = memo(({
     >
       <View style={[styles.resultImage, !article.image_path && styles.placeholderImage]}>
         {article.image_path ? (
-          <Image 
-            source={{ uri: article.image_path }} 
+          <AppImage
+            source={{ uri: article.image_path }}
             style={styles.resultImage}
           />
         ) : (

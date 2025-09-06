@@ -21,6 +21,7 @@
  * />
  */
 import React, { useRef, useState, memo, useCallback } from 'react';
+import { InteractionManager } from 'react-native';
 import {
   View,
   Text,
@@ -32,6 +33,8 @@ import {
 } from 'react-native';
 import { Article } from '../../types/supabase';
 import PerformanceMonitoringService from '../../services/PerformanceMonitoringService';
+import SkeletonLoader from '../SkeletonLoader';
+import AppImage from '../AppImage';
 import { COLORS, SPACING, BORDER_RADIUS, TYPOGRAPHY } from '../../constants/theme';
 
 /**
@@ -47,10 +50,8 @@ interface NewsCardImageProps {
   imageHeightAnim: Animated.Value;
   /** Callback function for double-tap zoom gesture */
   onImageDoubleTap: () => void;
-  /** Whether the image has finished loading */
-  imageLoaded: boolean;
-  /** Callback function called when image finishes loading */
-  onImageLoad: () => void;
+  /** Optional callback function called when image finishes loading */
+  onImageLoad?: () => void;
 }
 
 /**
@@ -64,7 +65,6 @@ const NewsCardImage: React.FC<NewsCardImageProps> = memo(({
   isSmallDevice,
   imageHeightAnim,
   onImageDoubleTap,
-  imageLoaded,
   onImageLoad,
 }) => {
   const performanceMonitor = useRef(PerformanceMonitoringService.getInstance());
@@ -95,7 +95,12 @@ const NewsCardImage: React.FC<NewsCardImageProps> = memo(({
   const handleImageLoad = useCallback(() => {
     const loadTime = Date.now() - imageLoadStartTime.current;
     performanceMonitor.current.recordImageLoad(article.image_path!, loadTime, 0);
-    onImageLoad();
+    // Defer state update until after interactions to avoid layout jank
+    InteractionManager.runAfterInteractions(() => {
+      if (typeof onImageLoad === 'function') {
+        try { onImageLoad(); } catch (e) { /* swallow */ }
+      }
+    });
   }, [article.image_path, onImageLoad]);
 
   /**
@@ -103,7 +108,9 @@ const NewsCardImage: React.FC<NewsCardImageProps> = memo(({
    * @returns {void}
    */
   const handleImageError = useCallback(() => {
-    onImageLoad();
+    if (typeof onImageLoad === 'function') {
+      try { onImageLoad(); } catch (e) { /* swallow */ }
+    }
   }, [onImageLoad]);
 
   return (
@@ -122,21 +129,9 @@ const NewsCardImage: React.FC<NewsCardImageProps> = memo(({
           activeOpacity={0.95}
           style={styles.imageWrapper}
         >
-          <Animated.Image
+          <AppImage
             source={{ uri: article.image_path }}
-            style={[
-              styles.cardImage,
-              !imageLoaded && styles.imageLoading,
-              {
-                height: imageHeightAnim.interpolate({
-                  inputRange: [1, 1.4],
-                  outputRange: [height * 0.38, height * 0.536]
-                })
-              }
-            ]}
-            resizeMethod="resize"
-            progressiveRenderingEnabled={true}
-            onLoadStart={handleImageLoadStart}
+            style={styles.cardImage}
             onLoad={handleImageLoad}
             onError={handleImageError}
           />
@@ -165,13 +160,18 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: '100%',
     backgroundColor: COLORS.GRAY_100,
+    minHeight: Math.round(height * 0.39),
     marginLeft: 0,
     marginRight: 0,
     paddingLeft: 0,
     paddingRight: 0,
   },
-  imageLoading: {
-    opacity: 0.7,
+  skeleton: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
   },
   noImage: {
     backgroundColor: COLORS.GRAY_50,

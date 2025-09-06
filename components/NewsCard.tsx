@@ -52,7 +52,6 @@ interface NewsCardProps {
 const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const [isSmallDevice, setIsSmallDevice] = useState(windowWidth < RESPONSIVE.SMALL_DEVICE_WIDTH);
-  const [imageLoaded, setImageLoaded] = useState(false);
   const [isImageExpanded, setIsImageExpanded] = useState(false);
   const imageOptimizer = useRef(ImageOptimizer.getInstance());
   const imageHeightAnim = useRef(new Animated.Value(1)).current;
@@ -137,22 +136,11 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
 
   useEffect(() => {
     if (article.image_path && typeof article.image_path === 'string') {
-      const loadImage = async () => {
-        try {
-          await imageOptimizer.current.preloadImage(article.image_path!);
-          InteractionManager.runAfterInteractions(() => {
-            setImageLoaded(true);
-          });
-        } catch (error) {
-          console.error('Failed to preload image:', error);
-          setImageLoaded(true);
-        }
-      };
-      loadImage();
+      // Start preloading in background without blocking UI render.
+      imageOptimizer.current.preloadImage(article.image_path!).catch(error => {
+        console.error('Failed to preload image (background):', error);
+      });
     }
-    return () => {
-      setImageLoaded(false);
-    };
   }, [article.image_path]);
 
   const [showIcons, setShowIcons] = useState(false);
@@ -281,8 +269,6 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
         isSmallDevice={isSmallDevice}
         imageHeightAnim={imageHeightAnim}
         onImageDoubleTap={handleImageDoubleTap}
-        imageLoaded={imageLoaded}
-        onImageLoad={() => setImageLoaded(true)}
       />
 
       <NewsCardContent
