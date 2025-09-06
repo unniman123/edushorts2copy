@@ -80,7 +80,7 @@ const ArticleDetailScreen: React.FC = () => {
   if (loading) {
     const SkeletonArticleDetail = require('../components/SkeletonArticleDetail').default;
     return (
-      <View style={styles.centerContainer}>
+      <View style={styles.centerContainerForSkeleton}>
         <SkeletonArticleDetail />
       </View>
     );
@@ -130,6 +130,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+  },
+  centerContainerForSkeleton: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'stretch',
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    backgroundColor: '#ffffff',
   },
   errorText: {
     fontSize: 18,

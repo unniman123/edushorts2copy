@@ -123,7 +123,7 @@ export default function SingleArticleViewerScreen() {
   if (loading) {
     const SkeletonReader = require('../components/SkeletonReader').default;
     return (
-      <SafeAreaView style={styles.centered} edges={['top', 'left', 'right', 'bottom']}>
+      <SafeAreaView style={styles.centeredForSkeleton} edges={['top', 'left', 'right', 'bottom']}>
         <SkeletonReader />
       </SafeAreaView>
     );
@@ -186,6 +186,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: '#ffffff',
+  },
+  centeredForSkeleton: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'stretch',
+    paddingHorizontal: 16,
+    paddingVertical: 20,
     backgroundColor: '#ffffff',
   },
   errorText: {
