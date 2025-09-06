@@ -26,6 +26,7 @@ class ImageOptimizer {
   private config: CacheConfig;
   private totalCacheSize: number = 0;
   private performanceMonitor: PerformanceMonitoringService;
+  private persistTimeout: any = null;
 
   private constructor(config: Partial<CacheConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -69,34 +70,43 @@ class ImageOptimizer {
 
   async preloadImage(uri: string): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
-      // Get image size before downloading
-      const imageSize = await this.getImageSize(uri);
-      
-      // Check if we need to clear space in cache
-      await this.ensureCacheSpace(imageSize);
-      
-      // Prefetch the image
-      await Image.prefetch(uri);
-      
-      const loadTime = Date.now() - startTime;
-      
-      // Record metrics
-      this.performanceMonitor.recordImageLoad(uri, loadTime, imageSize);
-      
-      // Update cache
-      this.cache.set(uri, {
-        uri,
-        timestamp: Date.now(),
-        size: imageSize,
-      });
-      
-      this.totalCacheSize += imageSize;
-      await this.persistCache();
-      
+      // Start prefetch immediately to avoid blocking UI.
+      const prefetchPromise = Image.prefetch(uri);
+
+      // Background pipeline: fetch size, ensure cache, then persist cache.
+      (async () => {
+        try {
+          const imageSize = await this.getImageSize(uri);
+
+          await this.ensureCacheSpace(imageSize);
+
+          // Wait for prefetch to complete before recording metrics and updating cache
+          await prefetchPromise;
+
+          const loadTime = Date.now() - startTime;
+          this.performanceMonitor.recordImageLoad(uri, loadTime, imageSize);
+
+          this.cache.set(uri, {
+            uri,
+            timestamp: Date.now(),
+            size: imageSize,
+          });
+
+          this.totalCacheSize += imageSize;
+
+          // Schedule a debounced persist to reduce AsyncStorage pressure
+          this.schedulePersist();
+        } catch (error) {
+          console.error(`Failed to background-preload image ${uri}:`, error);
+        }
+      })();
+
+      // Return immediately; callers may optionally await the prefetch separately.
+      return prefetchPromise.then(() => undefined).catch(() => undefined as any);
     } catch (error) {
-      console.error(`Failed to preload image ${uri}:`, error);
+      console.error(`Failed to initiate preload for image ${uri}:`, error);
     }
   }
 
@@ -144,8 +154,23 @@ class ImageOptimizer {
     }
 
     if (expired.length > 0) {
-      await this.persistCache();
+      this.schedulePersist();
     }
+  }
+
+  /**
+   * Schedule a debounced persist to AsyncStorage to avoid frequent writes.
+   */
+  private schedulePersist(): void {
+    if (this.persistTimeout) return;
+    this.persistTimeout = setTimeout(async () => {
+      this.persistTimeout = null;
+      try {
+        await this.persistCache();
+      } catch (error) {
+        console.error('Failed to persist cache (scheduled):', error);
+      }
+    }, 1000);
   }
 
   isImageCached(uri: string): boolean {

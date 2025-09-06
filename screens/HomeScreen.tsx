@@ -6,6 +6,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNews } from '../context/NewsContext';
@@ -15,6 +18,9 @@ import AdvertCard from '../components/AdvertCard';
 import PagerView from 'react-native-pager-view';
 import { Article } from '../types/supabase';
 import { Advertisement } from '../types/advertisement';
+import { useRoute, useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS } from '../constants/theme';
 
 interface HomeScreenRef {
   scrollToTop: () => void;
@@ -44,7 +50,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
     // Use reduce for better performance
     return news.reduce((acc: ContentItem[], newsItem, index) => {
       acc.push(newsItem as ContentItem);
-      
+
       const frequency = advertisements[0]?.display_frequency || 5;
       if ((index + 1) % frequency === 0) {
         const adIndex = Math.floor(index / frequency) % advertisements.length;
@@ -59,7 +65,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
           });
         }
       }
-      
+
       return acc;
     }, []);
   }, [news, advertisements]);
@@ -86,7 +92,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
     if (newsLoading || isLoadingMore || news.length === 0) return;
 
     setIsLoadingMore(true);
-    debouncedLoadRef.current(() => 
+    debouncedLoadRef.current(() =>
       loadMoreNews()
         .catch(error => {
           console.error('Error loading more news:', error);
@@ -106,7 +112,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
 
   if (newsError) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right']}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Error: {newsError}</Text>
           <TouchableOpacity onPress={refreshNews} style={styles.retryButton}>
@@ -118,10 +124,12 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
   }
 
   if (newsLoading && news.length === 0) {
+    // Show a skeleton-based placeholder while initial news load is in progress
+    const SkeletonNewsCard = require('../components/SkeletonNewsCard').default;
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right']}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ff0000" />
+          <SkeletonNewsCard />
         </View>
       </SafeAreaView>
     );
@@ -129,7 +137,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
 
   if (!newsLoading && news.length === 0 && !newsError) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right']}>
         <View style={styles.emptyList}>
           <Text>No news available.</Text>
         </View>
@@ -146,14 +154,14 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
       );
     }
     return (
-      <View style={styles.pageContainer} key={`news_${item.id}`}>
+      <View style={styles.pageContainer} key={`news_${item.id}_${content.indexOf(item)}`}>
         <NewsCard article={item} />
       </View>
     );
   });
 
   return (
-    <SafeAreaView style={styles.container} edges={['right', 'bottom', 'left']}>
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <PagerView
         // @ts-ignore - Ignoring the ref TypeScript error
         ref={pagerRef}
@@ -174,7 +182,7 @@ const HomeScreen = React.forwardRef<HomeScreenRef>((_, ref) => {
       </PagerView>
       {isLoadingMore && (
         <View style={styles.loadingMoreIndicator}>
-          <ActivityIndicator size="small" color="#ff0000" />
+          <ActivityIndicator size="small" color={COLORS.PRIMARY} />
         </View>
       )}
     </SafeAreaView>
@@ -191,11 +199,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.WHITE,
   },
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.WHITE,
   },
   pagerView: {
     flex: 1,
@@ -230,6 +238,17 @@ const styles = StyleSheet.create({
   retryText: {
     color: '#ffffff',
     fontWeight: 'bold',
+  },
+  bannerButton: {
+    color: COLORS.PRIMARY,
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  loadingText: {
+    color: COLORS.WHITE,
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 

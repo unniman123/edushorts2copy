@@ -21,17 +21,20 @@ import { analyticsService } from '../services/AnalyticsService';
 
 type ArticleDetailScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
-  'SingleArticleViewer'
+  'SingleArticleViewer' | 'SavedArticlePager'
 >;
 type ArticleDetailScreenRouteProp = RouteProp<
   RootStackParamList,
-  'SingleArticleViewer'
+  'SingleArticleViewer' | 'SavedArticlePager'
 >;
 
 const ArticleDetailScreen: React.FC = () => {
   const navigation = useNavigation<ArticleDetailScreenNavigationProp>();
   const route = useRoute<ArticleDetailScreenRouteProp>();
   const { articleId } = route.params;
+
+  // Context detection: determine if accessed via SavedArticlePager route
+  const isFromSavedArticles = route.name === 'SavedArticlePager';
 
   const { config } = useRemoteConfig();
   const {
@@ -60,7 +63,7 @@ const ArticleDetailScreen: React.FC = () => {
         message: `Check out this article: ${article.title}\n\n${branchUrl}`,
         url: branchUrl,
       });
-      
+
       analyticsService.logArticleShare({
         article_id: article.id,
         category: article.category?.name || 'Uncategorized',
@@ -75,9 +78,10 @@ const ArticleDetailScreen: React.FC = () => {
   };
 
   if (loading) {
+    const SkeletonArticleDetail = require('../components/SkeletonArticleDetail').default;
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#0066cc" />
+      <View style={styles.centerContainerForSkeleton}>
+        <SkeletonArticleDetail />
       </View>
     );
   }
@@ -91,7 +95,7 @@ const ArticleDetailScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
       <ArticleHeader
         onBack={() => navigation.goBack()}
         onToggleBookmark={toggleBookmark}
@@ -99,6 +103,7 @@ const ArticleDetailScreen: React.FC = () => {
         isBookmarked={isBookmarked}
         isBookmarkLoading={isBookmarkLoading}
         enableSharing={config.enable_sharing}
+        hideBookmark={isFromSavedArticles}
       />
       <ScrollView
         onScroll={handleScroll}
@@ -125,6 +130,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+  },
+  centerContainerForSkeleton: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'stretch',
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    backgroundColor: '#ffffff',
   },
   errorText: {
     fontSize: 18,

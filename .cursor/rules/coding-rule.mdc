@@ -1,0 +1,252 @@
+---
+alwaysApply: true
+---
+---this are the compliances that you must follow  - Updated Critical Instructions for Next Agent (MANDATORY COMPLIANCE)
+1. Core Safety Principles (NON-NEGOTIABLE)
+Based on evidence from successful build system implementation, these principles MUST be followed:
+A. Preserve Functionality
+Evidence: During build system tasks, all existing services (Branch.io, FCM, deep linking) remained untouched and functional
+Instruction: Under no circumstances alter, break, or disrupt existing functionalities. The application is complex with multiple initialized services; preserving the working system is the top priority.
+B. No Redundancy
+
+Instruction: Do not write any duplicate or redundant code. Maintain complete awareness of the codebase to avoid re-implementing existing logic.
+C. Prevent Loops
+Evidence: Avoided implementation loops during expo-battery detection by pausing to analyze root causes
+Instruction: If an implementation gets stuck in a repetitive loop, pause immediately. Analyze the root cause of the error, correct the course of action, and then proceed with the corrected implementation.
+D. Evidence-Based Actions
+Instruction: Do not make any educated guesses or assumptions. Every action must be backed by thorough, corroborated, and substantiated evidence from the codebase.
+E. Systematic Issue Resolution
+Instruction: Do multiple rounds of thinking and analysis of any issue. Break down the logic behind the issue, figure out 5-6 reasons for the issue. Based on this do another round of thinking, reasoning and analysis using affirmative evidence and corroborated facts to distill the 5-6 reasons to 1 most accurate and affirmative reason. Then based on this reason do multiple rounds of thinking and analysis and properly plan out the code fix.
+2. Enhanced Deliberation and Caution Protocol (NEW MANDATORY REQUIREMENTS)
+F. Deliberate Action Protocol
+Instruction: Do NOT jump into any action. Take your time thinking and reasoning. Make sure that you are absolutely confident about the changes.
+Evidence Requirement: Confirm all changes by seeing the necessary evidence and all other facts and elements from the codebase.
+Caution Mandate: Do not get excited and jump into action. Be very cautious and corroborate every ounce of evidence produced before proceeding.
+G. Post-Implementation Compliance Verification
+Instruction: After each code edit, you MUST read it and then cross-verify whether any of those are violative of our instructions or non-complying with the instructions.
+Verification Process: Place the code, interpret it, and then verify it using all necessary means.
+Compliance Report: After verification, provide a detailed compliance report for each code change.
+H. Deep Code Comprehension Protocol
+Instruction: Make sure that you have read the code well and that it is sufficiently evidence-backed and not based on any guesses or assumptions.
+Context Understanding: After interpreting properly, understand the context of the codebase and then use all necessary documentation for understanding the core concepts.
+Error Prevention: Catch any violative practices or any errors that may arise through thorough analysis.
+I. Incremental Implementation Strategy
+Instruction: Write code in small chunks. Do NOT write entire codes in one go.
+Task Division: You can divide the code writing into parts, but be very cautious that you don't create any duplication or make any mistakes.
+Preferred Approach: Dividing the task into smaller parts is preferred for better control and validation.
+J. Comprehensive Context Gathering
+Instruction: Gather as much context as necessary for code implementation.
+Required Checks: Run security checks, web search, and memory analysis.
+Context Sources: Thorough interpretation of the code will give you the context for proceeding further with the code.
+3. Critical No-Touch Zones (ABSOLUTE RESTRICTIONS)
+Evidence: These services are critical and frequently used across the application:
+Strictly Forbidden to Modify:
+Branch.io - All related code, imports, and configurations
+Deep linking - DeepLinkHandler.ts and all related functionality
+Notifications - NotificationService, NotificationBridge, FCM implementations
+Console statements - All console.log/error/warn statements throughout the application
+Core services - Any service marked as "critical" in the codebase
+Rationale: These services are essential for app functionality and must remain completely untouched, overriding any other considerations including unused import analysis or console optimization suggestions.
+4. Enhanced Safety Protocol Requirements
+Pre-Implementation Phase:
+Evidence Gathering - Use codebase_search, grep_search, and file_search extensively
+Multiple Analysis Rounds - Perform systematic issue resolution with 5-6 reason breakdown
+Security Verification - Run security checks and web searches for best practices
+Context Documentation - Document all findings with specific file references and line numbers
+Implementation Phase:
+Incremental Changes - Make one small change at a time with validation
+Backup Strategy - Create backups before any modifications
+Chunk-based Coding - Write code in small, manageable chunks
+Duplication Prevention - Verify no redundant code is created
+Post-Implementation Phase:
+Code Review - Read and interpret each code change thoroughly
+Compliance Verification - Cross-verify against all instructions
+Error Detection - Check for violative practices or potential errors
+Compliance Reporting - Provide detailed compliance report for each change
+Build Testing - Test both local and EAS builds after each change
+Rollback Verification - Maintain ability to revert to current working state
+ritical Instructions  (MANDATORY COMPLIANCE)
+
+Core Principles (Non-Negotiable)
+
+Preserve Functionality: Under no circumstances alter, break, or disrupt existing functionalities. The application is complex with multiple initialized services; preserving the working system is the top priority.
+
+No Redundancy: Do not write any duplicate or redundant code. Maintain complete awareness of the codebase to avoid re-implementing existing logic.
+
+Prevent Loops: If an implementation gets stuck in a repetitive loop, pause immediately. Analyze the root cause of the error, correct the course of action, and then proceed with the corrected implementation.
+
+Evidence-Based Actions: Do not make any educated guesses or assumptions. Every action must be backed by thorough, corroborated, and substantiated evidence from the codebase.
+
+Systematic Issue Resolution: Do multiple rounds of thinking and analysis of any issue. Break down the logic behind the issue, figure out 5-6 reasons for the issue. Based on this do another round of thinking, reasoning and analysis using affirmative evidence and corroborated facts to distill the 5-6 reasons to 1 most accurate and affirmative reason. Then based on this reason do multiple rounds of thinking and analysis and properly plan out the code fix.
+
+4. Dont jump into any action , take your time thinking and reasoning , make sure that you are absolutely confirm about the changes , make sure that you confirmed it by seeing the necessary evidence and all the other facts and elements from the codebase. make sure that you dont get excited and jump into action , be very cautious and do corroborate every ounce of evidence produced before you 
+
+5. after each code edits make sure that you have read it and then cross verify whether any of those are violative of our instructions or non compying with the instructions, place the code and interpret and then verify it using all the necessary maeans and after that give me the compliance report 
+
+6. Make sure that you have read the code well and that too which are sufficiently evidence backed and not based on any geusses or assumption , after interpreting properly understand the context of the codebase and then use all the documentation necessary for understanding the core concept so that you catch any violative practises or any arousing any errors. 
+
+7. write the code in small chunks dont write the entire codes in one go , you can divide the code writting in parts , but be very cautious that you dont create any duplication or make any mistakes in that .  but dividing the task into smaller parts is preffered. 
+
+8. gather as much context as necesary for the code implementation , run security checks, web search and memory and thorogh interpretation of the code will give you the context for proceeding further with the code Safety Protocol Requirements
+
+Incremental Changes: Make one change at a time with validation
+
+1. Core Safety Principles (NON-NEGOTIABLE)
+
+Based on evidence from successful build system implementation, these principles MUST be followed:
+
+A. Preserve Functionality
+
+Evidence: During build system tasks, all existing services (Branch.io, FCM, deep linking) remained untouched and functional
+
+Instruction: Under no circumstances alter, break, or disrupt existing functionalities. The application is complex with multiple initialized services; preserving the working system is the top priority.
+
+B. No Redundancy
+
+Evidence: Successfully eliminated gradle script duplication (51% reduction) by maintaining complete codebase awareness
+
+Instruction: Do not write any duplicate or redundant code. Maintain complete awareness of the codebase to avoid re-implementing existing logic.
+
+C. Prevent Loops
+
+Evidence: Avoided implementation loops during expo-battery detection by pausing to analyze root causes
+
+Instruction: If an implementation gets stuck in a repetitive loop, pause immediately. Analyze the root cause of the error, correct the course of action, and then proceed with the corrected implementation.
+
+D. Evidence-Based Actions
+
+Evidence: All build system decisions were backed by thorough analysis of gradle files, package.json, and EAS configuration
+
+Instruction: Do not make any educated guesses or assumptions. Every action must be backed by thorough, corroborated, and substantiated evidence from the codebase.
+
+E. Systematic Issue Resolution
+
+Evidence: Successfully resolved expo-battery detection issues through multiple rounds of analysis, identifying root cause and implementing targeted fix
+
+Instruction: Do multiple rounds of thinking and analysis of any issue. Break down the logic behind the issue, figure out 5-6 reasons for the issue. Based on this do another round of thinking, reasoning and analysis using affirmative evidence and corroborated facts to distill the 5-6 reasons to 1 most accurate and affirmative reason. Then based on this reason do multiple rounds of thinking and analysis and properly plan out the code fix.
+
+2. Critical No-Touch Zones (ABSOLUTE RESTRICTIONS)
+
+Evidence: These services are critical and frequently used across the application:
+
+Strictly Forbidden to Modify:
+
+Branch.io - All related code, imports, and configurations
+
+Deep linking - DeepLinkHandler.ts and all related functionality
+
+Notifications - NotificationService, NotificationBridge, FCM implementations
+
+Console statements - All console.log/error/warn statements throughout the application
+
+Core services - Any service marked as "critical" in the codebase
+
+Rationale: These services are essential for app functionality and must remain completely untouched, overriding any other considerations including unused import analysis or console optimization suggestions.
+
+3. Quality Standards (MANDATORY)
+
+Based on successful build system implementation:
+
+Code Quality Requirements:
+
+All code must be neat, clean, scalable, and maintainable
+
+Follow React Native + Expo best practices
+
+Implement proper error handling and input validation
+
+Use meaningful variable and function names
+
+Maintain consistent code style and formatting
+
+Break complex logic into small, reusable functions (DRY principle)
+
+Testing Requirements:
+
+Write unit tests for new features with high coverage (>80%)
+
+Document non-obvious functionality with brief comments
+
+Perform Q&A of code to ensure accuracy and usefulness
+
+4. Implementation Process (MANDATORY WORKFLOW)
+
+Safety Measures:
+
+Incremental Changes - Make one change at a time with validation
+
+Backup Strategy - Create backups before any modifications
+
+Build Testing - Test both local and EAS builds after each change
+
+Rollback Plan - Maintain ability to revert to current working state
+
+Validation Process:
+
+Evidence Gathering - Use codebase_search and grep_search extensively
+
+Multiple Analysis Rounds - Perform systematic issue resolution
+
+Comprehensive Testing - Validate all changes thoroughly
+
+Compliance Reporting - Provide detailed reports after changes
+
+5. Specific Instructions for Phase 3 (Security Implementation)
+
+Primary Focus: Security Hardening
+
+Start with: security-hardcoded-tokens task
+
+Method: Systematic analysis of all configuration files
+
+Evidence Required: Identify all hardcoded tokens, API keys, and credentials
+
+Implementation: Externalize to environment variables with proper fallbacks
+
+Security Analysis Requirements:
+
+Comprehensive Audit - Search entire codebase for hardcoded values
+
+Risk Assessment - Categorize security issues by severity
+
+Externalization Strategy - Implement proper environment variable management
+
+Validation Testing - Ensure externalized configuration works correctly
+
+6. Performance and Quality Assurance
+
+Static Analysis Requirements:
+
+Use ESLint and TypeScript compiler for comprehensive analysis
+
+Search for code patterns (StyleSheet usage, import patterns, hardcoded values)
+
+Check for duplication, redundancy, and technical debt markers
+
+Analyze component architecture and separation of concerns
+
+Verify React best practices (hooks usage, memoization, prop types)
+
+Documentation Requirements:
+
+Document findings with specific file references and line numbers
+
+Categorize issues by severity with evidence-based recommendations
+
+All conclusions must be supported by concrete code examples
+
+Key Learnings and Context from Current Implementation
+5. Enhanced Quality Standards (MANDATORY)
+Code Quality Requirements:
+All code must be neat, clean, scalable, and maintainable
+Follow React Native + Expo best practices with documentation verification
+Implement proper error handling and input validation
+Use meaningful variable and function names
+Maintain consistent code style and formatting
+Break complex logic into small, reusable functions (DRY principle)
+Documentation and Verification Requirements:
+Use React Native documentation for core concepts understanding
+Verify all implementations against official best practices
+Document non-obvious functionality with brief comments
+Perform Q&A of code to ensure accuracy and usefulness
+Cross-reference with existing codebase patterns

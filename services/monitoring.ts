@@ -5,7 +5,7 @@ interface PerformanceMetric {
   name: string;
   duration: number;
   timestamp: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface ErrorEvent {
@@ -13,7 +13,7 @@ interface ErrorEvent {
   message: string;
   stack?: string;
   timestamp: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 class MonitoringService {
@@ -145,7 +145,7 @@ class MonitoringService {
   }
 
   // Utility methods for common performance tracking scenarios
-  async trackNetworkRequest(name: string, duration: number, metadata?: Record<string, any>): Promise<void> {
+  async trackNetworkRequest(name: string, duration: number, metadata?: Record<string, unknown>): Promise<void> {
     await this.trackPerformance({
       type: 'network',
       name,
@@ -154,7 +154,7 @@ class MonitoringService {
     });
   }
 
-  async trackRenderTime(name: string, duration: number, metadata?: Record<string, any>): Promise<void> {
+  async trackRenderTime(name: string, duration: number, metadata?: Record<string, unknown>): Promise<void> {
     await this.trackPerformance({
       type: 'render',
       name,
@@ -163,7 +163,7 @@ class MonitoringService {
     });
   }
 
-  async trackInteraction(name: string, duration: number, metadata?: Record<string, any>): Promise<void> {
+  async trackInteraction(name: string, duration: number, metadata?: Record<string, unknown>): Promise<void> {
     await this.trackPerformance({
       type: 'interaction',
       name,

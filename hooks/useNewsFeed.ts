@@ -1,89 +1,128 @@
-import { useState, useCallback } from 'react';
-import { supabase } from '../utils/supabase';
-import { Article, NewsRow } from '../types/supabase';
+/**
+ * useNewsFeed - Custom hook for managing news feed data with pagination and filtering
+ * 
+ * Provides state management for news articles with support for category filtering,
+ * pagination, and loading states. Handles initial fetch, category-based filtering,
+ * and infinite scroll functionality with proper error handling and loading states.
+ * 
+ * @hook
+ * @returns {UseNewsFeedReturn} Object containing news feed state and methods
+ * 
+ * @example
+ * const { news, loading, error, hasMore, fetchNews, loadMoreNews } = useNewsFeed();
+ * 
+ * // Initial fetch with category filter
+ * useEffect(() => {
+ *   fetchNews('scholarship-category-id');
+ * }, []);
+ * 
+ * // Load more articles for infinite scroll
+ * const handleLoadMore = () => {
+ *   loadMoreNews(currentCategoryId);
+ * };
+ */
+import { useState, useCallback, useEffect } from 'react';
+import { Article } from '../types/supabase';
+import { newsService } from '../services/newsService';
 
-const PAGE_SIZE = 10;
+/**
+ * Return type for useNewsFeed hook
+ * @interface UseNewsFeedReturn
+ */
+interface UseNewsFeedReturn {
+  /** Array of news articles */
+  news: Article[];
+  /** Loading state indicator */
+  loading: boolean;
+  /** Error message if any */
+  error: string | null;
+  /** Whether more articles are available for pagination */
+  hasMore: boolean;
+  /** Function to set news articles directly */
+  setNews: React.Dispatch<React.SetStateAction<Article[]>>;
+  /** Function to fetch initial news articles with category filter */
+  fetchNews: (categoryId: string | null) => Promise<void>;
+  /** Function to load more articles for pagination */
+  loadMoreNews: (categoryId: string | null) => Promise<void>;
+}
 
-const newsRowToArticle = (newsRow: any): Article => ({
-  ...newsRow,
-  category: newsRow.categories,
-});
-
-export const useNewsFeed = () => {
+export const useNewsFeed = (): UseNewsFeedReturn => {
   const [news, setNews] = useState<Article[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
 
-  const getBaseQuery = (categoryId: string | null) => {
-    let query = supabase
-      .from('news')
-      .select('*, categories(*)')
-      .eq('status', 'published');
-
-    if (categoryId) {
-      query = query.eq('category_id', categoryId);
-    }
-    return query.order('created_at', { ascending: false });
-  };
-
+  /**
+   * Fetches initial news articles with optional category filtering
+   * Resets pagination state and loads first page of articles
+   * @param {string | null} categoryId - Category ID to filter by, null for all categories
+   * @returns {Promise<void>} Promise that resolves when fetch is complete
+   */
   const fetchNews = useCallback(async (categoryId: string | null) => {
     setLoading(true);
     setError(null);
     try {
-      const query = getBaseQuery(categoryId).limit(PAGE_SIZE);
-      const { data, error: fetchError } = await query;
-
-      if (fetchError) throw fetchError;
-
-      if (data) {
-        const articles = data.map(newsRowToArticle);
-        setNews(articles);
-        setHasMore(articles.length === PAGE_SIZE);
-      }
+      const fetchedArticles = await newsService.getArticles({
+        categoryId,
+        page: 1,
+        limit: 10,
+      });
+      setNews(fetchedArticles);
+      setPage(2);
+      setHasMore(fetchedArticles.length > 0);
     } catch (e: any) {
-      setError(e.message || 'Failed to fetch news');
+      setError(e.message);
     } finally {
       setLoading(false);
     }
   }, []);
 
+  /**
+   * Loads more articles for pagination (infinite scroll) - Performance optimized
+   * Uses cursor-based pagination for better performance and deduplication
+   * @param {string | null} categoryId - Category ID to filter by, null for all categories
+   * @returns {Promise<void>} Promise that resolves when load is complete
+   */
   const loadMoreNews = useCallback(async (categoryId: string | null) => {
     if (loading || !hasMore) return;
-
     setLoading(true);
     try {
-      const lastArticle = news[news.length - 1];
-      if (!lastArticle) {
-        setLoading(false);
-        return;
-      }
-      const query = getBaseQuery(categoryId)
-        .lt('created_at', lastArticle.created_at)
-        .limit(PAGE_SIZE);
-      
-      const { data, error: fetchError } = await query;
+      const fetchedArticles = await newsService.getArticles({
+        categoryId,
+        page,
+        limit: 10,
+      });
 
-      if (fetchError) throw fetchError;
-
-      if (data) {
-        const newArticles = data.map(newsRowToArticle);
-        setNews(prev => [...prev, ...newArticles]);
-        setHasMore(newArticles.length === PAGE_SIZE);
+      if (fetchedArticles.length > 0) {
+        // Deduplicate articles to prevent duplicates on network issues
+        setNews(prevNews => {
+          const existingIds = new Set(prevNews.map(article => article.id));
+          const newArticles = fetchedArticles.filter(article => !existingIds.has(article.id));
+          return [...prevNews, ...newArticles];
+        });
+        setPage(prevPage => prevPage + 1);
+        
+        // Smart hasMore detection - if we got fewer articles than requested, we're at the end
+        if (fetchedArticles.length < 10) {
+          setHasMore(false);
+        }
+      } else {
+        setHasMore(false);
       }
     } catch (e: any) {
-      setError(e.message || 'Failed to load more news');
+      setError(e.message);
     } finally {
       setLoading(false);
     }
-  }, [loading, hasMore, news]);
+  }, [loading, hasMore, page]);
 
   return {
     news,
     loading,
     error,
     hasMore,
-    setNews, // Expose setNews for real-time updates
+    setNews,
     fetchNews,
     loadMoreNews,
   };

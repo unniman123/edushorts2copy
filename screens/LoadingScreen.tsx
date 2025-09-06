@@ -112,7 +112,7 @@ export default function LoadingScreen() {
         ]}
       >
         <Image
-          source={require('../assets/apk icon .png')}
+          source={require('../assets/adaptive-icon-foreground.png')}
           style={styles.logo}
           onError={(error) => console.error('LoadingScreen: Error loading logo:', error)}
         />

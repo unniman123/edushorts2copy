@@ -17,14 +17,58 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// Keep this interface if used elsewhere, otherwise it can be removed if PushNotificationData covers everything
+/**
+ * Notification data interface for local notifications
+ * 
+ * @interface NotificationData
+ * @deprecated Use PushNotificationData from types/notification instead
+ */
 export interface NotificationData {
+  /** Notification title */
   title: string;
+  /** Notification body text */
   body: string;
+  /** Optional deep link URL */
   deep_link?: string;
+  /** Additional notification data */
   data?: Record<string, unknown>;
 }
 
+/**
+ * NotificationService - Comprehensive push notification management service
+ * 
+ * Handles both Expo push notifications and Firebase Cloud Messaging (FCM) for the
+ * React Native Expo application. Manages notification permissions, token registration,
+ * local notifications, and notification preferences. Implements singleton pattern
+ * for consistent notification management across the application.
+ * 
+ * Key Features:
+ * - Dual notification system (Expo + FCM) for maximum compatibility
+ * - Automatic token refresh and synchronization
+ * - User notification preferences management
+ * - Local notification scheduling and handling
+ * - Deep linking support for notification actions
+ * - Platform-specific permission handling (iOS/Android)
+ * - Notification channel configuration for Android
+ * - Comprehensive error handling and user feedback
+ * 
+ * @class NotificationService
+ * @example
+ * ```typescript
+ * const notificationService = NotificationService.getInstance();
+ * await notificationService.initialize(firebaseApp);
+ * 
+ * // Register for push notifications
+ * const tokens = await notificationService.registerForPushNotifications();
+ * 
+ * // Schedule local notification
+ * await notificationService.scheduleLocalNotification({
+ *   title: 'New Article',
+ *   body: 'Check out the latest education news!',
+ *   deep_link: 'edushorts://articles/123'
+ * });
+ * ```
+ */
 class NotificationService {
   private static instance: NotificationService;
   private notificationListener: Notifications.Subscription | null = null;
@@ -34,10 +78,29 @@ class NotificationService {
   private currentExpoToken: string | null = null;
   private currentFcmToken: string | null = null;
 
+  /**
+   * Private constructor implementing singleton pattern
+   * Initializes the service without Firebase dependencies, which are
+   * configured later through the initialize method.
+   * 
+   * @private
+   * @memberof NotificationService
+   */
   private constructor() {
     // Private constructor for singleton pattern
   }
 
+  /**
+   * Gets the singleton instance of NotificationService
+   * 
+   * @returns {NotificationService} The singleton instance
+   * @static
+   * @memberof NotificationService
+   * @example
+   * ```typescript
+   * const notificationService = NotificationService.getInstance();
+   * ```
+   */
   static getInstance(): NotificationService {
     if (!NotificationService.instance) {
       NotificationService.instance = new NotificationService();
@@ -46,9 +109,21 @@ class NotificationService {
   }
 
   /**
-   * Initializes the NotificationService with the Firebase App instance.
-   * This MUST be called before any methods that rely on Firebase Messaging.
-   * @param app The FirebaseApp instance obtained from `@react-native-firebase/app`.
+   * Initializes the NotificationService with Firebase App instance
+   * 
+   * This method MUST be called before any methods that rely on Firebase Messaging.
+   * Sets up the Firebase Messaging instance for FCM token management and
+   * message handling.
+   * 
+   * @param {ReactNativeFirebase.FirebaseApp} app - The Firebase App instance
+   * @returns {Promise<void>} Promise that resolves when initialization is complete
+   * @throws {Error} When Firebase App initialization fails
+   * @memberof NotificationService
+   * @example
+   * ```typescript
+   * const firebaseApp = getApp();
+   * await notificationService.initialize(firebaseApp);
+   * ```
    */
   async initialize(app: ReactNativeFirebase.FirebaseApp): Promise<void> {
     this.firebaseApp = app;
@@ -58,6 +133,17 @@ class NotificationService {
     }
   }
 
+  /**
+   * Helper method to ensure messaging instance is available
+   * 
+   * Validates that the messaging instance has been properly initialized
+   * before attempting to use Firebase Messaging methods.
+   * 
+   * @private
+   * @returns {FirebaseMessagingTypes.Module} The initialized messaging instance
+   * @throws {Error} When NotificationService has not been initialized
+   * @memberof NotificationService
+   */
   private getMessagingInstance(): FirebaseMessagingTypes.Module {
     if (!this.messagingInstance) {
       console.error('[NotificationService] Error: MessagingService not initialized. Call initialize() first.');
@@ -66,6 +152,24 @@ class NotificationService {
     return this.messagingInstance;
   }
 
+  /**
+   * Requests notification permissions from the user
+   * 
+   * Handles platform-specific permission requests for both iOS and Android.
+   * On Android, uses Expo notifications permissions. On iOS, uses Firebase
+   * Messaging authorization. Validates device compatibility and shows
+   * appropriate error messages.
+   * 
+   * @returns {Promise<boolean>} Promise that resolves to true if permissions granted
+   * @memberof NotificationService
+   * @example
+   * ```typescript
+   * const hasPermission = await notificationService.requestPermissions();
+   * if (hasPermission) {
+   *   // Proceed with notification setup
+   * }
+   * ```
+   */
   async requestPermissions(): Promise<boolean> {
     if (Platform.OS === 'android') {
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -98,6 +202,25 @@ class NotificationService {
     return true;
   }
 
+  /**
+   * Registers for push notifications and obtains tokens
+   * 
+   * Comprehensive registration process that:
+   * 1. Requests necessary permissions
+   * 2. Obtains both Expo and FCM tokens for maximum compatibility
+   * 3. Configures Android notification channels
+   * 4. Stores tokens in user profile
+   * 5. Sets up automatic token refresh handling
+   * 
+   * @returns {Promise<{expoToken: string | null, fcmToken: string | null}>} Promise resolving to token object
+   * @memberof NotificationService
+   * @example
+   * ```typescript
+   * const { expoToken, fcmToken } = await notificationService.registerForPushNotifications();
+   * console.log('Expo Token:', expoToken);
+   * console.log('FCM Token:', fcmToken);
+   * ```
+   */
   async registerForPushNotifications(): Promise<{ expoToken: string | null, fcmToken: string | null }> {
     try {
       const hasPermission = await this.requestPermissions();
@@ -165,6 +288,19 @@ class NotificationService {
     }
   }
 
+  /**
+   * Stores notification tokens in user profile
+   * 
+   * Updates the user's profile with current Expo and FCM tokens for push notification
+   * delivery. Handles authentication validation and provides comprehensive error handling.
+   * Tokens are stored in the notification_preferences field of the user's profile.
+   * 
+   * @private
+   * @param {string | null} expoToken - The Expo push token
+   * @param {string | null} fcmToken - The Firebase Cloud Messaging token
+   * @returns {Promise<void>} Promise that resolves when tokens are stored
+   * @memberof NotificationService
+   */
   private async storeTokens(expoToken: string | null, fcmToken: string | null): Promise<void> {
     console.log(`[NotificationService] Attempting to store tokens: Expo: ${expoToken ? 'SET' : 'NULL'}, FCM: ${fcmToken ? 'SET' : 'NULL'}`);
     if (!expoToken && !fcmToken) {
@@ -181,18 +317,11 @@ class NotificationService {
         return; 
       }
 
-      let profileError: any = null;
-      let notificationError: any = null;
-
       // Update notification preferences in profiles
-      // Assuming existing preferences might exist, fetch them first or ensure upsert merges correctly.
-      // For simplicity here, we'll overwrite, but a merge might be better in a real scenario
-      // if other preferences are set independently.
       const profileUpdate = {
-        id: userId, // Assuming 'id' is the column name for user_id in profiles table and is the conflict target
-        notification_preferences: { // This structure should match your DB
-          push: true, // Defaulting to true since we have tokens
-          // email: false, // Preserve existing email preference if not explicitly changing it
+        id: userId,
+        notification_preferences: {
+          push: true,
           expo_token: expoToken,
           fcm_token: fcmToken 
         },
@@ -202,54 +331,13 @@ class NotificationService {
       console.log('[NotificationService] Upserting to profiles for user:', userId, profileUpdate);
       const { error: supabaseProfileError } = await supabase
         .from('profiles')
-        .upsert(profileUpdate, { onConflict: 'id' }); // Ensure 'id' is the correct conflict column for profiles
-      
-      profileError = supabaseProfileError;
+        .upsert(profileUpdate, { onConflict: 'id' });
 
-      // Create a notification record for token storage
-      // Storing FCM token in expo_push_token column as per user's clarification.
-      // If both tokens exist, Expo is generally preferred for sending via Expo's services, 
-      // but storing both is good. The column name `expo_push_token` might be slightly misleading
-      // if it exclusively stores FCM at times, but adhering to current schema.
-      const tokenForNotificationsTable = expoToken || fcmToken; // Prioritize Expo token if available for the specific column
-
-      if (tokenForNotificationsTable) { // Only insert if there's a token to store
-        const notificationUpdate = {
-          user_id: userId,
-          expo_push_token: tokenForNotificationsTable, // Storing the primary token here
-          // fcm_token: fcmToken, // If there's a separate fcm_token column in 'notifications' table, use it
-          type: 'device_registration', // Clear type for this record
-          title: 'Device Registered', // System notification title
-          body: `Device token ${expoToken ? 'Expo' : ''} ${fcmToken && expoToken ? '&' : ''} ${fcmToken ? 'FCM' : ''} updated.`, // Descriptive body
-          target_audience: 'user', // Or system, depending on conventions
-          created_at: new Date().toISOString(),
-          // sent_at: new Date().toISOString(), // 'sent_at' might not be applicable for a registration event
-        };
-
-        console.log('[NotificationService] Inserting into notifications for user:', userId, notificationUpdate);
-        const { error: supabaseNotificationError } = await supabase
-          .from('notifications') // Correct table
-          .insert(notificationUpdate); // Insert as it's a new registration event/log
-        
-        notificationError = supabaseNotificationError;
-      }
-
-
-      if (profileError || notificationError) {
-        console.error('[NotificationService] Error storing tokens. Details:', {
-          profileError: profileError ? JSON.stringify(profileError, null, 2) : null,
-          notificationError: notificationError ? JSON.stringify(notificationError, null, 2) : null,
-          userId,
-          expoTokenProvided: !!expoToken,
-          fcmTokenProvided: !!fcmToken,
-          timestamp: new Date().toISOString()
-        });
-        // Decide on toast behavior. Maybe one generic error or specific ones.
-        if (profileError) toast.error(`Profile update error: ${profileError.message || 'Unknown error'}`, TOAST_ERROR_CONFIG);
-        if (notificationError) toast.error(`Notification record error: ${notificationError.message || 'Unknown error'}`, TOAST_ERROR_CONFIG);
+      if (supabaseProfileError) {
+        console.error('[NotificationService] Error storing tokens in profiles:', supabaseProfileError);
+        toast.error(`Profile update error: ${supabaseProfileError.message || 'Unknown error'}`, TOAST_ERROR_CONFIG);
       } else {
         console.log('[NotificationService] Push notification tokens processed successfully for user:', userId);
-        // toast.success(TOAST_MESSAGES.TOKEN_SUCCESS, TOAST_SUCCESS_CONFIG); // Optional success toast
       }
     } catch (e: any) {
       console.error('[NotificationService] General exception in storeTokens. Message:', e?.message);

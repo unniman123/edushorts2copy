@@ -1,5 +1,3 @@
-import { NativeModules, Platform } from 'react-native';
-
 interface BatteryMetrics {
   consumption: number;  // Battery consumption per hour
   level: number;       // Current battery level
@@ -29,34 +27,4 @@ export async function getBatteryMetrics(mode: BatteryMode): Promise<BatteryMetri
   }
 }
 
-/**
- * Simulate active app usage for battery measurement
- */
-async function simulateActiveUsage(): Promise<void> {
-  // Simulate CPU intensive tasks
-  const duration = 5 * 60 * 1000; // 5 minutes
-  const startTime = Date.now();
-
-  while (Date.now() - startTime < duration) {
-    // Perform some CPU work
-    const data = new Array(10000).fill(0);
-    data.sort(() => Math.random() - 0.5);
-    
-    // Add small delay to prevent blocking
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-}
-
-/**
- * Simulate background app usage for battery measurement
- */
-async function simulateBackgroundUsage(): Promise<void> {
-  // Simulate background tasks
-  const duration = 15 * 60 * 1000; // 15 minutes
-  const startTime = Date.now();
-
-  while (Date.now() - startTime < duration) {
-    // Perform light background work
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  }
-} 
+ 

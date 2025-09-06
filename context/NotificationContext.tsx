@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { NotificationService, DeepLinkHandler } from '../services';
@@ -18,9 +18,30 @@ export function NotificationProvider({ children, navigation }: { children: React
   const deepLinkHandler = DeepLinkHandler.getInstance();
   const notificationListener = useRef<any>();
   const responseListener = useRef<any>();
+  const [isServiceInitialized, setIsServiceInitialized] = useState(false);
+
+  // Check if NotificationService is initialized
+  const checkServiceInitialization = () => {
+    try {
+      // Try to access the messaging instance - if it throws, service isn't initialized
+      notificationService.requestPermissions();
+      return true;
+    } catch (error: any) {
+      if (error.message?.includes('MessagingService not initialized')) {
+        return false;
+      }
+      return true; // Other errors mean service is initialized but there's a different issue
+    }
+  };
 
   const setupNotifications = async () => {
     try {
+      // Wait for service to be initialized before proceeding
+      if (!checkServiceInitialization()) {
+        console.log('[NotificationContext] NotificationService not yet initialized, waiting...');
+        return;
+      }
+
       // registerForPushNotifications will request permissions and store tokens internally
       const tokens = await notificationService.registerForPushNotifications();
       if (tokens.expoToken || tokens.fcmToken) {
@@ -35,6 +56,12 @@ export function NotificationProvider({ children, navigation }: { children: React
 
   const updatePushToken = async () => {
     try {
+      // Ensure service is initialized before updating tokens
+      if (!checkServiceInitialization()) {
+        console.log('[NotificationContext] NotificationService not yet initialized for token update.');
+        return;
+      }
+
       // registerForPushNotifications will handle requesting and storing new tokens
       const tokens = await notificationService.registerForPushNotifications();
       if (tokens.expoToken || tokens.fcmToken) {
@@ -47,8 +74,42 @@ export function NotificationProvider({ children, navigation }: { children: React
     }
   };
 
+  // Polling mechanism to check for service initialization
   useEffect(() => {
-    if (session?.user) {
+    const checkInitialization = () => {
+      if (checkServiceInitialization()) {
+        setIsServiceInitialized(true);
+        return true;
+      }
+      return false;
+    };
+
+    // Check immediately
+    if (checkInitialization()) {
+      return;
+    }
+
+    // Poll every 500ms for up to 10 seconds
+    const pollInterval = setInterval(() => {
+      if (checkInitialization()) {
+        clearInterval(pollInterval);
+      }
+    }, 500);
+
+    // Cleanup after 10 seconds to avoid infinite polling
+    const timeout = setTimeout(() => {
+      clearInterval(pollInterval);
+      console.warn('[NotificationContext] Service initialization check timed out');
+    }, 10000);
+
+    return () => {
+      clearInterval(pollInterval);
+      clearTimeout(timeout);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (session?.user && isServiceInitialized) {
       setupNotifications();
     }
 
@@ -86,7 +147,7 @@ export function NotificationProvider({ children, navigation }: { children: React
         Notifications.removeNotificationSubscription(responseListener.current);
       }
     };
-  }, [session?.user, navigation, deepLinkHandler]);
+  }, [session?.user, navigation, deepLinkHandler, isServiceInitialized]);
 
   return (
     <NotificationContext.Provider value={{ setupNotifications, updatePushToken }}>

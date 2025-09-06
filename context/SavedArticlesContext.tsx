@@ -5,6 +5,58 @@ import { NewsRow } from '../types/supabase';
 import { showToast } from '../utils/toast';
 import { useAuth } from './AuthContext';
 
+// Storage Key Management Utility
+const StorageKeyManager = {
+  getUserStorageKey: (userId: string): string => `@edushorts/user_${userId}/savedArticles`,
+  getTemporaryStorageKey: (): string => '@edushorts/temp/savedArticles',
+  getLegacyStorageKey: (): string => 'savedArticles',
+
+  getUserId: (session: any): string | null => {
+    return session?.user?.id || null;
+  },
+
+  getStorageKey: (session: any): string => {
+    const userId = StorageKeyManager.getUserId(session);
+    if (userId) {
+      return StorageKeyManager.getUserStorageKey(userId);
+    }
+    return StorageKeyManager.getTemporaryStorageKey();
+  },
+
+  migrateExistingData: async (userId: string): Promise<void> => {
+    try {
+      const legacyKey = StorageKeyManager.getLegacyStorageKey();
+      const userKey = StorageKeyManager.getUserStorageKey(userId);
+
+      // Check if migration is needed
+      const existingUserData = await AsyncStorage.getItem(userKey);
+      if (existingUserData) {
+        console.log('SavedArticlesContext: User data already exists, skipping migration for user:', userId);
+        return;
+      }
+
+      // Check if legacy data exists
+      const legacyData = await AsyncStorage.getItem(legacyKey);
+      if (legacyData) {
+        // Migrate legacy data to user-specific key
+        await AsyncStorage.setItem(userKey, legacyData);
+        console.log('SavedArticlesContext: Migrated existing data for user:', userId);
+
+        // Validate migration
+        const migratedData = await AsyncStorage.getItem(userKey);
+        if (!migratedData || migratedData !== legacyData) {
+          throw new Error('Migration validation failed');
+        }
+
+        console.log('SavedArticlesContext: Migration validated successfully for user:', userId);
+      }
+    } catch (error) {
+      console.error('SavedArticlesContext: Migration error for user:', userId, error);
+      // Don't throw - allow app to continue functioning
+    }
+  }
+};
+
 interface SavedArticleRecord {
   id: string;
   article_id: string;
@@ -40,12 +92,36 @@ export function SavedArticlesProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const { session, isLoading: authLoading } = useAuth();
   const [initialized, setInitialized] = useState(false);
+  const [isOperating, setIsOperating] = useState(false);
+
+  const clearSavedArticles = useCallback(async () => {
+    if (isOperating) return; // Prevent concurrent operations
+
+    setIsOperating(true);
+    try {
+      // Clear both legacy and user-specific keys for safety
+      await AsyncStorage.removeItem(StorageKeyManager.getLegacyStorageKey());
+      const userId = StorageKeyManager.getUserId(session);
+      if (userId) {
+        await AsyncStorage.removeItem(StorageKeyManager.getUserStorageKey(userId));
+      }
+      setSavedArticles([]);
+      console.log('SavedArticlesContext: Cleared saved articles cache');
+    } catch (error) {
+      console.error('SavedArticlesContext: Error clearing articles:', error);
+    } finally {
+      setIsOperating(false);
+    }
+  }, [isOperating, session]);
 
   const loadSavedArticles = useCallback(async () => {
     console.log('SavedArticlesContext: Loading saved articles...');
     try {
       if (session?.user) {
         console.log('SavedArticlesContext: Fetching from Supabase for user:', session.user.id);
+
+        // Migrate existing data if needed
+        await StorageKeyManager.migrateExistingData(session.user.id);
 
         const { data, error } = await supabase
           .from('saved_articles')
@@ -91,9 +167,9 @@ export function SavedArticlesProvider({ children }: { children: ReactNode }) {
         const rawData = data as unknown;
         // Then cast to our expected type
         const typedData = rawData as SavedArticleResponse[];
-        
+
         const articles: SavedArticle[] = typedData
-          .filter((item): item is SavedArticleResponse & { news: NonNullable<SavedArticleResponse['news']> } => 
+          .filter((item): item is SavedArticleResponse & { news: NonNullable<SavedArticleResponse['news']> } =>
             item.news != null
           )
           .map(item => ({
@@ -109,11 +185,13 @@ export function SavedArticlesProvider({ children }: { children: ReactNode }) {
           }));
 
         setSavedArticles(articles);
-        await AsyncStorage.setItem('savedArticles', JSON.stringify(articles));
+        const storageKey = StorageKeyManager.getStorageKey(session);
+        await AsyncStorage.setItem(storageKey, JSON.stringify(articles));
         console.log('SavedArticlesContext: Loaded', articles.length, 'saved articles');
       } else {
         // Try loading from AsyncStorage when offline
-        const savedData = await AsyncStorage.getItem('savedArticles');
+        const storageKey = StorageKeyManager.getStorageKey(session);
+        const savedData = await AsyncStorage.getItem(storageKey);
         if (savedData) {
           const parsed = JSON.parse(savedData);
           setSavedArticles(parsed);
@@ -128,44 +206,52 @@ export function SavedArticlesProvider({ children }: { children: ReactNode }) {
   }, [session]);
 
   useEffect(() => {
-    // Load articles once auth is ready
-    if (!authLoading && !initialized) {
-      console.log('SavedArticlesContext: Initial load started');
-      loadSavedArticles()
-        .then(() => {
-          setInitialized(true);
-          console.log('SavedArticlesContext: Initial load complete');
-        })
-        .catch((error) => {
-          console.error('SavedArticlesContext: Error during initial load:', error);
-          setInitialized(true); // Still mark as initialized to prevent loops
-        });
+    // Critical: Handle user session changes to prevent cross-user data contamination
+    if (!authLoading) {
+      if (!session?.user) {
+        // User logged out or no session - clear cached data immediately
+        console.log('SavedArticlesContext: User logged out, clearing cached data');
+        clearSavedArticles();
+        setInitialized(false);
+      } else if (!initialized) {
+        // User logged in - load fresh data
+        console.log('SavedArticlesContext: User logged in, loading fresh data for user:', session.user.id);
+        loadSavedArticles()
+          .then(() => {
+            setInitialized(true);
+            console.log('SavedArticlesContext: Initial load complete for user:', session.user.id);
+          })
+          .catch((error) => {
+            console.error('SavedArticlesContext: Error during initial load:', error);
+            setInitialized(true); // Still mark as initialized to prevent loops
+          });
+      }
     }
-  }, [authLoading, loadSavedArticles, initialized]);
+  }, [session?.user?.id, authLoading, initialized]);
 
   useEffect(() => {
     // Set up real-time subscription only when authenticated
     if (!session?.user || authLoading || !initialized) {
-      console.log('SavedArticlesContext: Skipping real-time setup -', 
-        !session?.user ? 'No session' : 
-        authLoading ? 'Auth loading' : 
-        'Not initialized');
+      console.log('SavedArticlesContext: Skipping real-time setup -',
+        !session?.user ? 'No session' :
+          authLoading ? 'Auth loading' :
+            'Not initialized');
       return;
     }
 
     console.log('SavedArticlesContext: Setting up real-time subscription for user:', session.user.id);
-    
+
     let isSubscribed = true;
     const { channel, cleanup } = createChannel('saved_articles');
-    
+
     channel
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
+      .on('postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
           table: 'saved_articles',
           filter: `user_id=eq.${session.user.id}` // Only listen to user's changes
-        }, 
+        },
         async (payload) => {
           if (!isSubscribed) return;
           console.log('SavedArticlesContext: Real-time update received, reloading...');
@@ -210,7 +296,8 @@ export function SavedArticlesProvider({ children }: { children: ReactNode }) {
 
         const updatedArticles = [...savedArticles, newSavedArticle];
         setSavedArticles(updatedArticles);
-        await AsyncStorage.setItem('savedArticles', JSON.stringify(updatedArticles));
+        const storageKey = StorageKeyManager.getStorageKey(session);
+        await AsyncStorage.setItem(storageKey, JSON.stringify(updatedArticles));
         return;
       }
 
@@ -225,7 +312,7 @@ export function SavedArticlesProvider({ children }: { children: ReactNode }) {
         ]);
 
       if (error) throw error;
-      
+
       // Reload to get the latest data
       await loadSavedArticles();
       console.log('SavedArticlesContext: Bookmark added successfully');
@@ -246,7 +333,8 @@ export function SavedArticlesProvider({ children }: { children: ReactNode }) {
         console.log('SavedArticlesContext: No session, removing from AsyncStorage only');
         const updatedArticles = savedArticles.filter(article => article.id !== articleId);
         setSavedArticles(updatedArticles);
-        await AsyncStorage.setItem('savedArticles', JSON.stringify(updatedArticles));
+        const storageKey = StorageKeyManager.getStorageKey(session);
+        await AsyncStorage.setItem(storageKey, JSON.stringify(updatedArticles));
         return;
       }
 
@@ -257,7 +345,7 @@ export function SavedArticlesProvider({ children }: { children: ReactNode }) {
         .eq('user_id', session.user.id);
 
       if (error) throw error;
-      
+
       // Update local state optimistically
       setSavedArticles(current => current.filter(article => article.id !== articleId));
       console.log('SavedArticlesContext: Bookmark removed successfully');

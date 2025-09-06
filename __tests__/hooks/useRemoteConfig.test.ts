@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react-native';
+import { renderHook, act, waitFor } from '@testing-library/react-native';
 import { useRemoteConfig } from '../../hooks/useRemoteConfig';
 import { remoteConfigService, RemoteConfigParams } from '../../services/RemoteConfigService';
 
@@ -31,15 +31,17 @@ describe('useRemoteConfig', () => {
   });
 
   it('should initialize with default config values', async () => {
-    const { result, waitForNextUpdate } = renderHook(() => useRemoteConfig());
+    const { result } = renderHook(() => useRemoteConfig());
 
     // Initial state should be loading
     expect(result.current.loading).toBe(true);
 
-    await waitForNextUpdate();
+    // Wait for initialization to complete
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
 
     // After initialization
-    expect(result.current.loading).toBe(false);
     expect(result.current.error).toBeNull();
     expect(result.current.config).toEqual(mockDefaultConfig);
   });
@@ -48,11 +50,12 @@ describe('useRemoteConfig', () => {
     const error = new Error('Failed to initialize');
     (remoteConfigService.initialize as jest.Mock).mockRejectedValue(error);
 
-    const { result, waitForNextUpdate } = renderHook(() => useRemoteConfig());
+    const { result } = renderHook(() => useRemoteConfig());
 
-    await waitForNextUpdate();
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
 
-    expect(result.current.loading).toBe(false);
     expect(result.current.error).toEqual(error);
     expect(result.current.config).toEqual(mockDefaultConfig); // Should still have default values
   });
@@ -67,9 +70,11 @@ describe('useRemoteConfig', () => {
       .mockReturnValueOnce(mockDefaultConfig)
       .mockReturnValueOnce(updatedConfig);
 
-    const { result, waitForNextUpdate } = renderHook(() => useRemoteConfig());
+    const { result } = renderHook(() => useRemoteConfig());
 
-    await waitForNextUpdate();
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
 
     // Initial config
     expect(result.current.config).toEqual(mockDefaultConfig);
@@ -87,9 +92,11 @@ describe('useRemoteConfig', () => {
     const error = new Error('Failed to refresh');
     (remoteConfigService.fetchAndActivate as jest.Mock).mockRejectedValue(error);
 
-    const { result, waitForNextUpdate } = renderHook(() => useRemoteConfig());
+    const { result } = renderHook(() => useRemoteConfig());
 
-    await waitForNextUpdate();
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
 
     await act(async () => {
       const updated = await result.current.refreshConfig();
@@ -102,9 +109,11 @@ describe('useRemoteConfig', () => {
   it('should get specific config value using getValue', async () => {
     (remoteConfigService.getValue as jest.Mock).mockImplementation((key: keyof RemoteConfigParams) => mockDefaultConfig[key]);
 
-    const { result, waitForNextUpdate } = renderHook(() => useRemoteConfig());
+    const { result } = renderHook(() => useRemoteConfig());
 
-    await waitForNextUpdate();
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
 
     const layout = result.current.getValue('article_layout');
     expect(layout).toBe('default');

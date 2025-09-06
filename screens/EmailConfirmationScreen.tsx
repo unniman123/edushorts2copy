@@ -6,7 +6,7 @@ import { RootStackParamList } from '../types/navigation';
 import * as Linking from 'expo-linking'; // Import Linking
 import { supabase } from '../utils/supabase';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { toast } from 'sonner-native';
+import { toast, showSuccessToast } from '../src/utils/toast/config';
 
 type EmailConfirmationRouteProp = RouteProp<RootStackParamList, 'EmailConfirmation'>;
 type EmailConfirmationNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -49,7 +49,7 @@ export default function EmailConfirmationScreen() {
         }
 
         setConfirmationStatus('success');
-        toast.success('Email confirmed successfully!');
+        showSuccessToast('Email confirmed successfully!');
 
         // Get the current user to potentially create profile/role if needed
         // Note: Profile/role creation might be better handled on first login after confirmation
@@ -93,7 +93,7 @@ export default function EmailConfirmationScreen() {
 
       if (error) throw error;
 
-      toast.success('Verification email resent! Please check your inbox.');
+      showSuccessToast('Verification email resent! Please check your inbox.');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to resend verification email';
       toast.error(`Error: ${errorMessage}`);
@@ -114,7 +114,7 @@ export default function EmailConfirmationScreen() {
     }
 
     if (confirmationStatus === 'success') {
-       return <Text style={styles.text}>Email confirmed! Redirecting to login...</Text>;
+      return <Text style={styles.text}>Email confirmed! Redirecting to login...</Text>;
     }
 
     // Default state: Show message and resend button
@@ -126,9 +126,9 @@ export default function EmailConfirmationScreen() {
           Please click the link to verify your account.
         </Text>
         {confirmationStatus === 'error' && (
-           <Text style={[styles.text, styles.errorText]}>
-             There was an issue confirming your email. Please try resending the link.
-           </Text>
+          <Text style={[styles.text, styles.errorText]}>
+            There was an issue confirming your email. Please try resending the link.
+          </Text>
         )}
         <TouchableOpacity
           style={[styles.button, isResending && styles.buttonDisabled]}
@@ -141,15 +141,15 @@ export default function EmailConfirmationScreen() {
             <Text style={styles.buttonText}>Resend Confirmation Email</Text>
           )}
         </TouchableOpacity>
-         <TouchableOpacity onPress={() => navigation.navigate('Login', {})}>
-            <Text style={styles.backToLoginText}>Back to Login</Text>
-          </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('Login', {})}>
+          <Text style={styles.backToLoginText}>Back to Login</Text>
+        </TouchableOpacity>
       </>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.content}>
         {renderContent()}
       </View>
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
   },
-   backToLoginText: {
+  backToLoginText: {
     marginTop: 24,
     fontSize: 14,
     color: '#ff0000',

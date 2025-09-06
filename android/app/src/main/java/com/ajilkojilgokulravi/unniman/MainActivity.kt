@@ -3,6 +3,8 @@ package com.ajilkojilgokulravi.unniman
 import android.os.Build
 import android.os.Bundle
 import android.content.Intent
+import android.view.View
+import android.view.WindowInsetsController
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
@@ -14,13 +16,66 @@ import expo.modules.ReactActivityDelegateWrapper
 // Import Branch
 import io.branch.referral.Branch
 
+// Import for edge-to-edge support
+import androidx.core.view.WindowCompat
+import androidx.activity.enableEdgeToEdge
+
 class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
+    // Enable edge-to-edge display for Android 15 compatibility using recommended approach
+    enableEdgeToEdge()
+    
+    // Configure status bar appearance natively to avoid deprecated API calls
+    configureStatusBarAppearance()
+    
     // Set the theme to AppTheme BEFORE onCreate to support
     // coloring the background, status bar, and navigation bar.
     // This is required for expo-splash-screen.
     setTheme(R.style.AppTheme);
     super.onCreate(null)
+  }
+
+  /**
+   * Configure status bar appearance natively using WindowInsetsController
+   * This replaces expo-status-bar to avoid deprecated Window color API calls
+   * Equivalent to <StatusBar style="light" translucent={true} />
+   * Enhanced based on Android 15 edge-to-edge video guidelines
+   */
+  private fun configureStatusBarAppearance() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      // Android 11+ (API 30+) - Use WindowInsetsController (modern approach)
+      window.insetsController?.apply {
+        // Set light status bar icons for better visibility on light backgrounds
+        setSystemBarsAppearance(
+          0, // Clear light status bar flags for dark icons on light background
+          WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+        )
+        
+        // For three-button navigation: make navigation bar transparent
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+          window.isNavigationBarContrastEnforced = false
+        }
+      }
+    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      // Android 6+ (API 23+) - Use systemUiVisibility (fallback)
+      @Suppress("DEPRECATION")
+      window.decorView.systemUiVisibility = 
+        window.decorView.systemUiVisibility and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
+        
+      // Configure navigation bar for Android 8+ (API 26+)
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        @Suppress("DEPRECATION")
+        window.decorView.systemUiVisibility = 
+          window.decorView.systemUiVisibility and View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR.inv()
+      }
+      
+      // Make navigation bar transparent for three-button navigation (Android 10+)
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        window.isNavigationBarContrastEnforced = false
+      }
+    }
+    // For Android versions below API 23, light status bar is not supported
+    // The status bar will remain dark, which is acceptable for older devices
   }
 
   // Handle Branch links when the app opens from a link

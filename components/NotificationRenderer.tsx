@@ -1,3 +1,22 @@
+/**
+ * NotificationRenderer - Comprehensive notification display system with deep linking support
+ * 
+ * Renders individual notifications with support for different notification types, deep linking
+ * to articles, read/unread states, and dismissal actions. Includes grouped notification display
+ * and automatic navigation handling for article links. Features platform-specific styling
+ * and accessibility support with test IDs.
+ * 
+ * @component
+ * @param {NotificationRendererProps} props - Component properties
+ * @returns {React.ReactElement} The rendered notification component
+ * 
+ * @example
+ * <NotificationRenderer
+ *   notification={notificationData}
+ *   onPress={(notification) => handleNotificationPress(notification)}
+ *   onDismiss={(notification) => dismissNotification(notification)}
+ * />
+ */
 import React, { useCallback } from 'react';
 import {
   View,
@@ -11,33 +30,68 @@ import {
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
-import { formatDistanceToNow } from 'date-fns';
+import { getRelativeTime } from '../utils/timeUtils';
 
+/**
+ * Notification data structure with support for different notification types
+ * @interface NotificationData
+ */
 interface NotificationData {
+  /** Unique identifier for the notification */
   id: string;
+  /** Notification title/headline */
   title: string;
+  /** Notification body/content */
   body: string;
+  /** Timestamp when the notification was created */
   timestamp: Date;
+  /** Optional deep link URL for navigation */
   deep_link?: string;
+  /** Whether the notification has been read */
   read: boolean;
+  /** Type of notification for icon and behavior determination */
   type: 'push' | 'web' | 'scheduled' | 'article_link';
+  /** Additional metadata for the notification */
   data?: Record<string, unknown>;
 }
 
+/**
+ * Props for notification group component
+ * @interface NotificationGroupProps
+ */
 interface NotificationGroupProps {
+  /** Date string for grouping notifications */
   date: string;
+  /** Array of notifications to display in the group */
   notifications: NotificationData[];
+  /** Callback when a notification is pressed */
   onPress: (notification: NotificationData) => void;
+  /** Callback when a notification is dismissed */
   onDismiss: (notification: NotificationData) => void;
 }
 
+/**
+ * Props for the main notification renderer component
+ * @interface NotificationRendererProps
+ */
 interface NotificationRendererProps {
+  /** Notification data to render */
   notification: NotificationData;
+  /** Optional callback when notification is pressed */
   onPress?: (notification: NotificationData) => void;
+  /** Optional callback when notification is dismissed */
   onDismiss?: (notification: NotificationData) => void;
+  /** Optional custom styles for the notification container */
   style?: ViewStyle;
 }
 
+/**
+ * NotificationGroup - Groups notifications by date for organized display
+ * 
+ * @component
+ * @param {NotificationGroupProps} props - Group component properties
+ * @returns {React.ReactElement} The rendered notification group
+ */
 const NotificationGroup: React.FC<NotificationGroupProps> = ({
   date,
   notifications,
@@ -59,6 +113,14 @@ const NotificationGroup: React.FC<NotificationGroupProps> = ({
   );
 };
 
+/**
+ * NotificationContent - Renders the main content area of a notification
+ * 
+ * @component
+ * @param {Object} props - Content component properties
+ * @param {NotificationData} props.notification - Notification data to display
+ * @returns {React.ReactElement} The rendered notification content
+ */
 const NotificationContent: React.FC<{ notification: NotificationData }> = ({
   notification,
 }) => {
@@ -71,7 +133,7 @@ const NotificationContent: React.FC<{ notification: NotificationData }> = ({
         {notification.body}
       </Text>
       <Text testID="notification-timestamp" style={styles.time}>
-        {formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true })}
+        {getRelativeTime(notification.timestamp)}
       </Text>
     </View>
   );
@@ -85,6 +147,11 @@ const NotificationRenderer: React.FC<NotificationRendererProps> = ({
 }) => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
+  /**
+   * Handles notification press with deep linking support
+   * Automatically navigates to article viewer for article links
+   * @returns {void}
+   */
   const handlePress = useCallback(() => {
     if (notification.deep_link && notification.deep_link.startsWith('edushorts://articles/')) {
       const articleId = notification.deep_link.split('/').pop();
@@ -95,10 +162,18 @@ const NotificationRenderer: React.FC<NotificationRendererProps> = ({
     onPress?.(notification);
   }, [notification, onPress, navigation]);
 
+  /**
+   * Handles notification dismissal
+   * @returns {void}
+   */
   const handleDismiss = useCallback(() => {
     onDismiss?.(notification);
   }, [notification, onDismiss]);
 
+  /**
+   * Determines appropriate icon based on notification type
+   * @returns {string} Icon name for the notification type
+   */
   const getIconName = useCallback(() => {
     switch (notification.type) {
       case 'article_link':

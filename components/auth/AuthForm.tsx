@@ -1,3 +1,24 @@
+/**
+ * AuthForm - Authentication form component with email and password inputs
+ * 
+ * Renders a complete authentication form with email and password fields,
+ * password visibility toggle, and forgot password link. Features proper
+ * input validation, accessibility support, and responsive design. Includes
+ * icon-enhanced inputs and secure password handling with show/hide functionality.
+ * 
+ * @component
+ * @param {AuthFormProps} props - Component properties
+ * @returns {React.ReactElement} The rendered authentication form component
+ * 
+ * @example
+ * <AuthForm
+ *   email={emailValue}
+ *   setEmail={setEmailValue}
+ *   password={passwordValue}
+ *   setPassword={setPasswordValue}
+ *   onForgotPassword={() => handleForgotPassword()}
+ * />
+ */
 import React, { useState } from 'react';
 import {
   View,
@@ -8,11 +29,20 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
+/**
+ * Props interface for AuthForm component
+ * @interface AuthFormProps
+ */
 interface AuthFormProps {
+  /** Current email input value */
   email: string;
+  /** Callback function to update email value */
   setEmail: (email: string) => void;
+  /** Current password input value */
   password: string;
+  /** Callback function to update password value */
   setPassword: (password: string) => void;
+  /** Callback function for forgot password action */
   onForgotPassword: () => void;
 }
 
@@ -100,11 +130,9 @@ const styles = StyleSheet.create({
   forgotPassword: {},
   forgotPasswordText: {
     fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: -1, height: 1 },
-    textShadowRadius: 5,
+    color: '#FF0000',
+    fontWeight: '500',
+    textDecorationLine: 'underline',
   },
 });
 

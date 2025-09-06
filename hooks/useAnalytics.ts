@@ -1,21 +1,69 @@
+/**
+ * useAnalytics - Custom hooks for analytics tracking and screen navigation monitoring
+ * 
+ * Provides comprehensive analytics tracking functionality including automatic screen
+ * view tracking, navigation pattern monitoring, and user journey analytics. Integrates
+ * with Firebase Analytics through the analytics service and handles navigation state
+ * changes with proper initialization and cleanup.
+ * 
+ * @fileoverview Analytics tracking hooks for React Navigation integration
+ * @author Development Team
+ * @version 1.0.0
+ */
 import { useEffect, useRef } from 'react';
 import { useNavigationContainerRef } from '@react-navigation/native';
 import { analyticsService } from '../services/AnalyticsService';
 import { ScreenViewAnalyticsParams } from '../src/types/analytics';
 
 /**
- * Hook to automatically track screen views and user navigation patterns.
- * 
- * Tracks:
- * - Initial screen view on app launch
- * - Screen transitions during navigation
- * - Maintains navigation history for analytics
+ * Return type for useScreenTracking hook
+ * @interface UseScreenTrackingReturn
  */
-export const useScreenTracking = () => {
+interface UseScreenTrackingReturn {
+  /** Navigation container reference for manual navigation control */
+  navigationRef: ReturnType<typeof useNavigationContainerRef>;
+}
+
+/**
+ * useScreenTracking - Custom hook for automatic screen view tracking
+ * 
+ * Automatically tracks screen views and user navigation patterns using React Navigation.
+ * Monitors navigation state changes, handles initial screen tracking, and maintains
+ * navigation history for analytics purposes. Integrates with Firebase Analytics
+ * through the analytics service.
+ * 
+ * @hook
+ * @returns {UseScreenTrackingReturn} Object containing navigation reference
+ * 
+ * @example
+ * const { navigationRef } = useScreenTracking();
+ * 
+ * // Use in NavigationContainer
+ * <NavigationContainer ref={navigationRef}>
+ *   <Stack.Navigator>
+ *     // Navigation screens
+ *   </Stack.Navigator>
+ * </NavigationContainer>
+ * 
+ * // Automatic tracking includes:
+ * // - Initial screen view on app launch
+ * // - Screen transitions during navigation
+ * // - Navigation history maintenance
+ */
+export const useScreenTracking = (): UseScreenTrackingReturn => {
   const navigationRef = useNavigationContainerRef();
+  /**
+   * Reference to store the current route name for comparison
+   * @type {React.MutableRefObject<string | undefined>}
+   */
   const routeNameRef = useRef<string | undefined>();
 
   useEffect(() => {
+    /**
+     * Handles navigation container ready state
+     * Tracks initial screen view when navigation is ready
+     * @returns {void}
+     */
     const onReady = () => {
       // This will be called once the navigation container is ready
       const initialRoute = navigationRef.getCurrentRoute();
@@ -32,6 +80,11 @@ export const useScreenTracking = () => {
       }
     };
 
+    /**
+     * Handles navigation state changes
+     * Tracks screen transitions and updates navigation history
+     * @returns {void}
+     */
     const onStateChange = () => {
       if (!navigationRef.isReady()) {
         // Don't do anything if the navigator is not yet ready
@@ -68,7 +121,6 @@ export const useScreenTracking = () => {
       onReady();
     }
     // else onReady will be called by NavigationContainer in App.tsx, or we can listen for a ready event if available.
-    // For now, we'll rely on isReady() check.
 
     const unsubscribeState = navigationRef.addListener('state', onStateChange);
 
@@ -77,5 +129,5 @@ export const useScreenTracking = () => {
     };
   }, [navigationRef]);
 
-  return navigationRef;
+  return { navigationRef };
 };

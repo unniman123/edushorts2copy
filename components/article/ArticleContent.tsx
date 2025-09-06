@@ -1,4 +1,24 @@
-import React from 'react';
+/**
+ * ArticleContent - Full article content display component with dynamic layout
+ * 
+ * Renders complete article content including hero image, title, publisher information,
+ * summary, full content, and source link. Features dynamic layout optimization based
+ * on source icon presence, memoized timestamp calculations for performance, and
+ * fallback handling for missing images. Includes proper content hierarchy and
+ * responsive text sizing.
+ * 
+ * @component
+ * @param {ArticleContentProps} props - Component properties
+ * @returns {React.ReactElement} The rendered article content component
+ * 
+ * @example
+ * <ArticleContent
+ *   article={articleData}
+ *   showSourceIcon={true}
+ *   maxSummaryLength={200}
+ * />
+ */
+import React, { memo, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,22 +29,61 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Article } from '../../types/supabase';
+import { getRelativeTime } from '../../utils/timeUtils';
+import { TYPOGRAPHY } from '../../constants/theme';
 
+/**
+ * Props interface for ArticleContent component
+ * @interface ArticleContentProps
+ */
 interface ArticleContentProps {
+  /** Article data containing all content and metadata */
   article: Article;
+  /** Whether to display the source icon in publisher section */
   showSourceIcon: boolean;
+  /** Maximum length for summary text (currently unused but available for future truncation) */
   maxSummaryLength: number;
 }
 
-const ArticleContent: React.FC<ArticleContentProps> = ({
+const ArticleContent: React.FC<ArticleContentProps> = memo(({
   article,
   showSourceIcon,
   maxSummaryLength,
 }) => {
-  const truncatedSummary =
-    article.summary.length > maxSummaryLength
-      ? article.summary.substring(0, maxSummaryLength) + '...'
-      : article.summary;
+  /**
+   * Memoized timestamp calculation for performance optimization
+   * Prevents unnecessary recalculation of relative time on every render
+   * @returns {string} Formatted relative time string
+   */
+  const memoizedTimestamp = useMemo(() => {
+    return getRelativeTime(article.created_at);
+  }, [article.created_at]);
+
+  /**
+   * Article summary text (currently displays full summary without truncation)
+   * @constant {string}
+   */
+  const truncatedSummary = article.summary;
+
+  /**
+   * Dynamic publisher container styles based on source icon presence
+   * Adjusts layout when source icon is hidden for optimal space utilization
+   * @constant {Array}
+   */
+  const publisherContainerStyle = [
+    styles.publisherContainer,
+    !showSourceIcon && styles.publisherContainerNoIcon,
+  ];
+
+  /**
+   * Dynamic publisher info styles based on source icon presence
+   * Optimizes text layout when icon is not displayed
+   * @constant {Array}
+   */
+  const publisherInfoStyle = [
+    styles.publisherInfo,
+    !showSourceIcon && styles.publisherInfoNoIcon,
+  ];
 
   return (
     <View>
@@ -40,17 +99,17 @@ const ArticleContent: React.FC<ArticleContentProps> = ({
       </View>
       <View style={styles.contentContainer}>
         <Text style={styles.title}>{article.title}</Text>
-        <View style={styles.publisherContainer}>
+        <View style={publisherContainerStyle}>
           {showSourceIcon && article.source_icon && (
             <Image
               source={{ uri: article.source_icon }}
               style={styles.publisherIcon}
             />
           )}
-          <View style={styles.publisherInfo}>
+          <View style={publisherInfoStyle}>
             <Text style={styles.publisherName}>{article.source_name}</Text>
             <Text style={styles.publishDate}>
-              {new Date(article.created_at).toLocaleDateString()}
+              {memoizedTimestamp}
             </Text>
           </View>
         </View>
@@ -69,7 +128,7 @@ const ArticleContent: React.FC<ArticleContentProps> = ({
       </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   heroContainer: {
@@ -95,7 +154,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: TYPOGRAPHY.FONT_SIZE.LARGE, // Updated to 16sp for consistency with NewsCard titles as per industrial best practice
     fontWeight: 'bold',
     color: '#333333',
     marginBottom: 12,
@@ -105,6 +164,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 15,
   },
+  publisherContainerNoIcon: {
+    justifyContent: 'flex-start',
+  },
   publisherIcon: {
     width: 40,
     height: 40,
@@ -113,6 +175,10 @@ const styles = StyleSheet.create({
   },
   publisherInfo: {
     flex: 1,
+  },
+  publisherInfoNoIcon: {
+    flex: 0,
+    alignSelf: 'flex-start',
   },
   publisherName: {
     fontSize: 16,
@@ -147,7 +213,7 @@ const styles = StyleSheet.create({
   },
   sourceLinkText: {
     fontSize: 14,
-    color: '#0066cc',
+    color: '#ff0000',
     fontWeight: '600',
     marginRight: 6,
   },

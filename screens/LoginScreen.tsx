@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,22 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
+  Animated,
+  Easing,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS, BORDER_RADIUS, TYPOGRAPHY } from '../constants/theme';
+import { COMMON_STYLES } from '../constants/commonStyles';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../utils/supabase';
+import { handleGoogleSignIn } from '../utils/authHelpers';
+import { getErrorMessage, handleAuthError } from '../utils/errorHandler';
+import * as Linking from 'expo-linking';
 import AuthForm from '../components/auth/AuthForm';
 import SocialSignInButtons from '../components/auth/SocialSignInButtons';
 
@@ -21,39 +31,183 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
 export default function LoginScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const {
-    email,
-    setEmail,
-    password,
-    setPassword,
-    isLoading,
-    handleLogin,
-    handleSocialLogin,
-    handleForgotPassword,
-  } = useAuth();
+  const route = useRoute<any>();
+  const { isLoading: authLoading } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Get navigation context from route params
+  const { returnTo, context } = route.params || {};
+
+  // Entrance animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(8)).current; // small upward motion
+  const scale = useRef(new Animated.Value(0.995)).current; // subtle pop
+
+  useEffect(() => {
+    // Composite entrance animation for smoother visual transition
+    // Slower duration and easing for a gentler appearance
+    const duration = 420;
+    const ease = Easing.out(Easing.cubic);
+
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration,
+        easing: ease,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration,
+        easing: ease,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scale, {
+        toValue: 1,
+        duration,
+        easing: ease,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please enter both email and password.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { data: { user }, error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        if (error.message.includes('Email not confirmed')) {
+          Alert.alert(
+            'Email Not Verified',
+            'Please check your inbox to confirm your email address.'
+          );
+          navigation.navigate('EmailConfirmation', { email });
+        } else {
+          throw error;
+        }
+      } else if (user) {
+        // Navigate based on where user came from
+        if (returnTo === 'Guest') {
+          // User came from guest mode, send them to authenticated main
+          navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+        } else {
+          // Default navigation for direct login
+          navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+        }
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleAuthError(error, {
+        component: 'LoginScreen',
+        operation: 'user_login',
+        additionalData: { email }
+      });
+      Alert.alert('Login Error', errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSocialLogin = async () => {
+    setIsLoading(true);
+    try {
+      await handleGoogleSignIn();
+    } catch (error: unknown) {
+      const errorMessage = handleAuthError(error, {
+        component: 'LoginScreen',
+        operation: 'social_login'
+      });
+      console.error('Social login error:', errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      Alert.alert('Error', 'Please enter your email to reset your password.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: Linking.createURL('auth/reset-password'),
+      });
+      if (error) throw error;
+      Alert.alert('Password Reset', 'A password reset link has been sent to your email.');
+    } catch (error: unknown) {
+      const errorMessage = handleAuthError(error, {
+        component: 'LoginScreen',
+        operation: 'password_reset',
+        additionalData: { email }
+      });
+      Alert.alert('Error', errorMessage || 'Failed to send reset link.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleExternalLink = (url: string) => {
+    Linking.openURL(url).catch(err => {
+      console.error("Couldn't open URL", err);
+      Alert.alert('Error', 'Unable to open the link. Please try again.');
+    });
+  };
 
   return (
-    <View style={styles.backgroundImage}>
-      <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardAvoidingView}
-        >
+    <LinearGradient
+      colors={['#ffffff', '#f8f8f8', '#f0f0f0']}
+      style={styles.backgroundImage}
+    >
+      <Animated.View 
+        style={[
+          styles.animatedContainer,
+          {
+            opacity: fadeAnim,
+            transform: [
+              { translateY: translateY },
+              { scale: scale },
+            ],
+          }
+        ]}
+      >
+        <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
+        {/* Fixed Logo Section - Not affected by keyboard */}
+        <View style={styles.logoSection}>
+                      <View style={styles.logoContainer}>
+              <Image
+                source={require('../assets/adaptive-icon-foreground.png')}
+                style={styles.logo}
+                onError={(error) => console.error('LoginScreen: Error loading logo:', error)}
+              />
+              <Text style={styles.logoText}>Edushorts</Text>
+              <Text style={styles.taglineText}>
+                {context === 'bookmarks' 
+                  ? 'Sign in to save articles and access them anywhere, anytime.'
+                  : context === 'profile' 
+                  ? 'Sign in to access your personalized education hub'
+                  : context === 'notifications'
+                  ? 'Sign in to receive personalized education alerts'
+                  : 'One simplified feed for the latest trusted foreign education and visa insights'
+                }
+              </Text>
+            </View>
+        </View>
+
+        {/* Keyboard-Responsive Form Section */}
+        <View style={styles.keyboardAvoidingView}>
           <ScrollView
             contentContainerStyle={styles.scrollContainer}
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.logoContainer}>
-              <Image
-                source={require('../assets/app-logo.png')}
-                style={styles.logo}
-              />
-              <Text style={styles.logoText}>Edushorts</Text>
-              <Text style={styles.subtitle}>
-                "Your Daily Briefing on Foreign Education & Immigration."
-              </Text>
-            </View>
-
             <View style={styles.formContainer}>
               <AuthForm
                 email={email}
@@ -83,33 +237,61 @@ export default function LoginScreen() {
                 <Text style={styles.registerLink}>Sign Up</Text>
               </TouchableOpacity>
             </View>
+
+            {/* Legal Policy Links - Google Play Compliance */}
+            <View style={styles.legalLinksContainer}>
+              <Text style={styles.legalDisclaimerText}>
+                By signing in, you agree with our{' '}
+              </Text>
+              <View style={styles.legalLinksRow}>
+                <TouchableOpacity onPress={() => handleExternalLink('https://edushorts-website.vercel.app/terms-conditions.html')}>
+                  <Text style={styles.legalLinkText}>terms of use</Text>
+                </TouchableOpacity>
+                <Text style={styles.legalSeparator}> and </Text>
+                <TouchableOpacity onPress={() => handleExternalLink('https://edushorts-website.vercel.app/privacy-policy.html')}>
+                  <Text style={styles.legalLinkText}>privacy policy</Text>
+                </TouchableOpacity>
+                <Text style={styles.legalSeparator}> and for further information </Text>
+                <TouchableOpacity onPress={() => handleExternalLink('https://edushorts-website.vercel.app/#contact')}>
+                  <Text style={styles.legalLinkText}>contact us</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </View>
+        </View>
+        </SafeAreaView>
+      </Animated.View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   backgroundImage: {
-    flex: 1,
-    backgroundColor: '#FF0000',
+    ...COMMON_STYLES.flex1,
+    backgroundColor: COLORS.WHITE,
+  },
+  animatedContainer: {
+    ...COMMON_STYLES.flex1,
   },
   container: {
-    flex: 1,
-    justifyContent: 'center',
+    ...COMMON_STYLES.flex1,
   },
-  keyboardAvoidingView: {
-    flex: 1,
+  logoSection: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 15,
+    ...COMMON_STYLES.centerHorizontal,
   },
+  keyboardAvoidingView: COMMON_STYLES.flex1,
   scrollContainer: {
     flexGrow: 1,
-    padding: 24,
-    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+    justifyContent: 'flex-start',
   },
   logoContainer: {
-    alignItems: 'center',
-    marginBottom: 40,
+    ...COMMON_STYLES.centerHorizontal,
+    marginBottom: 10,
   },
   logo: {
     width: 80,
@@ -117,69 +299,83 @@ const styles = StyleSheet.create({
     borderRadius: 40,
   },
   logoText: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginTop: 12,
+    fontSize: TYPOGRAPHY.FONT_SIZE.TITLE,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.EXTRA_BOLD,
+    color: COLORS.PRIMARY,
+    marginTop: 16,
     marginBottom: 8,
-    letterSpacing: 1,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    letterSpacing: 2,
+    textAlign: 'center',
     textTransform: 'uppercase',
   },
-  subtitle: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#FFFFFF',
+  taglineText: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.MEDIUM,
+    color: COLORS.TEXT_SECONDARY,
     textAlign: 'center',
-    letterSpacing: 0.25,
-    lineHeight: 22,
-    maxWidth: '80%',
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    marginBottom: 4,
   },
   formContainer: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   loginButton: {
-    backgroundColor: '#ff0000',
+    backgroundColor: COLORS.PRIMARY,
     paddingVertical: 15,
-    borderRadius: 12,
-    alignItems: 'center',
+    borderRadius: BORDER_RADIUS.LARGE,
     marginTop: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderColor: COLORS.PRIMARY,
+    width: '100%',
+    ...COMMON_STYLES.centerHorizontal,
   },
   loginButtonDisabled: {
-    backgroundColor: '#ff9999',
+    backgroundColor: COLORS.GRAY_300,
+    borderColor: COLORS.GRAY_300,
   },
   loginButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: COLORS.WHITE,
+    fontSize: TYPOGRAPHY.FONT_SIZE.LARGE,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
   },
   registerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 24,
+    ...COMMON_STYLES.flexRowCenter,
+    marginBottom: 16,
   },
   registerText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: -1, height: 1 },
-    textShadowRadius: 5,
+    fontSize: TYPOGRAPHY.FONT_SIZE.LARGE,
+    color: COLORS.TEXT_SECONDARY,
   },
   registerLink: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginLeft: 4,
+    fontSize: TYPOGRAPHY.FONT_SIZE.LARGE,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
+    color: COLORS.PRIMARY,
+    marginLeft: 6,
     textDecorationLine: 'underline',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: -1, height: 1 },
-    textShadowRadius: 5,
+  },
+  // New styles for legal compliance
+  legalLinksContainer: {
+    ...COMMON_STYLES.centerHorizontal,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  legalDisclaimerText: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.SMALL,
+    color: COLORS.TEXT_SECONDARY,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  legalLinksRow: {
+    ...COMMON_STYLES.flexRowCenter,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  legalLinkText: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.SMALL,
+    color: COLORS.PRIMARY,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
+    textDecorationLine: 'underline',
+  },
+  legalSeparator: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.SMALL,
+    color: COLORS.TEXT_SECONDARY,
   },
 });

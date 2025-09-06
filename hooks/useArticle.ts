@@ -1,10 +1,55 @@
+/**
+ * useArticle - Custom hook for managing individual article data and bookmark functionality
+ * 
+ * Provides state management for a single article with loading states, error handling,
+ * and bookmark functionality. Automatically fetches article data based on article ID
+ * and integrates with the saved articles context for bookmark management. Includes
+ * analytics tracking for bookmark actions.
+ * 
+ * @hook
+ * @param {string | null} articleId - The ID of the article to fetch
+ * @returns {UseArticleReturn} Object containing article state and bookmark methods
+ * 
+ * @example
+ * const { 
+ *   article, 
+ *   loading, 
+ *   error, 
+ *   isBookmarked, 
+ *   toggleBookmark 
+ * } = useArticle('article-id-123');
+ * 
+ * // Handle bookmark toggle
+ * const handleBookmark = async () => {
+ *   await toggleBookmark();
+ * };
+ */
 import { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabase';
 import { Article } from '../types/supabase';
 import { useSavedArticles } from '../context/SavedArticlesContext';
 import { analyticsService } from '../services/AnalyticsService';
 
-export const useArticle = (articleId: string | null) => {
+/**
+ * Return type for useArticle hook
+ * @interface UseArticleReturn
+ */
+interface UseArticleReturn {
+  /** Article data or null if not loaded */
+  article: Article | null;
+  /** Loading state indicator */
+  loading: boolean;
+  /** Error message if any */
+  error: string | null;
+  /** Whether the article is currently bookmarked */
+  isBookmarked: boolean;
+  /** Loading state for bookmark operations */
+  isBookmarkLoading: boolean;
+  /** Function to toggle bookmark status */
+  toggleBookmark: () => Promise<void>;
+}
+
+export const useArticle = (articleId: string | null): UseArticleReturn => {
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,6 +63,10 @@ export const useArticle = (articleId: string | null) => {
   const isBookmarked = savedArticles.some(a => a.id === articleId);
 
   useEffect(() => {
+    /**
+     * Fetches article data from Supabase with category information
+     * @returns {Promise<void>} Promise that resolves when fetch is complete
+     */
     const fetchArticle = async () => {
       if (!articleId) {
         setLoading(false);
@@ -55,6 +104,11 @@ export const useArticle = (articleId: string | null) => {
     fetchArticle();
   }, [articleId]);
 
+  /**
+   * Toggles bookmark status for the current article
+   * Handles both adding and removing bookmarks with analytics tracking
+   * @returns {Promise<void>} Promise that resolves when bookmark operation is complete
+   */
   const toggleBookmark = async () => {
     if (!article) return;
 

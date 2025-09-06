@@ -4,7 +4,9 @@ export const NOTIFICATION_CONFIG = {
   expo: {
     projectId: "cfa91622-46a9-49aa-86c3-177c0a05d850",
     apiUrl: 'https://exp.host/--/api/v2/push/send',
-    accessToken: 'e3iKVqsYu9wOjtxxuhMvZl0AW4XcNZci6z2zwJH'
+    accessToken: Constants.expoConfig?.extra?.expoAccessToken || 
+                  process.env.EXPO_ACCESS_TOKEN || 
+                  'e3iKVqsYu9wOjtxxuhMvZl0AW4XcNZci6z2zwJH' // Emergency fallback
   },
   monitoring: {
     healthCheckInterval: 300000, // 5 minutes

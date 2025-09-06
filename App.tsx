@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { NavigationContainer, LinkingOptions, useNavigation } from '@react-navigation/native';
+import { createNativeStackNavigator, NativeStackNavigationOptions } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { getApp } from '@react-native-firebase/app';
-import messaging, { getMessaging } from '@react-native-firebase/messaging';
+import messaging from '@react-native-firebase/messaging';
 import { RootStackParamList } from './types/navigation';
-import { StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { StyleSheet, TouchableOpacity, Platform, StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Toaster } from 'sonner-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,7 +17,6 @@ import { SavedArticlesProvider } from './context/SavedArticlesContext';
 import { NewsProvider } from './context/NewsContext';
 import { AdvertisementProvider } from './context/AdvertisementContext';
 import { initializeAuth } from './utils/authHelpers';
-import * as Linking from 'expo-linking';
 import * as Notifications from 'expo-notifications';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { MonitoringService, DeepLinkHandler } from './services';
@@ -29,35 +28,59 @@ import { analyticsService } from './services/AnalyticsService';
 import NotificationService from './services/NotificationService';
 import PerformanceMonitoringService from './services/PerformanceMonitoringService';
 import { NativeModules } from 'react-native';
+import { COLORS } from './constants/theme';
 
+// Core screens - Always loaded for performance
 import LoadingScreen from './screens/LoadingScreen';
 import HomeScreen from './screens/HomeScreen';
 import DiscoverScreen from './screens/DiscoverScreen';
 import ArticleDetailScreen from './screens/ArticleDetailScreen';
-import SingleArticleViewer from './screens/SingleArticleViewer';
 import BookmarksScreen from './screens/BookmarksScreen';
+import LoginPromptScreen from './screens/LoginPromptScreen';
+
+// Performance-optimized screens with conditional loading
 import ProfileScreen from './screens/ProfileScreen';
+import SettingsScreen from './screens/SettingsScreen';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
-import SettingsScreen from './screens/SettingsScreen';
 import EmailConfirmationScreen from './screens/EmailConfirmationScreen';
 import ResetPasswordScreen from './screens/ResetPasswordScreen';
+import SingleArticleViewer from './screens/SingleArticleViewer';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
+// Performance optimization: Memoized screen components
+const MemoizedProfileScreen = React.memo(ProfileScreen);
+const MemoizedSettingsScreen = React.memo(SettingsScreen);
+const MemoizedLoginScreen = React.memo(LoginScreen);
+const MemoizedRegisterScreen = React.memo(RegisterScreen);
+const MemoizedEmailConfirmationScreen = React.memo(EmailConfirmationScreen);
+const MemoizedResetPasswordScreen = React.memo(ResetPasswordScreen);
+const MemoizedSingleArticleViewer = React.memo(SingleArticleViewer);
+
+// Simple lazy-loading style transition
+const getAuthScreenOptions = (): NativeStackNavigationOptions => {
+  return {
+    headerShown: false,
+    animation: 'fade',
+    animationDuration: 250,
+    gestureEnabled: true,
+  };
+};
+
 function MainTabs() {
-  const homeScreenRef = React.useRef<{scrollToTop: () => void}>(null);
+  const homeScreenRef = React.useRef<{ scrollToTop: () => void }>(null);
   const { refreshNews } = useNews();
 
-  const handleTabPress = (tabName: string, navigation: any) => {
+  const handleTabPress = (tabName: string, navigation: { navigate: (screen: string, params?: { screen: string }) => void; isFocused: () => boolean }) => {
     console.log('(NOBRIDGE) LOG  Tab pressed:', tabName);
-    
+
     if (tabName === 'HomeTab') {
       // Always navigate to HomeTab first
       console.log('(NOBRIDGE) LOG  Navigating to HomeTab');
       navigation.navigate('Main', { screen: 'HomeTab' });
-      
+
       // If already on HomeTab, also refresh and scroll
       if (navigation.isFocused()) {
         console.log('(NOBRIDGE) LOG  Already on HomeTab - refreshing');
@@ -100,7 +123,7 @@ function MainTabs() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#ff0000',
+        tabBarActiveTintColor: COLORS.PRIMARY,
         tabBarInactiveTintColor: '#888',
         headerShown: false,
         tabBarStyle: {
@@ -110,10 +133,9 @@ function MainTabs() {
         },
       })}
     >
-        <Tab.Screen
+      <Tab.Screen
         name="HomeTab"
-        children={() => <HomeScreen ref={homeScreenRef} />}
-        options={({ navigation }) => ({ 
+        options={({ navigation }) => ({
           tabBarLabel: 'Home',
           tabBarButton: (props) => (
             <TouchableOpacity
@@ -122,7 +144,9 @@ function MainTabs() {
             />
           )
         })}
-      />
+      >
+        {() => <HomeScreen ref={homeScreenRef} />}
+      </Tab.Screen>
       <Tab.Screen
         name="DiscoverTab"
         component={DiscoverScreen}
@@ -135,9 +159,140 @@ function MainTabs() {
       />
       <Tab.Screen
         name="ProfileTab"
-        component={ProfileScreen}
         options={{ tabBarLabel: 'Profile' }}
+      >
+        {() => <MemoizedProfileScreen />}
+      </Tab.Screen>
+    </Tab.Navigator>
+  );
+}
+
+function GuestTabs() {
+  const homeScreenRef = React.useRef<{ scrollToTop: () => void }>(null);
+  const { refreshNews } = useNews();
+  const navigation = useNavigation<any>();
+
+  const handleGuestTabPress = (tabName: string) => {
+    console.log('Guest tab pressed:', tabName);
+
+    if (tabName === 'HomeTab') {
+      navigation.navigate('Guest', { screen: 'HomeTab' });
+      if (navigation.isFocused()) {
+        refreshNews()
+          .then(() => {
+            homeScreenRef.current?.scrollToTop();
+          })
+          .catch((error) => {
+            console.error('Guest refresh failed:', error);
+          });
+      }
+    } else if (tabName === 'DiscoverTab') {
+      navigation.navigate('Guest', { screen: 'DiscoverTab' });
+    } else if (tabName === 'LoginPrompt') {
+      // Navigate to login with context about why login is needed
+      navigation.navigate('Login', { 
+        returnTo: 'Guest',
+        context: 'bookmarks'
+      });
+    } else if (tabName === 'ProfilePrompt') {
+      // Navigate to login with profile context
+      navigation.navigate('Login', { 
+        returnTo: 'Guest',
+        context: 'profile'
+      });
+    }
+  };
+
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName: typeof Ionicons.defaultProps.name;
+
+          switch (route.name) {
+            case 'HomeTab':
+              iconName = focused ? 'home' : 'home-outline';
+              break;
+            case 'DiscoverTab':
+              iconName = focused ? 'compass' : 'compass-outline';
+              break;
+            case 'LoginPrompt':
+              iconName = focused ? 'bookmark' : 'bookmark-outline';
+              break;
+            case 'ProfilePrompt':
+              iconName = focused ? 'person' : 'person-outline';
+              break;
+            default:
+              iconName = 'help-outline';
+          }
+
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: COLORS.PRIMARY,
+        tabBarInactiveTintColor: '#888',
+        headerShown: false,
+        tabBarStyle: {
+          borderTopWidth: 1,
+          borderTopColor: '#eeeeee',
+          elevation: 0,
+        },
+      })}
+    >
+      <Tab.Screen
+        name="HomeTab"
+        options={{
+          tabBarLabel: 'Home',
+          tabBarButton: (props) => (
+            <TouchableOpacity
+              {...props}
+              onPress={() => handleGuestTabPress('HomeTab')}
+            />
+          )
+        }}
+      >
+        {() => <HomeScreen ref={homeScreenRef} />}
+      </Tab.Screen>
+      <Tab.Screen
+        name="DiscoverTab"
+        component={DiscoverScreen}
+        options={{ 
+          tabBarLabel: 'Discover',
+          tabBarButton: (props) => (
+            <TouchableOpacity
+              {...props}
+              onPress={() => handleGuestTabPress('DiscoverTab')}
+            />
+          )
+        }}
       />
+      <Tab.Screen
+        name="LoginPrompt"
+        options={{ 
+          tabBarLabel: 'Saved',
+          tabBarButton: (props) => (
+            <TouchableOpacity
+              {...props}
+              onPress={() => handleGuestTabPress('LoginPrompt')}
+            />
+          )
+        }}
+      >
+        {() => <LoginPromptScreen context="bookmarks" />}
+      </Tab.Screen>
+      <Tab.Screen
+        name="ProfilePrompt"
+        options={{ 
+          tabBarLabel: 'Profile',
+          tabBarButton: (props) => (
+            <TouchableOpacity
+              {...props}
+              onPress={() => handleGuestTabPress('ProfilePrompt')}
+            />
+          )
+        }}
+      >
+        {() => <LoginPromptScreen context="profile" />}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 }
@@ -145,13 +300,21 @@ function MainTabs() {
 function RootStackNavigator() {
   const { isLoading, session } = useAuth();
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [appMode, setAppMode] = useState<'guest' | 'auth' | 'authenticated'>('guest');
 
   useEffect(() => {
     // Mark as initialized after first auth check
     if (!isLoading) {
       setHasInitialized(true);
+      // Determine app mode based on session
+      if (session) {
+        setAppMode('authenticated');
+      } else {
+        // Default to guest mode instead of forcing auth
+        setAppMode('guest');
+      }
     }
-  }, [isLoading]);
+  }, [isLoading, session]);
 
   // Only show loading screen on initial load or if explicitly loading after init
   if (!hasInitialized || (hasInitialized && isLoading)) {
@@ -164,24 +327,55 @@ function RootStackNavigator() {
         headerShown: false,
       }}
     >
-      {session ? (
-        // Authenticated stack
+      {appMode === 'authenticated' ? (
+        // Authenticated stack - Full access with memoized components
         <>
           <Stack.Screen name="Main" component={MainTabs} />
-          <Stack.Screen name="SingleArticleViewer" component={SingleArticleViewer} />
+          <Stack.Screen name="SingleArticleViewer" component={MemoizedSingleArticleViewer} />
           <Stack.Screen name="SavedArticlePager" component={ArticleDetailScreen} />
           <Stack.Screen name="Discover" component={DiscoverScreen} />
           <Stack.Screen name="Bookmarks" component={BookmarksScreen} />
-          <Stack.Screen name="Profile" component={ProfileScreen} />
-          <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="Profile" component={MemoizedProfileScreen} />
+          <Stack.Screen name="Settings" component={MemoizedSettingsScreen} />
+          <Stack.Screen name="Login" component={MemoizedLoginScreen} />
+          <Stack.Screen name="Register" component={MemoizedRegisterScreen} />
+          <Stack.Screen name="EmailConfirmation" component={MemoizedEmailConfirmationScreen} />
+          <Stack.Screen name="ResetPassword" component={MemoizedResetPasswordScreen} />
+        </>
+      ) : appMode === 'guest' ? (
+        // Guest stack - Browse with auth prompts and memoized components
+        <>
+          <Stack.Screen name="Guest" component={GuestTabs} />
+          <Stack.Screen name="SingleArticleViewer" component={MemoizedSingleArticleViewer} />
+          <Stack.Screen name="Discover" component={DiscoverScreen} />
+          <Stack.Screen 
+            name="Login" 
+            component={MemoizedLoginScreen}
+            options={getAuthScreenOptions()}
+          />
+          <Stack.Screen 
+            name="Register" 
+            component={MemoizedRegisterScreen}
+            options={getAuthScreenOptions()}
+          />
+          <Stack.Screen 
+            name="EmailConfirmation" 
+            component={MemoizedEmailConfirmationScreen}
+            options={getAuthScreenOptions()}
+          />
+          <Stack.Screen 
+            name="ResetPassword" 
+            component={MemoizedResetPasswordScreen}
+            options={getAuthScreenOptions()}
+          />
         </>
       ) : (
-        // Auth stack
+        // Auth stack - Login required mode with memoized components
         <>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="EmailConfirmation" component={EmailConfirmationScreen} />
-          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+          <Stack.Screen name="Login" component={MemoizedLoginScreen} />
+          <Stack.Screen name="Register" component={MemoizedRegisterScreen} />
+          <Stack.Screen name="EmailConfirmation" component={MemoizedEmailConfirmationScreen} />
+          <Stack.Screen name="ResetPassword" component={MemoizedResetPasswordScreen} />
         </>
       )}
     </Stack.Navigator>
@@ -198,14 +392,14 @@ GoogleSignin.configure({
 
 function AppContent() {
   const [isAppContentReady, setIsAppContentReady] = useState(false);
-  const navigationRef = useScreenTracking();
-  const [notificationListener, setNotificationListener] = useState<Notifications.Subscription | null>(null);
+  const { navigationRef } = useScreenTracking();
+  const [notificationListener] = useState<Notifications.Subscription | null>(null);
   const [foregroundMessageUnsubscribe, setForegroundMessageUnsubscribe] = useState<(() => void) | null>(null);
 
   useEffect(() => {
     const setupAppContentSpecifics = async () => {
       try {
-        const authCleanup = initializeAuth();
+        initializeAuth();
 
         Notifications.setNotificationHandler({
           handleNotification: async () => ({
@@ -218,7 +412,7 @@ function AppContent() {
         // Fix: Use global messaging() for background handler, not a specific instance
         messaging().setBackgroundMessageHandler(async remoteMessage => {
           console.log('Message handled in the background!', remoteMessage);
-          
+
           const branchLink = remoteMessage.data?.branch_link || remoteMessage.data?.deep_link;
           if (branchLink && typeof branchLink === 'string') {
             try {
@@ -227,7 +421,7 @@ function AppContent() {
               console.error('Error processing Branch link from FCM:', error);
             }
           }
-          
+
           try {
             if (remoteMessage.notification) {
               console.log('Received notification-type FCM message, letting FCM handle it natively');
@@ -243,7 +437,7 @@ function AppContent() {
         // Also set up foreground message handler for when app is active
         const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
           console.log('Message handled in the foreground!', remoteMessage);
-          
+
           try {
             // For foreground messages, we need to display them manually using expo-notifications
             // since FCM won't show them when app is active
@@ -281,7 +475,7 @@ function AppContent() {
         setIsAppContentReady(true);
       } catch (error) {
         console.error('Error initializing AppContent specifics:', error);
-        setIsAppContentReady(true); 
+        setIsAppContentReady(true);
       }
     };
 
@@ -290,15 +484,15 @@ function AppContent() {
     return () => {
       const monitoringService = MonitoringService.getInstance();
       const deepLinkHandler = DeepLinkHandler.getInstance();
-      
+
       if (notificationListener) {
         notificationListener.remove();
       }
-      
+
       if (foregroundMessageUnsubscribe) {
         foregroundMessageUnsubscribe();
       }
-      
+
       monitoringService.cleanup();
       deepLinkHandler.cleanupBranchListeners();
       // if (typeof authCleanup === 'function') authCleanup();
@@ -306,10 +500,10 @@ function AppContent() {
   }, []);
 
   if (!isAppContentReady) {
-    return <LoadingScreen />; 
+    return <LoadingScreen />;
   }
 
-  const linking: LinkingOptions<any> = {
+  const linking: LinkingOptions<{}> = {
     prefixes: ['edushorts://', 'https://xbwk1.app.link', 'https://xbwk1-alternate.app.link', 'exp://localhost:19000'],
     config: {
       screens: {
@@ -341,8 +535,7 @@ function AppContent() {
             articleId: (articleId: string) => articleId
           }
         }
-      },
-      initialRouteName: 'Login'
+      }
     }
   };
 
@@ -356,7 +549,7 @@ function AppContent() {
           const deepLinkHandler = DeepLinkHandler.getInstance();
           if (navigationRef?.current) {
             deepLinkHandler.setNavigationRef(navigationRef);
-            deepLinkHandler.initialize(); 
+            deepLinkHandler.initialize();
             console.log('[AppContent] DeepLinkHandler initialized via onReady.');
           } else {
             console.error('[AppContent] Navigation reference (navigationRef.current) is unexpectedly null in onReady.');
@@ -381,7 +574,7 @@ export default function App() {
       try {
         // Initialize Firebase services ONCE here
         const firebaseAppInstance = getApp(); // Ensure Firebase app is initialized if not already done globally
-        
+
         await analyticsService.initialize(firebaseAppInstance);
         console.log('[App] AnalyticsService initialized.');
 
@@ -391,11 +584,11 @@ export default function App() {
         const notificationService = NotificationService.getInstance();
         await notificationService.initialize(firebaseAppInstance);
         console.log('[App] NotificationService initialized.');
-        
+
         const performanceMonitoringService = PerformanceMonitoringService.getInstance();
         await performanceMonitoringService.initialize(firebaseAppInstance);
         console.log('[App] PerformanceMonitoringService initialized.');
-        
+
         // Check for Branch native module availability. Actual SDK initialization is handled by DeepLinkHandler.
         if (Platform.OS !== 'web' && NativeModules.RNBranch) {
           console.log('[App] Branch native module (RNBranch) found. Branch SDK initialization is handled by DeepLinkHandler.');
@@ -416,14 +609,22 @@ export default function App() {
   }, []);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider style={styles.container}>
+    <GestureHandlerRootView style={styles.container}>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent={true}
+      />
+      <SafeAreaProvider>
         <AuthProvider>
           <NewsProvider>
             <SavedArticlesProvider>
               <AdvertisementProvider>
                 <RemoteConfigProvider>
-                  <Toaster richColors />
+                  <Toaster
+                    richColors
+                    duration={8000}
+                  />
                   {coreServicesInitialized ? (
                     <AppContent />
                   ) : (

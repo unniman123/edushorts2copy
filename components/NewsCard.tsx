@@ -1,118 +1,213 @@
-import React, { useState, memo, useCallback, useEffect, useRef } from 'react';
+/**
+ * NewsCard - Full-screen interactive news article card with advanced features
+ * 
+ * A comprehensive news article display component featuring full-screen layout,
+ * responsive design, image optimization, double-tap zoom, bookmark functionality,
+ * sharing capabilities, and deep linking. Uses React.memo for performance optimization
+ * and includes adaptive text sizing, progressive image loading, and smooth animations.
+ * 
+ * @component
+ * @param {NewsCardProps} props - Component properties
+ * @returns {React.ReactElement} The rendered news card component
+ * 
+ * @example
+ * <NewsCard
+ *   article={articleData}
+ * />
+ */
+import React, { useState, memo, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
-  Dimensions,
-  ScrollView,
-  Linking,
-  Share,
   useWindowDimensions,
   InteractionManager,
+  Animated,
+  Linking,
+  Share,
 } from 'react-native';
 import ImageOptimizer from '../utils/ImageOptimizer';
 import PerformanceMonitoringService from '../services/PerformanceMonitoringService';
 import { Article } from '../types/supabase';
-import { Feather, Ionicons } from '@expo/vector-icons'; 
-import { useSavedArticles } from '../context/SavedArticlesContext'; 
-import { showToast } from '../utils/toast'; 
+import { useSavedArticles } from '../context/SavedArticlesContext';
+import { showToast } from '../utils/toast';
 import DeepLinkHandler from '../services/DeepLinkHandler';
+import { useGuestAuth } from '../hooks/useGuestAuth';
+import AuthPromptModal from './AuthPromptModal';
+import { COLORS, RESPONSIVE } from '../constants/theme';
 
+import NewsCardImage from './news/NewsCardImage';
+import NewsCardContent from './news/NewsCardContent';
+import NewsCardActions from './news/NewsCardActions';
+
+/**
+ * Props interface for NewsCard component
+ * @interface NewsCardProps
+ */
 interface NewsCardProps {
+  /** Article data containing title, content, image, and metadata */
   article: Article;
 }
 
 const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
-  const { width: windowWidth } = useWindowDimensions();
-  const [isSmallDevice, setIsSmallDevice] = useState(windowWidth < 375);
-  const [imageLoaded, setImageLoaded] = useState(false);
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const [isSmallDevice, setIsSmallDevice] = useState(windowWidth < RESPONSIVE.SMALL_DEVICE_WIDTH);
+  const [isImageExpanded, setIsImageExpanded] = useState(false);
   const imageOptimizer = useRef(ImageOptimizer.getInstance());
-  const performanceMonitor = useRef(PerformanceMonitoringService.getInstance());
-  const imageLoadStartTime = useRef(0);
+  const imageHeightAnim = useRef(new Animated.Value(1)).current;
+  const lastTapRef = useRef(0);
 
-  const styles = React.useMemo(() => createStyleSheet(isSmallDevice), [isSmallDevice]);
+  /**
+   * Calculates adaptive summary lines based on title length, device size, and available screen height
+   * Optimizes text display by adjusting summary line count based on title space usage and screen real estate
+   * @returns {number} Number of summary lines to display
+   */
+  const summaryLines = useMemo(() => {
+    const titleLength = article.title.length;
+    // Adjusted for smaller title font size - more characters per line
+    const avgCharsPerLine = isSmallDevice ? RESPONSIVE.CHARS_PER_LINE.SMALL.TITLE : RESPONSIVE.CHARS_PER_LINE.LARGE.TITLE;
+    const estimatedTitleLines = Math.ceil(titleLength / avgCharsPerLine);
+
+    // Enhanced calculation with screen height consideration
+    const availableHeight = windowHeight - 400; // Subtract fixed elements height (image, category, buttons)
+    const lineHeight = isSmallDevice ? 25 : 27;
+    const maxPossibleLines = Math.floor(availableHeight / lineHeight);
+
+    // Base lines with screen height adaptation
+    const baseLines = isSmallDevice ? RESPONSIVE.BASE_LINES.SMALL : RESPONSIVE.BASE_LINES.LARGE;
+    const adaptiveBaseLines = Math.max(baseLines, Math.min(20, maxPossibleLines));
+
+    if (estimatedTitleLines > 2) {
+      const reduction = Math.min(1, estimatedTitleLines - 2);
+      return Math.max(12, adaptiveBaseLines - reduction);
+    }
+
+    return adaptiveBaseLines;
+  }, [article.title, isSmallDevice, windowHeight]);
+
+  /**
+   * Simplified adaptive margins for responsive text layout
+   * Since read more button is now fixed position, we only need summary margin
+   * @returns {Object} Margin configuration object
+   */
+  const adaptiveMargins = useMemo(() => {
+    return {
+      summaryMarginBottom: isSmallDevice ? 8 : 12,
+      readMoreMarginTop: 0, // Not used with fixed positioning
+      readMoreMarginBottom: 0, // Not used with fixed positioning
+    };
+  }, [isSmallDevice]);
+
+  /**
+   * Simplified space calculation for fixed button layout
+   * Calculates optimal summary lines based on available space above fixed button
+   * @returns {Object} Smart spacing configuration with enhanced summary lines
+   */
+  const smartSpaceCalculation = useMemo(() => {
+    const screenHeight = windowHeight;
+    const fixedButtonHeight = 40; // Reduced button area height
+    const fixedElementsHeight = 280; // Optimized fixed elements (image, category, minimal margins)
+
+    // Calculate available space for content with aggressive space utilization
+    const availableContentHeight = screenHeight - fixedElementsHeight - fixedButtonHeight;
+    const lineHeight = isSmallDevice ? 22 : 24; // Tighter line height like Inshorts
+    const titleLines = Math.ceil(article.title.length / (isSmallDevice ? 35 : 40)); // More characters per line
+    const titleHeight = titleLines * (isSmallDevice ? 20 : 22); // Reduced title line height
+
+    // Calculate maximum summary lines with minimal margins
+    const availableSummaryHeight = availableContentHeight - titleHeight - 20; // Reduced margins
+    const maxSummaryLines = Math.floor(availableSummaryHeight / lineHeight);
+
+    // More aggressive line calculation - prioritize content over whitespace
+    const enhancedSummaryLines = Math.max(12, Math.min(maxSummaryLines, summaryLines + 4));
+
+    return {
+      adaptiveBottomPadding: 0, // Not needed with fixed positioning
+      bonusSummaryLines: 0, // Calculated differently now
+      enhancedSummaryLines
+    };
+  }, [windowHeight, article.title.length, summaryLines, isSmallDevice]);
+
+  const styles = useMemo(() => createStyleSheet(windowWidth, windowHeight), [windowWidth, windowHeight]);
 
   useEffect(() => {
-    setIsSmallDevice(windowWidth < 375);
+    setIsSmallDevice(windowWidth < RESPONSIVE.SMALL_DEVICE_WIDTH);
   }, [windowWidth]);
 
   useEffect(() => {
     if (article.image_path && typeof article.image_path === 'string') {
-      const loadImage = async () => {
-        try {
-          imageLoadStartTime.current = Date.now();
-          await imageOptimizer.current.preloadImage(article.image_path!);
-          
-          InteractionManager.runAfterInteractions(() => {
-            setImageLoaded(true);
-              const loadTime = Date.now() - imageLoadStartTime.current;
-              performanceMonitor.current.recordImageLoad(article.image_path!, loadTime, 0);
-          });
-        } catch (error) {
-          console.error('Failed to preload image:', error);
-          setImageLoaded(true);
-        }
-      };
-
-      loadImage();
+      // Start preloading in background without blocking UI render.
+      imageOptimizer.current.preloadImage(article.image_path!).catch(error => {
+        console.error('Failed to preload image (background):', error);
+      });
     }
-
-    return () => {
-      setImageLoaded(false);
-    };
   }, [article.image_path]);
 
   const [showIcons, setShowIcons] = useState(false);
   const { savedArticles, addBookmark, removeBookmark } = useSavedArticles();
-
+  const { 
+    isGuest, 
+    promptForAuth, 
+    modalVisible, 
+    modalContent, 
+    closeModal, 
+    handleModalSignIn, 
+    handleModalCreateAccount 
+  } = useGuestAuth();
   const isSaved = savedArticles.some(saved => saved.id === article.id);
 
-  const formatTimeAgo = (timestamp: string | undefined): string => {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffHours = Math.abs(now.getTime() - date.getTime()) / 36e5;
-    if (diffHours < 1) return 'Just now';
-    if (diffHours < 24) return `${Math.floor(diffHours)} hours ago`;
-    return date.toLocaleDateString();
-  };
-
+  /**
+   * Handles source link press to open article in external browser
+   * @returns {void}
+   */
   const handleSourceLinkPress = useCallback(() => {
     if (article.source_url) {
-      Linking.openURL(article.source_url).catch(err => console.error("Couldn't load page", err));
+      Linking.openURL(article.source_url).catch(err => {
+        console.error("Couldn't load page", err);
+      });
     }
   }, [article.source_url]);
 
+  /**
+   * Handles article sharing with deep link generation and tracking
+   * Creates Branch.io deep link and shares via native share API
+   * @returns {Promise<void>} Promise that resolves when sharing is complete
+   * @throws {Error} When sharing fails
+   */
   const handleShare = useCallback(async () => {
     try {
       const deepLinkHandler = DeepLinkHandler.getInstance();
-      
       const branchUrl = await deepLinkHandler.createBranchLink(
         article.id,
         article.title,
         article.summary,
         article.image_path || undefined
       );
-
       const message = `Check out this article in Edushorts: ${article.title}\n\n${branchUrl}`;
-
       await Share.share({
         message: message,
         url: branchUrl,
         title: article.title,
       });
-      
       deepLinkHandler.trackArticleShare(article.id, 'news_card');
-      
     } catch (error: any) {
       console.error('Error sharing article:', error.message);
       showToast('error', 'Error sharing article');
     }
   }, [article.id, article.title, article.summary, article.image_path]);
 
+  /**
+   * Handles bookmark toggle with user feedback
+   * Shows auth prompt for guests, adds/removes article from saved articles for authenticated users
+   * @returns {void}
+   */
   const handleSaveToggle = useCallback(() => {
+    if (isGuest) {
+      // Show contextual auth prompt for guest users
+      promptForAuth('bookmarks', `Sign in to save "${article.title}" and access it anywhere.`);
+      return;
+    }
+
     try {
       if (isSaved) {
         removeBookmark(article.id);
@@ -125,7 +220,43 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
       console.error('Error saving/unsaving article:', error.message);
       showToast('error', 'Error updating bookmarks');
     }
-  }, [article.id, isSaved, removeBookmark, addBookmark]);
+  }, [article.id, article.title, isSaved, removeBookmark, addBookmark, isGuest, promptForAuth]);
+
+  /**
+   * Handles image double-tap for zoom functionality
+   * Implements double-tap detection and smooth zoom animation with auto-reset
+   * @returns {void}
+   */
+  const handleImageDoubleTap = useCallback(() => {
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300;
+
+    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+      const toValue = isImageExpanded ? 1 : 1.4;
+      if (!isImageExpanded) setIsImageExpanded(true);
+
+      Animated.timing(imageHeightAnim, {
+        toValue,
+        duration: 300,
+        useNativeDriver: false,
+      }).start(() => {
+        if (toValue === 1) setIsImageExpanded(false);
+      });
+
+      if (toValue === 1.4) {
+        setTimeout(() => {
+          if (lastTapRef.current === now) {
+            Animated.timing(imageHeightAnim, {
+              toValue: 1,
+              duration: 300,
+              useNativeDriver: false,
+            }).start(() => setIsImageExpanded(false));
+          }
+        }, 3000);
+      }
+    }
+    lastTapRef.current = now;
+  }, [isImageExpanded, imageHeightAnim]);
 
   return (
     <TouchableOpacity
@@ -133,208 +264,52 @@ const NewsCard: React.FC<NewsCardProps> = memo(({ article }) => {
       onPress={() => setShowIcons(prev => !prev)}
       activeOpacity={0.98}
     >
-      <View style={styles.imageContainer}>
-        {article.image_path ? (
-          <Image
-            source={{ uri: article.image_path }}
-            style={[styles.cardImage, !imageLoaded && styles.imageLoading]}
-            resizeMethod="resize"
-            progressiveRenderingEnabled={true}
-            onLoadStart={() => {
-              imageLoadStartTime.current = Date.now();
-            }}
-            onLoad={() => {
-              const loadTime = Date.now() - imageLoadStartTime.current;
-              performanceMonitor.current.recordImageLoad(article.image_path!, loadTime, 0);
-              setImageLoaded(true);
-            }}
-            onError={() => {
-              setImageLoaded(true); 
-            }}
-          />
-        ) : (
-          <View style={[styles.cardImage, styles.noImage]}>
-            <Text style={styles.noImageText}>No Image Available</Text>
-          </View>
-        )}
-        <View style={styles.logoOverlay}>
-          <Text style={styles.logoText}>Edushorts</Text>
-        </View>
-      </View>
+      <NewsCardImage
+        article={article}
+        isSmallDevice={isSmallDevice}
+        imageHeightAnim={imageHeightAnim}
+        onImageDoubleTap={handleImageDoubleTap}
+      />
 
-      <View style={styles.cardContentContainer}>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          style={styles.scrollView}
-          removeClippedSubviews={true} 
-          scrollEventThrottle={16} 
-          overScrollMode="never" 
-        >
-          <View style={styles.sourceTagContainer}>
-            <Text style={styles.sourceTagText} numberOfLines={1}>
-              {article.category?.name || 'General'}
-            </Text>
-          </View>
-          <Text style={styles.timeText}>{formatTimeAgo(article.created_at)}</Text>
-          <Text style={styles.title}>{article.title}</Text>
-          <Text style={styles.summary} numberOfLines={isSmallDevice ? 8 : 10}>{article.summary}</Text>
-          {article.source_url && (
-            <TouchableOpacity
-              style={styles.readMoreButton}
-              onPress={handleSourceLinkPress}
-            >
-              <Text style={styles.readMoreText}>Read more at {article.source_name || 'Source'}</Text>
-              <Feather name="external-link" size={14} color="#ff0000" style={styles.linkIcon} />
-            </TouchableOpacity>
-          )}
-          <View style={styles.scrollViewBottomPadding} />
-        </ScrollView>
-      </View>
+      <NewsCardContent
+        article={article}
+        isSmallDevice={isSmallDevice}
+        onSourceLinkPress={handleSourceLinkPress}
+      />
 
       {showIcons && (
-        <View style={styles.interactionContainer}>
-          <TouchableOpacity onPress={handleSaveToggle} style={styles.iconButton}>
-            <Ionicons name={isSaved ? "bookmark" : "bookmark-outline"} size={28} color={isSaved ? "#ff0000" : "#333"} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleShare} style={styles.iconButton}>
-            <Feather name="share-2" size={28} color="#333" />
-          </TouchableOpacity>
-        </View>
+        <NewsCardActions
+          isSaved={isSaved}
+          onSaveToggle={handleSaveToggle}
+          onShare={handleShare}
+        />
       )}
+
+      {/* Auth Prompt Modal */}
+      <AuthPromptModal
+        visible={modalVisible}
+        onClose={closeModal}
+        onSignIn={handleModalSignIn}
+        onCreateAccount={handleModalCreateAccount}
+        context={modalContent.context}
+        title={modalContent.title}
+        message={modalContent.message}
+        loginText={modalContent.loginText}
+      />
     </TouchableOpacity>
   );
 });
 
-const { height, width } = Dimensions.get('window');
-
-const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
+const createStyleSheet = (width: number, height: number) => StyleSheet.create({
   fullScreenCard: {
-    flex: 1, 
-    backgroundColor: 'white',
-    height: height, 
-    width: width,   
-  },
-  cardImage: {
-    width: '100%',
-    height: height * (smallDevice ? 0.3 : 0.35), 
-    resizeMode: 'cover', 
-  },
-  imageContainer: {
-    position: 'relative',
-    width: '100%',
-    backgroundColor: '#f0f0f0', 
-  },
-  imageLoading: {
-    opacity: 0.7,
-  },
-  logoOverlay: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  logoText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  noImage: {
-    backgroundColor: '#e0e0e0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  noImageText: {
-    fontSize: 16,
-    color: '#888',
-    textAlign: 'center',
-  },
-  cardContentContainer: {
-    flex: 1.5, 
-    marginTop: -20, 
-    backgroundColor: 'white', 
-    borderTopLeftRadius: 20, 
-    borderTopRightRadius: 20, 
-    paddingBottom: 20, 
-    position: 'relative',
-  },
-  scrollView: {
-    paddingHorizontal: smallDevice ? 16 : 20, 
-    paddingTop: 40,       
-    paddingBottom: 20,    
-  },
-  scrollViewBottomPadding: {
-    height: 20, 
-  },
-  sourceTagContainer: {
-    backgroundColor: '#ff0000',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-    marginBottom: 15,      
-  },
-  sourceTagText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  title: {
-    fontSize: smallDevice ? 22 : 24,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#333333',
-    lineHeight: smallDevice ? 28 : 30,
-  },
-  summary: {
-    fontSize: smallDevice ? 15 : 16,
-    color: '#666666',
-    lineHeight: smallDevice ? 22 : 24,
-    marginBottom: 16,
-    marginTop: 4,
-    fontWeight: 'normal',
-  },
-  timeText: {
-    fontSize: smallDevice ? 11 : 12,
-    color: '#666666',
-    marginTop: 4,
-    marginBottom: smallDevice ? 8 : 10,
-  },
-  readMoreButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: smallDevice ? 10 : 12,
-    marginBottom: smallDevice ? 16 : 20,
-    paddingVertical: 4, 
-  },
-  readMoreText: {
-    fontSize: smallDevice ? 14 : 15,
-    color: '#ff0000',
-    fontWeight: '600',
-    letterSpacing: 0.2,
-  },
-  linkIcon: {
-    marginLeft: 8,
-  },
-  interactionContainer: {
-    position: 'absolute',
-    bottom: 30,           
-    right: 20,            
-    flexDirection: 'column',
-    alignItems: 'center',
-  },
-  iconButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
-    padding: 12,          
-    borderRadius: 30,     
-    marginBottom: 15,     
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3,
+    flex: 1,
+    backgroundColor: COLORS.WHITE,
+    height: height,
+    width: width,
+    overflow: 'hidden', // Ensure clean edges and prevent content overflow
+    borderRadius: 0, // No border radius on main container to avoid edge conflicts
+    margin: 0, // Ensure no margins prevent edge-to-edge display
+    padding: 0, // Ensure no padding prevents edge-to-edge display
   },
 });
 

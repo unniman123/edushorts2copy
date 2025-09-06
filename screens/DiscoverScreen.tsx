@@ -10,7 +10,7 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -19,23 +19,25 @@ import { Article } from '../types/supabase';
 import { useNews } from '../context/NewsContext';
 import { ArticleResultCard } from '../components/ArticleResultCard';
 
-// Debounce function
-function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
+// Debounce function with proper TypeScript constraints
+function debounce<T extends unknown[]>(
+  func: (...args: T) => void,
+  waitFor: number
+): (...args: T) => void {
   let timeout: ReturnType<typeof setTimeout> | null = null;
 
-  const debounced = (...args: Parameters<F>) => {
+  return (...args: T) => {
     if (timeout !== null) {
       clearTimeout(timeout);
       timeout = null;
     }
     timeout = setTimeout(() => func(...args), waitFor);
   };
-
-  return debounced as (...args: Parameters<F>) => ReturnType<F>;
 }
 
 export default function DiscoverScreen() {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Article[]>([]);
   const [loading, setLoading] = useState(false);
@@ -82,16 +84,27 @@ export default function DiscoverScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleSearch]);
 
+  // Lazy-require skeleton to avoid bundler issues when not used
+  const RequireSkeleton = React.useMemo(() => {
+    try {
+      // eslint-disable-next-line global-require
+      return require('../components/SkeletonArticleResult').default;
+    } catch (e) {
+      // Fallback to a minimal inline placeholder
+      return () => <View style={{ height: 120, backgroundColor: '#eee', borderRadius: 12, marginBottom: 16 }} />;
+    }
+  }, []);
+
   const renderItem = useCallback(({ item, index }: { item: Article; index: number }) => (
     <ArticleResultCard
       article={item}
       onPress={() => {
         const parentNavigator = navigation.getParent<NativeStackNavigationProp<RootStackParamList>>();
         if (parentNavigator) {
-          parentNavigator.navigate('SingleArticleViewer', { 
+          parentNavigator.navigate('SingleArticleViewer', {
             articleId: item.id,
-            articles: searchResults, 
-            currentIndex: index 
+            articles: searchResults,
+            currentIndex: index
           });
         }
       }}
@@ -99,8 +112,8 @@ export default function DiscoverScreen() {
   ), [navigation, searchResults]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
+      <View style={[styles.header, { paddingTop: 12 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
@@ -108,7 +121,7 @@ export default function DiscoverScreen() {
         <View style={{ width: 24 }} />
       </View>
 
-      <Text style={styles.subtitle}>Global news at your fingertips</Text>
+      <Text style={styles.subtitle}>Global news at your fingertip</Text>
 
       <View style={styles.searchContainer}>
         <Feather name="search" size={20} color="#888" style={styles.searchIcon} />
@@ -122,7 +135,7 @@ export default function DiscoverScreen() {
           }}
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => {
               setSearchQuery('');
               debouncedSearch('');
@@ -136,7 +149,14 @@ export default function DiscoverScreen() {
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0066cc" />
+          {/* Use skeleton placeholders for discover results */}
+          <View style={{ width: '100%', paddingHorizontal: 16 }}>
+            <View style={{ height: 12 }} />
+            {/* Render a few skeleton rows */}
+            <RequireSkeleton />
+            <RequireSkeleton />
+            <RequireSkeleton />
+          </View>
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>

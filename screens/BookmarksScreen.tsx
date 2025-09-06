@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { CompositeNavigationProp } from '@react-navigation/native';
@@ -18,6 +18,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { RootStackParamList, MainTabParamList } from '../types/navigation';
 import BookmarkCard from '../components/BookmarkCard';
+// Lazy skeletons
+const SkeletonBookmarkItem = require('../components/SkeletonBookmarkItem').default;
+import { COLORS, BORDER_RADIUS, TYPOGRAPHY, COMPONENT_STYLES } from '../constants/theme';
 
 type NavigationProp = CompositeNavigationProp<
   NativeStackNavigationProp<RootStackParamList>,
@@ -26,6 +29,7 @@ type NavigationProp = CompositeNavigationProp<
 
 export default function BookmarksScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const insets = useSafeAreaInsets();
   const { savedArticles } = useSavedArticles();
   const [loading, setLoading] = useState(false);
 
@@ -59,13 +63,13 @@ export default function BookmarksScreen() {
   ), [navigation, handleRemoveBookmark]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
+      <View style={[styles.header, { paddingTop: 12 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Saved Articles</Text>
-        <View style={{width: 24}} />
+        <View style={{ width: 24 }} />
       </View>
 
       {savedArticles.length === 0 ? (
@@ -106,21 +110,15 @@ export default function BookmarksScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eeeeee',
+    ...COMPONENT_STYLES.HEADER_CONTAINER,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: TYPOGRAPHY.FONT_SIZE.XL,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
+    color: COLORS.TEXT_PRIMARY,
   },
   emptyContainer: {
     flex: 1,
@@ -141,15 +139,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 24,
   }, browseButton: {
-    backgroundColor: '#ff0000',
+    backgroundColor: COLORS.PRIMARY,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.MEDIUM,
   },
   browseButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
+    color: COLORS.WHITE,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
+    fontSize: TYPOGRAPHY.FONT_SIZE.LARGE,
   },
   list: {
     padding: 16,

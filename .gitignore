@@ -20,6 +20,9 @@ branch.json
 # Temporary files created by Metro to check the health of the file watcher
 .metro-health-check*
 
+# Test coverage reports
+coverage/
+
 # VSCode
 .vscode/
 .history/
@@ -35,3 +38,9 @@ local.properties
 # iOS
 ios/Pods/
 *.xcworkspace
+
+# Test coverage reports (Jest generated)
+coverage/
+
+# Test coverage reports (Jest generated)
+coverage/

@@ -1,5 +1,3 @@
-import { Platform } from 'react-native';
-
 interface BundleMetrics {
   size: number;             // Total bundle size in bytes
   initialBundleSize: number; // Initial bundle size for first load
