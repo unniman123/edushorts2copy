@@ -7,6 +7,7 @@ import { toast, TOAST_MESSAGES, TOAST_CONFIG, TOAST_SUCCESS_CONFIG, TOAST_ERROR_
 import messaging, { FirebaseMessagingTypes, getMessaging } from '@react-native-firebase/messaging';
 import type { ReactNativeFirebase } from '@react-native-firebase/app';
 import { NotificationResponse as LocalNotificationResponse, PushNotificationData, NotificationPreferences } from '../src/types/notification';
+import DeepLinkHandler from './DeepLinkHandler';
 
 // Configure notification handling
 Notifications.setNotificationHandler({
@@ -130,6 +131,12 @@ class NotificationService {
     this.messagingInstance = getMessaging(app);
     if (__DEV__) {
       console.log('[NotificationService] Initialized with Firebase App');
+    }
+    // Ensure expo-notification listeners are registered as part of service initialization
+    try {
+      this.initializeListeners();
+    } catch (listenerInitError) {
+      console.error('[NotificationService] Failed to initialize listeners during initialize():', listenerInitError);
     }
   }
 
@@ -354,16 +361,10 @@ class NotificationService {
       const data = notification.request.content.data as NotificationData | undefined; // Allow undefined
 
       // Handle the notification based on the app state
-      if (data?.deep_link) { // Use optional chaining
-        console.log('Processing deep link:', data.deep_link);
-        // Pass the whole response object to the response handler
-        // Note: Expo's Notification type doesn't directly match NotificationResponse structure
-        // We need to construct it or adjust the handler
-        const response: Notifications.NotificationResponse = {
-          actionIdentifier: Notifications.DEFAULT_ACTION_IDENTIFIER, // Default action
-          notification: notification,
-        };
-        this.handleNotificationResponse(response);
+      // Do NOT auto-navigate when a notification is merely received (foreground). Navigation
+      // should occur only when the user taps the notification (handled by response listener).
+      if (data?.deep_link) {
+        console.log('Received notification with deep_link (no auto-navigation):', data.deep_link);
       }
     } catch (error) {
       console.error('Error handling received notification:', error);
@@ -379,7 +380,24 @@ class NotificationService {
       if (data?.deep_link) { // Use optional chaining
         console.log('Handling deep link from notification response:', data.deep_link);
         // Actual deep link navigation should be triggered here or passed to a navigation service
-        // e.g., DeepLinkHandler.getInstance().handleDeepLink(data.deep_link);
+        // Prefer Branch for Branch links, otherwise use DeepLinkHandler
+        try {
+          if (typeof data.deep_link === 'string' && (data.deep_link.includes('xbwk1.app.link') || data.deep_link.includes('xbwk1-alternate.app.link'))) {
+            // Branch link detected - use Branch SDK to open
+            const branch = require('react-native-branch').default;
+            if (branch && typeof branch.openURL === 'function') {
+              branch.openURL(data.deep_link as string);
+            } else {
+              // Fallback to DeepLinkHandler if Branch openURL isn't available
+              DeepLinkHandler.getInstance().handleDeepLink(data.deep_link as string);
+            }
+          } else {
+            // Non-Branch deep link - handle via DeepLinkHandler
+            DeepLinkHandler.getInstance().handleDeepLink(data.deep_link as string);
+          }
+        } catch (navError) {
+          console.error('Error navigating deep link from response:', navError);
+        }
       }
     } catch (error) {
       console.error('Error handling notification response:', error);

@@ -137,10 +137,8 @@ class NotificationBridge {
 
   private async handlePushNotification(notification: NotificationPayload): Promise<void> {
     try {
-      // Process deep link if present
-      if (notification.payload.deep_link) {
-        this.handleDeepLink(notification.payload.deep_link);
-      }
+      // Preserve deep_link in outgoing payload but DO NOT auto-handle it here.
+      // Navigation must occur only when the user taps the notification (response listener).
       
       const expoToken = await this.getExpoToken();
       if (!expoToken) {
@@ -376,10 +374,8 @@ class NotificationBridge {
         channelId: remoteMessage.notification?.android?.channelId,
       };
 
-      // Handle deep link if present
-      if (notificationData.deep_link) {
-        this.handleDeepLink(notificationData.deep_link);
-      }
+      // Do NOT auto-navigate on receipt. Preserve deep_link in the scheduled notification data
+      // so that navigation happens only when the user taps the notification.
 
       // Map FCM priority to a string priority value if present
       let priority: string | undefined;
