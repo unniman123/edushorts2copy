@@ -174,7 +174,7 @@ const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
     paddingHorizontal: SPACING.XS / 2, // minimal horizontal padding for tighter fit
     paddingVertical: 1, // minimal vertical padding for compact look
     borderRadius: BORDER_RADIUS.SMALL,
-    maxWidth: '30%', // reduced width to minimize background color area
+    maxWidth: '40%', // increased width to accommodate longer category names like "Foreign News"
     alignSelf: 'flex-start', // Ensure button only takes needed space
     // Keep subtle shadow but minimal to avoid extra perceived spacing
     shadowColor: COLORS.BLACK,

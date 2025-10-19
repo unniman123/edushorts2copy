@@ -258,7 +258,7 @@ export const NEWSCARD_CONTENT_STATIC_STYLES = {
     paddingHorizontal: 2,
     paddingVertical: 1,
     borderRadius: BORDER_RADIUS.SMALL,
-    maxWidth: '35%',
+    maxWidth: '40%',
     alignSelf: 'flex-start' as const,
     shadowColor: COLORS.BLACK,
     shadowOffset: { width: 0, height: 1 },
