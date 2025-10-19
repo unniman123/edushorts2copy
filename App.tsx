@@ -543,14 +543,119 @@ function AppContent() {
     <NavigationContainer
       ref={navigationRef}
       linking={linking}
-      onReady={() => {
+      onReady={async () => {
         console.log('[AppContent] NavigationContainer is ready. Initializing DeepLinkHandler.');
         try {
           const deepLinkHandler = DeepLinkHandler.getInstance();
           if (navigationRef?.current) {
             deepLinkHandler.setNavigationRef(navigationRef);
-            deepLinkHandler.initialize();
+            await deepLinkHandler.initialize();
             console.log('[AppContent] DeepLinkHandler initialized via onReady.');
+
+            // Handle cold-start notification taps (app was killed)
+            try {
+              const lastNotificationResponse = await Notifications.getLastNotificationResponseAsync();
+              
+              if (lastNotificationResponse) {
+                console.log('[AppContent] Last notification response detected:', lastNotificationResponse);
+                
+                const notificationData = lastNotificationResponse.notification.request.content.data;
+                const deep_link = notificationData?.deep_link || 
+                                  notificationData?.branch_link || 
+                                  notificationData?.url || 
+                                  notificationData?.click_action;
+
+                if (deep_link && typeof deep_link === 'string') {
+                  console.log('[AppContent] Cold-start deep link found:', deep_link);
+
+                  // CRITICAL: Wait for navigation stack to be fully initialized
+                  // The stack needs time to render with correct screens based on auth state
+                  console.log('[AppContent] Waiting for navigation stack initialization...');
+                  await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5 second delay
+                  console.log('[AppContent] Proceeding with navigation after stack initialization delay');
+
+                  // Verify navigation state is ready and screen is available
+                  const navState = navigationRef?.current?.getState();
+                  console.log('[AppContent] Current navigation state:', JSON.stringify(navState, null, 2));
+                  
+                  if (!navigationRef?.current) {
+                    console.error('[AppContent] Navigation ref is null after delay, cannot navigate');
+                    return;
+                  }
+
+                  // Check if it's a Branch link
+                  if (deep_link.includes('xbwk1.app.link') || deep_link.includes('xbwk1-alternate.app.link')) {
+                    console.log('[AppContent] Branch link detected in cold-start notification');
+                    
+                    // Wait for Branch SDK to be ready before opening URL
+                    const branchReady = await deepLinkHandler.waitForBranchInitialization(5000);
+                    
+                    if (branchReady) {
+                      try {
+                        const branchModule = require('react-native-branch').default;
+                        if (branchModule && typeof branchModule.openURL === 'function') {
+                          await branchModule.openURL(deep_link);
+                          console.log('[AppContent] Branch URL opened successfully for cold-start notification');
+                        } else {
+                          console.warn('[AppContent] Branch openURL not available, falling back to DeepLinkHandler');
+                          await deepLinkHandler.handleDeepLink(deep_link);
+                        }
+                      } catch (branchError) {
+                        console.error('[AppContent] Error opening Branch URL, falling back to DeepLinkHandler:', branchError);
+                        await deepLinkHandler.handleDeepLink(deep_link);
+                      }
+                    } else {
+                      console.warn('[AppContent] Branch SDK not ready within timeout, using DeepLinkHandler');
+                      await deepLinkHandler.handleDeepLink(deep_link);
+                    }
+                  } else {
+                    // Non-Branch deep link (edushorts:// scheme) - attempt navigation with minimal retries
+                    console.log('[AppContent] Non-Branch deep link detected, attempting navigation');
+                    
+                    let navigationSuccess = false;
+                    const maxRetries = 3; // Reduced from 6 since we already waited for stack init
+                    const retryDelay = 300; // ms
+
+                    for (let attempt = 1; attempt <= maxRetries && !navigationSuccess; attempt++) {
+                      try {
+                        console.log(`[AppContent] Navigation attempt ${attempt}/${maxRetries}`);
+                        const handled = await deepLinkHandler.handleDeepLink(deep_link);
+                        
+                        if (handled) {
+                          navigationSuccess = true;
+                          console.log(`[AppContent] Cold-start navigation successful on attempt ${attempt}`);
+                        } else if (attempt < maxRetries) {
+                          console.log(`[AppContent] Navigation attempt ${attempt} returned false, retrying...`);
+                          await new Promise(resolve => setTimeout(resolve, retryDelay));
+                        }
+                      } catch (navError: any) {
+                        console.error(`[AppContent] Navigation attempt ${attempt} failed:`, navError?.message || navError);
+                        // Log stack trace for debugging
+                        if (navError?.stack) {
+                          console.error('[AppContent] Error stack:', navError.stack);
+                        }
+                        if (attempt < maxRetries) {
+                          await new Promise(resolve => setTimeout(resolve, retryDelay));
+                        }
+                      }
+                    }
+
+                    if (!navigationSuccess) {
+                      console.error('[AppContent] All navigation attempts failed for cold-start notification');
+                      console.error('[AppContent] Deep link that failed:', deep_link);
+                      console.error('[AppContent] This may indicate the target screen is not in the current navigation stack');
+                    }
+                  }
+                } else {
+                  console.log('[AppContent] Last notification response has no valid deep link');
+                }
+              } else {
+                console.log('[AppContent] No last notification response found (normal app launch)');
+              }
+            } catch (notificationError) {
+              console.error('[AppContent] Error handling last notification response:', notificationError);
+              // Non-fatal - app should continue to function normally
+            }
           } else {
             console.error('[AppContent] Navigation reference (navigationRef.current) is unexpectedly null in onReady.');
           }

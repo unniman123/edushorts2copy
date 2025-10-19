@@ -159,22 +159,22 @@ const createStyleSheet = (smallDevice: boolean) => StyleSheet.create({
   },
   contentWrapper: {
     flex: 1,
-    paddingTop: SPACING.LG, // Adequate top padding for clean content start
+    paddingTop: SPACING.SM, // Reduced top padding to move category button closer to top border
     paddingBottom: SPACING.XS, // Minimal bottom padding to maximize content space
     paddingLeft: smallDevice ? SPACING.XXL : SPACING.XXXL, // Responsive left padding for consistent edges
     paddingRight: smallDevice ? SPACING.XXL : SPACING.XXXL, // Responsive right padding for consistent edges
     minHeight: 200, // Ensure minimum content area height
   },
   categoryContainer: {
-    paddingBottom: 0, // remove extra space so button touches title area cleanly
+    paddingBottom: SPACING.SM, // add space between category button and title
     alignItems: 'flex-start', // Align category to left
   },
   categoryButton: {
     backgroundColor: COLORS.PRIMARY,
-    paddingHorizontal: SPACING.XS, // small horizontal padding so text fits neatly
-    paddingVertical: SPACING.XS / 2, // subtle vertical padding for balanced look
+    paddingHorizontal: SPACING.XS / 2, // minimal horizontal padding for tighter fit
+    paddingVertical: 1, // minimal vertical padding for compact look
     borderRadius: BORDER_RADIUS.SMALL,
-    maxWidth: '36%', // slightly increased width for better text fit
+    maxWidth: '30%', // reduced width to minimize background color area
     alignSelf: 'flex-start', // Ensure button only takes needed space
     // Keep subtle shadow but minimal to avoid extra perceived spacing
     shadowColor: COLORS.BLACK,

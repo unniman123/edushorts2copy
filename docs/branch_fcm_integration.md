@@ -152,3 +152,66 @@ Edit #2 — Prevent auto-navigation on receipt and register listeners on init
   - Linter checks passed.
 
 ---
+
+
+---
+
+Edit #3 — Handle cold-start notification taps using last notification response
+
+- File(s) touched
+  - `App.tsx`
+
+- State before edit (evidence)
+  - When app was killed and user tapped notification, app opened but did not navigate to deep link target. `DeepLinkHandler.initialize()` was called in `NavigationContainer.onReady`, but there was no check for the last notification response to handle a tap that triggered cold-start navigation.
+  - `expo-notifications` provides `getLastNotificationResponseAsync()` to retrieve the response that launched the app.
+
+- Change made (minimal)
+  - In `NavigationContainer.onReady`, after initializing `DeepLinkHandler`, call `Notifications.getLastNotificationResponseAsync()` and, if a response exists with `deep_link` (or `branch_link`/`url`/`click_action`), navigate using Branch or `DeepLinkHandler`.
+  - Wrapped in try/catch blocks to avoid breaking startup.
+
+- Risks and rollback plan
+  - Risk: If `getLastNotificationResponseAsync()` behaves differently across platforms or returns stale data, navigation may be triggered unexpectedly. Mitigation: Only act when `deep_link` is present and handle errors gracefully; log actions for debugging. Rollback: revert the single block in `App.tsx`.
+
+- Test steps to verify
+  1. Kill the app process fully.
+  2. Send a notification with `deep_link` set to `edushorts://articles/123` or a Branch short link.
+  3. Tap the notification from the OS notification tray.
+  4. App should cold-start and navigate to article 123.
+
+- Post-change status
+  - Code updated; linter passed. This should handle the cold-start path now by explicitly checking the last notification response once `DeepLinkHandler` is initialized.
+
+---
+
+
+---
+
+Edit #4 — Robust cold-start navigation with retries and Branch readiness wait
+
+- File(s) touched
+  - `App.tsx`
+  - `services/DeepLinkHandler.ts` (made `waitForBranchInitialization` public)
+
+- State before edit (evidence)
+  - After earlier attempts, tapping a notification when the app was killed opened the app but did not navigate to the article.
+  - `App.tsx` attempted to read the last notification response and navigate, but timing issues (Branch SDK or navigation stack readiness) could prevent navigation.
+
+- Changes made (minimal)
+  - In `App.tsx`, when handling the last notification response deep_link on startup, added:
+    - A call to `DeepLinkHandler.getInstance().waitForBranchInitialization(5000)` before using `branch.openURL`.
+    - A retry loop for non-Branch deep links that calls `DeepLinkHandler.handleDeepLink` up to 6 times with 500ms delay to allow navigation stack to be ready.
+  - In `services/DeepLinkHandler.ts`, changed `waitForBranchInitialization` visibility from private to public so `App.tsx` can await Branch readiness.
+
+- Risks and rollback plan
+  - Risk: If Branch never initializes within the timeout, we fallback to DeepLinkHandler which may still fail if navigationRef is not yet ready. Rollback: revert the small changes in `App.tsx` and `DeepLinkHandler.ts`.
+
+- Test steps
+  1. Kill the app completely.
+  2. Send a notification (Branch short link and also test with `edushorts://articles/123`).
+  3. Tap notification and observe if the app navigates to the article. Repeat if intermittent.
+
+- Post-change status
+  - `waitForBranchInitialization` is now callable from `App.tsx`.
+  - `App.tsx` will attempt multiple navigation attempts and log success/failure.
+
+---

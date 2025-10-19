@@ -70,21 +70,43 @@ class RemoteConfigService {
       logger.error('[RemoteConfigService] Error: RemoteConfigService not initialized. Call initialize() first.');
       return false;
     }
+    // Add resilience: check network and perform retries with exponential backoff
+    const maxAttempts = 3;
+    let attempt = 0;
+    const baseDelayMs = 500;
 
-    try {
-      const fetchedRemotely = await this.remoteConfigInstance.fetchAndActivate();
-      if (__DEV__) {
-        if (fetchedRemotely) {
-          logger.log('[RemoteConfigService] Remote Configs fetched and activated from server');
-        } else {
-          logger.log('[RemoteConfigService] Remote Configs not fetched (using cached or default values)');
-        }
-      }
-      return fetchedRemotely;
-    } catch (error) {
-      logger.error('[RemoteConfigService] Error fetching and activating remote config:', error);
+    // Simple network availability check using navigator if available (fallback to attempt anyway)
+    const isNetworkAvailable = typeof navigator !== 'undefined' ? (navigator.onLine ?? true) : true;
+    if (!isNetworkAvailable) {
+      logger.warn('[RemoteConfigService] Network appears offline; skipping remote fetch. Using defaults/cached values.');
       return false;
     }
+
+    while (attempt < maxAttempts) {
+      try {
+        attempt += 1;
+        const fetchedRemotely = await this.remoteConfigInstance.fetchAndActivate();
+        if (__DEV__) {
+          if (fetchedRemotely) {
+            logger.log('[RemoteConfigService] Remote Configs fetched and activated from server');
+          } else {
+            logger.log('[RemoteConfigService] Remote Configs not fetched (using cached or default values)');
+          }
+        }
+        return fetchedRemotely;
+      } catch (error) {
+        logger.warn(`[RemoteConfigService] fetchAndActivate attempt ${attempt} failed:`, error);
+        if (attempt >= maxAttempts) {
+          logger.error('[RemoteConfigService] All fetch attempts failed. Using defaults/cached values.');
+          return false;
+        }
+        // Exponential backoff with jitter
+        const delay = baseDelayMs * Math.pow(2, attempt - 1);
+        const jitter = Math.floor(Math.random() * 200);
+        await new Promise(resolve => setTimeout(resolve, delay + jitter));
+      }
+    }
+    return false;
   }
 
   getValue<K extends keyof RemoteConfigParams>(key: K): RemoteConfigParams[K] {

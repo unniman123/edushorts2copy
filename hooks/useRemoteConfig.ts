@@ -24,8 +24,8 @@
  * };
  */
 import { useState, useEffect } from 'react';
-import { getApp } from '@react-native-firebase/app';
-import { remoteConfigService, RemoteConfigParams } from '../services/RemoteConfigService';
+import { remoteConfigFacade } from '../services/RemoteConfigFacade';
+import type { RemoteConfigParams } from '../services/RemoteConfigService';
 
 /**
  * Return type for useRemoteConfig hook
@@ -45,7 +45,7 @@ interface UseRemoteConfigReturn {
 }
 
 export function useRemoteConfig(): UseRemoteConfigReturn {
-  const [config, setConfig] = useState<RemoteConfigParams>(remoteConfigService.getParams());
+  const [config, setConfig] = useState<RemoteConfigParams>(remoteConfigFacade.getParams());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -58,16 +58,15 @@ export function useRemoteConfig(): UseRemoteConfigReturn {
     const initializeConfig = async () => {
       try {
         setLoading(true);
-        // Wait for Firebase app to be available
-        const firebaseApp = getApp();
-        await remoteConfigService.initialize(firebaseApp);
-        setConfig(remoteConfigService.getParams());
+        // Lazy initialize remote config non-blocking; provider will call init too.
+        await remoteConfigFacade.initIfNeeded();
+        setConfig(remoteConfigFacade.getParams());
         setError(null);
       } catch (err) {
         console.error('[useRemoteConfig] Initialization error:', err);
         setError(err instanceof Error ? err : new Error('Failed to initialize remote config'));
         // Use default values in case of error
-        setConfig(remoteConfigService.getParams());
+        setConfig(remoteConfigFacade.getParams());
       } finally {
         setLoading(false);
       }
@@ -84,9 +83,9 @@ export function useRemoteConfig(): UseRemoteConfigReturn {
   const refreshConfig = async () => {
     try {
       setLoading(true);
-      const updated = await remoteConfigService.fetchAndActivate();
+      const updated = await remoteConfigFacade.fetchAndActivateSafely();
       if (updated) {
-        setConfig(remoteConfigService.getParams());
+        setConfig(remoteConfigFacade.getParams());
       }
       return updated;
     } catch (err) {
@@ -105,7 +104,8 @@ export function useRemoteConfig(): UseRemoteConfigReturn {
    * @returns {RemoteConfigParams[T]} The configuration value for the specified key
    */
   const getValue = <T extends keyof RemoteConfigParams>(key: T): RemoteConfigParams[T] => {
-    return remoteConfigService.getValue(key);
+    const params = remoteConfigFacade.getParams();
+    return params[key];
   };
 
   return {

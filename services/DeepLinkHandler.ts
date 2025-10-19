@@ -533,7 +533,7 @@ class DeepLinkHandler {
   }
 
   // Utility method to check if Branch SDK seems initialized (optional usage)
-  private async waitForBranchInitialization(timeoutMs = 5000): Promise<boolean> {
+  public async waitForBranchInitialization(timeoutMs = 5000): Promise<boolean> {
     const localBranchInstance = require('react-native-branch').default; // Use a local require
 
     if (localBranchInstance && typeof localBranchInstance.getLatestReferringParams === 'function') {

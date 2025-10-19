@@ -1,4 +1,10 @@
-import '@testing-library/jest-native/extend-expect';
+// Guarded import for jest-native extend-expect to avoid ReferenceError in some test setups
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  require('@testing-library/jest-native/extend-expect');
+} catch (e) {
+  // ignore if not available in this environment
+}
 import 'react-native-gesture-handler/jestSetup';
 import { NativeModules } from 'react-native';
 
@@ -67,15 +73,19 @@ jest.mock('react-native-url-polyfill/auto', () => {
 // Mock fetch
 global.fetch = jest.fn();
 
-// Clear all mocks before each test
-beforeEach(() => {
-  jest.clearAllMocks();
-});
+// Clear all mocks before each test (guarded in case this file is executed outside Jest)
+if (typeof beforeEach === 'function') {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+}
 
 // Clean up after each test
-afterEach(() => {
-  jest.clearAllMocks();
-});
+if (typeof afterEach === 'function') {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+}
 
 // Performance metrics setup
 global.__PERFORMANCE_METRICS__ = {
@@ -100,7 +110,11 @@ jest.mock('react-native/Libraries/Utilities/Platform', () => ({
 }));
 
 // Silence the warning: Animated: `useNativeDriver` is not supported
-jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
+try {
+  jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper', () => ({}));
+} catch (e) {
+  // ignore if jest environment already handles this
+}
 
 // Mock console.error to ignore specific warnings
 const originalConsoleError = console.error;
