@@ -161,10 +161,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: TYPOGRAPHY.FONT_SIZE.LARGE,
-    color: COLORS.TEXT_SECONDARY,
+    fontSize: TYPOGRAPHY.FONT_SIZE.XL,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
+    color: COLORS.BLACK,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 26,
   },
   featuresContainer: {
     marginBottom: 40,
