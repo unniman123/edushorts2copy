@@ -35,12 +35,26 @@ export const useNews = () => {
 export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentCategoryId, setCurrentCategoryId] = useState<string | null>(null);
   const { news, loading, error, hasMore, setNews, fetchNews, loadMoreNews: fetchMore } = useNewsFeed();
+  const [hasInitiallyFetched, setHasInitiallyFetched] = useState(false);
 
   // Set up real-time listener
   useNewsRealtime(setNews, currentCategoryId);
 
   useEffect(() => {
-    fetchNews(currentCategoryId);
+    // Skip fetch if we already have news data and haven't changed category
+    // This prevents unnecessary refetch during auth transitions when component remounts
+    if (news.length > 0 && !currentCategoryId && hasInitiallyFetched) {
+      console.log('NewsContext: Skipping refetch - data already loaded');
+      return;
+    }
+
+    // Fetch news if:
+    // 1. No news data exists yet (initial load)
+    // 2. Category has changed (user filter)
+    // 3. First mount and no data
+    fetchNews(currentCategoryId).then(() => {
+      setHasInitiallyFetched(true);
+    });
   }, [currentCategoryId, fetchNews]);
 
   const filterByCategory = useCallback((categoryId: string | null) => {

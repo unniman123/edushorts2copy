@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { NavigationContainer, LinkingOptions, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackNavigationOptions } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { getApp } from '@react-native-firebase/app';
 import messaging from '@react-native-firebase/messaging';
 import { RootStackParamList } from './types/navigation';
-import { StyleSheet, TouchableOpacity, Platform, StatusBar } from 'react-native';
+import { StyleSheet, TouchableOpacity, Platform, StatusBar, Animated, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Toaster } from 'sonner-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,6 +29,7 @@ import NotificationService from './services/NotificationService';
 import PerformanceMonitoringService from './services/PerformanceMonitoringService';
 import { NativeModules } from 'react-native';
 import { COLORS } from './constants/theme';
+import { normalizeNotificationDeepLink, routeNotificationDeepLink, waitForNavigationReady, waitForBranchReady, isBranchLink } from './utils/notificationHelpers';
 
 // Core screens - Always loaded for performance
 import LoadingScreen from './screens/LoadingScreen';
@@ -301,20 +302,53 @@ function RootStackNavigator() {
   const { isLoading, session } = useAuth();
   const [hasInitialized, setHasInitialized] = useState(false);
   const [appMode, setAppMode] = useState<'guest' | 'auth' | 'authenticated'>('guest');
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const transitionOpacity = useRef(new Animated.Value(0)).current;
+  const prevAppModeRef = useRef<'guest' | 'auth' | 'authenticated'>('guest');
 
   useEffect(() => {
     // Mark as initialized after first auth check
     if (!isLoading) {
       setHasInitialized(true);
-      // Determine app mode based on session
-      if (session) {
-        setAppMode('authenticated');
+      
+      // Determine new app mode based on session
+      const newAppMode = session ? 'authenticated' : 'guest';
+      
+      // Only trigger transition if mode actually changed
+      if (prevAppModeRef.current !== newAppMode && hasInitialized) {
+        console.log(`RootStackNavigator: Transitioning from ${prevAppModeRef.current} to ${newAppMode}`);
+        
+        // Start smooth transition
+        setIsTransitioning(true);
+        
+        // Fade in overlay
+        Animated.timing(transitionOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }).start(() => {
+          // Change app mode while overlay is visible
+          setAppMode(newAppMode);
+          prevAppModeRef.current = newAppMode;
+          
+          // Fade out overlay after brief delay
+          setTimeout(() => {
+            Animated.timing(transitionOpacity, {
+              toValue: 0,
+              duration: 250,
+              useNativeDriver: true,
+            }).start(() => {
+              setIsTransitioning(false);
+            });
+          }, 100);
+        });
       } else {
-        // Default to guest mode instead of forcing auth
-        setAppMode('guest');
+        // Initial setup or no mode change
+        setAppMode(newAppMode);
+        prevAppModeRef.current = newAppMode;
       }
     }
-  }, [isLoading, session]);
+  }, [isLoading, session, hasInitialized]);
 
   // Only show loading screen on initial load or if explicitly loading after init
   if (!hasInitialized || (hasInitialized && isLoading)) {
@@ -322,11 +356,12 @@ function RootStackNavigator() {
   }
 
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
+    <>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
       {appMode === 'authenticated' ? (
         // Authenticated stack - Full access with memoized components
         <>
@@ -378,7 +413,27 @@ function RootStackNavigator() {
           <Stack.Screen name="ResetPassword" component={MemoizedResetPasswordScreen} />
         </>
       )}
-    </Stack.Navigator>
+      </Stack.Navigator>
+
+      {/* Smooth transition overlay to mask component remounting */}
+      {isTransitioning && (
+        <Animated.View
+          style={[
+            {
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: COLORS.WHITE,
+              opacity: transitionOpacity,
+              zIndex: 9999,
+            },
+          ]}
+          pointerEvents="none"
+        />
+      )}
+    </>
   );
 }
 
@@ -395,11 +450,39 @@ function AppContent() {
   const { navigationRef } = useScreenTracking();
   const [notificationListener] = useState<Notifications.Subscription | null>(null);
   const [foregroundMessageUnsubscribe, setForegroundMessageUnsubscribe] = useState<(() => void) | null>(null);
+  const [notificationOpenedAppUnsubscribe, setNotificationOpenedAppUnsubscribe] = useState<(() => void) | null>(null);
+  const [pendingInitialNotification, setPendingInitialNotification] = useState<any | null>(null);
 
   useEffect(() => {
     const setupAppContentSpecifics = async () => {
       try {
         initializeAuth();
+
+        // CRITICAL: Check for initial notification BEFORE rendering navigation
+        // In development builds, add a small delay to avoid conflicts with Expo Dev Menu initialization
+        // which can cause MainActivity recreation and double-initialization crashes
+        // Evidence: Dev menu initialization can trigger activity recreation, causing "Only one instance" assertion failure
+        const isDevelopment = __DEV__;
+        const notificationCheckDelay = isDevelopment ? 1500 : 0; // 1.5s delay in dev, immediate in prod
+
+        if (isDevelopment) {
+          console.log('[AppContent] Development build detected - delaying initial notification check to avoid dev menu conflict');
+        }
+
+        setTimeout(async () => {
+          try {
+            const initialFcmNotification = await messaging().getInitialNotification();
+            if (initialFcmNotification) {
+              console.log('[AppContent] Initial FCM notification detected (storing for later processing):', initialFcmNotification);
+              setPendingInitialNotification(initialFcmNotification);
+            } else {
+              console.log('[AppContent] No initial FCM notification found');
+            }
+          } catch (initialNotifError) {
+            console.error('[AppContent] Error checking initial notification:', initialNotifError);
+            // Non-fatal, continue app initialization
+          }
+        }, notificationCheckDelay);
 
         Notifications.setNotificationHandler({
           handleNotification: async () => ({
@@ -465,6 +548,46 @@ function AppContent() {
         // Store the unsubscribe function for cleanup
         setForegroundMessageUnsubscribe(() => unsubscribeOnMessage);
 
+        // Set up handler for when user taps notification while app is in background
+        // Evidence: This is the critical missing piece for background notification taps (Firebase docs)
+        const unsubscribeNotificationOpened = messaging().onNotificationOpenedApp(async remoteMessage => {
+          console.log('[AppContent] Notification opened app from background:', remoteMessage);
+          
+          try {
+            // Extract and normalize deep link from FCM message data
+            const deepLink = normalizeNotificationDeepLink(remoteMessage.data);
+            
+            if (deepLink) {
+              console.log('[AppContent] Processing deep link from background notification tap:', deepLink);
+              
+              // Wait for navigation to be ready before attempting navigation
+              const navReady = await waitForNavigationReady(navigationRef, 3000);
+              if (!navReady) {
+                console.error('[AppContent] Navigation not ready after background notification tap');
+                return;
+              }
+
+              // If it's a Branch link, wait for Branch SDK to be ready
+              if (isBranchLink(deepLink)) {
+                console.log('[AppContent] Branch link detected, waiting for Branch SDK readiness');
+                const branchReady = await waitForBranchReady(5000);
+                if (!branchReady) {
+                  console.warn('[AppContent] Branch SDK not ready, attempting navigation anyway');
+                }
+              }
+
+              // Route the deep link using centralized executor
+              await routeNotificationDeepLink(deepLink);
+            } else {
+              console.log('[AppContent] No deep link found in background notification');
+            }
+          } catch (error) {
+            console.error('[AppContent] Error handling notification opened from background:', error);
+          }
+        });
+
+        setNotificationOpenedAppUnsubscribe(() => unsubscribeNotificationOpened);
+
         try {
           const monitoringService = MonitoringService.getInstance();
           await monitoringService.initialize();
@@ -491,6 +614,10 @@ function AppContent() {
 
       if (foregroundMessageUnsubscribe) {
         foregroundMessageUnsubscribe();
+      }
+
+      if (notificationOpenedAppUnsubscribe) {
+        notificationOpenedAppUnsubscribe();
       }
 
       monitoringService.cleanup();
@@ -553,107 +680,91 @@ function AppContent() {
             console.log('[AppContent] DeepLinkHandler initialized via onReady.');
 
             // Handle cold-start notification taps (app was killed)
+            // Evidence: Initial notification must be checked EARLY (before rendering) to prevent crashes
+            // We now use the pending notification that was stored during setup
             try {
-              const lastNotificationResponse = await Notifications.getLastNotificationResponseAsync();
-              
-              if (lastNotificationResponse) {
-                console.log('[AppContent] Last notification response detected:', lastNotificationResponse);
+              // Use the pending initial notification that was captured early in setup
+              if (pendingInitialNotification) {
+                console.log('[AppContent] Processing pending FCM initial notification:', pendingInitialNotification);
                 
-                const notificationData = lastNotificationResponse.notification.request.content.data;
-                const deep_link = notificationData?.deep_link || 
-                                  notificationData?.branch_link || 
-                                  notificationData?.url || 
-                                  notificationData?.click_action;
+                // Extract and normalize deep link from FCM message
+                const deepLink = normalizeNotificationDeepLink(pendingInitialNotification.data);
+                
+                if (deepLink) {
+                  console.log('[AppContent] Cold-start deep link found from FCM:', deepLink);
 
-                if (deep_link && typeof deep_link === 'string') {
-                  console.log('[AppContent] Cold-start deep link found:', deep_link);
-
-                  // CRITICAL: Wait for navigation stack to be fully initialized
-                  // The stack needs time to render with correct screens based on auth state
-                  console.log('[AppContent] Waiting for navigation stack initialization...');
-                  await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5 second delay
-                  console.log('[AppContent] Proceeding with navigation after stack initialization delay');
-
-                  // Verify navigation state is ready and screen is available
-                  const navState = navigationRef?.current?.getState();
-                  console.log('[AppContent] Current navigation state:', JSON.stringify(navState, null, 2));
-                  
-                  if (!navigationRef?.current) {
-                    console.error('[AppContent] Navigation ref is null after delay, cannot navigate');
+                  // Wait for navigation to be ready (adaptive wait, not fixed delay)
+                  const navReady = await waitForNavigationReady(navigationRef, 5000);
+                  if (!navReady) {
+                    console.error('[AppContent] Navigation not ready after cold-start, cannot navigate');
                     return;
                   }
 
-                  // Check if it's a Branch link
-                  if (deep_link.includes('xbwk1.app.link') || deep_link.includes('xbwk1-alternate.app.link')) {
-                    console.log('[AppContent] Branch link detected in cold-start notification');
-                    
-                    // Wait for Branch SDK to be ready before opening URL
-                    const branchReady = await deepLinkHandler.waitForBranchInitialization(5000);
-                    
-                    if (branchReady) {
-                      try {
-                        const branchModule = require('react-native-branch').default;
-                        if (branchModule && typeof branchModule.openURL === 'function') {
-                          await branchModule.openURL(deep_link);
-                          console.log('[AppContent] Branch URL opened successfully for cold-start notification');
-                        } else {
-                          console.warn('[AppContent] Branch openURL not available, falling back to DeepLinkHandler');
-                          await deepLinkHandler.handleDeepLink(deep_link);
-                        }
-                      } catch (branchError) {
-                        console.error('[AppContent] Error opening Branch URL, falling back to DeepLinkHandler:', branchError);
-                        await deepLinkHandler.handleDeepLink(deep_link);
-                      }
-                    } else {
-                      console.warn('[AppContent] Branch SDK not ready within timeout, using DeepLinkHandler');
-                      await deepLinkHandler.handleDeepLink(deep_link);
-                    }
-                  } else {
-                    // Non-Branch deep link (edushorts:// scheme) - attempt navigation with minimal retries
-                    console.log('[AppContent] Non-Branch deep link detected, attempting navigation');
-                    
-                    let navigationSuccess = false;
-                    const maxRetries = 3; // Reduced from 6 since we already waited for stack init
-                    const retryDelay = 300; // ms
-
-                    for (let attempt = 1; attempt <= maxRetries && !navigationSuccess; attempt++) {
-                      try {
-                        console.log(`[AppContent] Navigation attempt ${attempt}/${maxRetries}`);
-                        const handled = await deepLinkHandler.handleDeepLink(deep_link);
-                        
-                        if (handled) {
-                          navigationSuccess = true;
-                          console.log(`[AppContent] Cold-start navigation successful on attempt ${attempt}`);
-                        } else if (attempt < maxRetries) {
-                          console.log(`[AppContent] Navigation attempt ${attempt} returned false, retrying...`);
-                          await new Promise(resolve => setTimeout(resolve, retryDelay));
-                        }
-                      } catch (navError: any) {
-                        console.error(`[AppContent] Navigation attempt ${attempt} failed:`, navError?.message || navError);
-                        // Log stack trace for debugging
-                        if (navError?.stack) {
-                          console.error('[AppContent] Error stack:', navError.stack);
-                        }
-                        if (attempt < maxRetries) {
-                          await new Promise(resolve => setTimeout(resolve, retryDelay));
-                        }
-                      }
-                    }
-
-                    if (!navigationSuccess) {
-                      console.error('[AppContent] All navigation attempts failed for cold-start notification');
-                      console.error('[AppContent] Deep link that failed:', deep_link);
-                      console.error('[AppContent] This may indicate the target screen is not in the current navigation stack');
+                  // If it's a Branch link, wait for Branch SDK
+                  if (isBranchLink(deepLink)) {
+                    console.log('[AppContent] Branch link detected in cold-start FCM notification');
+                    const branchReady = await waitForBranchReady(5000);
+                    if (!branchReady) {
+                      console.warn('[AppContent] Branch SDK not ready within timeout, attempting navigation anyway');
                     }
                   }
+
+                  // Route using centralized executor
+                  const handled = await routeNotificationDeepLink(deepLink);
+                  if (handled) {
+                    console.log('[AppContent] Cold-start FCM notification deep link handled successfully');
+                  } else {
+                    console.warn('[AppContent] Cold-start FCM notification deep link routing returned false');
+                  }
                 } else {
-                  console.log('[AppContent] Last notification response has no valid deep link');
+                  console.log('[AppContent] FCM initial notification has no deep link');
                 }
               } else {
-                console.log('[AppContent] No last notification response found (normal app launch)');
+                // Fallback: check Expo's last notification response (for Expo-scheduled notifications)
+                console.log('[AppContent] No FCM initial notification, checking Expo last notification response');
+                const lastNotificationResponse = await Notifications.getLastNotificationResponseAsync();
+                
+                if (lastNotificationResponse) {
+                  console.log('[AppContent] Expo last notification response detected:', lastNotificationResponse);
+                  
+                  const notificationData = lastNotificationResponse.notification.request.content.data;
+                  const deepLink = normalizeNotificationDeepLink(notificationData);
+
+                  if (deepLink) {
+                    console.log('[AppContent] Cold-start deep link found from Expo notification:', deepLink);
+
+                    // Wait for navigation readiness
+                    const navReady = await waitForNavigationReady(navigationRef, 5000);
+                    if (!navReady) {
+                      console.error('[AppContent] Navigation not ready after Expo cold-start, cannot navigate');
+                      return;
+                    }
+
+                    // If it's a Branch link, wait for Branch SDK
+                    if (isBranchLink(deepLink)) {
+                      console.log('[AppContent] Branch link detected in cold-start Expo notification');
+                      const branchReady = await waitForBranchReady(5000);
+                      if (!branchReady) {
+                        console.warn('[AppContent] Branch SDK not ready, attempting navigation anyway');
+                      }
+                    }
+
+                    // Route using centralized executor
+                    const handled = await routeNotificationDeepLink(deepLink);
+                    if (handled) {
+                      console.log('[AppContent] Cold-start Expo notification deep link handled successfully');
+                    } else {
+                      console.warn('[AppContent] Cold-start Expo notification deep link routing returned false');
+                    }
+                  } else {
+                    console.log('[AppContent] Expo notification response has no valid deep link');
+                  }
+                } else {
+                  console.log('[AppContent] No cold-start notification found (normal app launch)');
+                }
               }
             } catch (notificationError) {
-              console.error('[AppContent] Error handling last notification response:', notificationError);
+              console.error('[AppContent] Error handling cold-start notification:', notificationError);
               // Non-fatal - app should continue to function normally
             }
           } else {

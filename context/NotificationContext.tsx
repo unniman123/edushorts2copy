@@ -4,6 +4,7 @@ import * as Notifications from 'expo-notifications';
 import { NotificationService, DeepLinkHandler } from '../services';
 import { useAuth } from './AuthContext';
 import { NavigationContainerRef } from '@react-navigation/native';
+import { normalizeNotificationDeepLink, routeNotificationDeepLink } from '../utils/notificationHelpers';
 
 interface NotificationContextProps {
   setupNotifications: () => Promise<void>;
@@ -129,12 +130,25 @@ export function NotificationProvider({ children, navigation }: { children: React
       }
     );
 
-    // Handle notification responses
+    // Handle notification responses (user taps notification)
+    // Updated to use centralized deep link routing with normalization
     responseListener.current = Notifications.addNotificationResponseReceivedListener(
-      response => {
+      async response => {
+        console.log('[NotificationContext] Notification response received:', response);
         const data = response.notification.request.content.data;
-        if (data.deep_link) {
-          deepLinkHandler.handleDeepLink(data.deep_link);
+        
+        // Use normalized deep link extraction to handle various payload key names
+        const deepLink = normalizeNotificationDeepLink(data);
+        
+        if (deepLink) {
+          console.log('[NotificationContext] Routing notification tap deep link:', deepLink);
+          // Use centralized executor for consistent Branch/DeepLinkHandler routing
+          const handled = await routeNotificationDeepLink(deepLink);
+          if (!handled) {
+            console.warn('[NotificationContext] Deep link routing returned false:', deepLink);
+          }
+        } else {
+          console.log('[NotificationContext] No deep link found in notification response');
         }
       }
     );
